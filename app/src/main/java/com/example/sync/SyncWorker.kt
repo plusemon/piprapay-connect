@@ -37,12 +37,11 @@ class SyncWorker(
         val baseUrl = prefs.getServerBaseUrl()
         val apiKey = prefs.getApiKey()
         val deviceKey = prefs.getDeviceKey()
-        val isDemoMode = prefs.isDemoMode()
 
-        Log.d(TAG, "Starting sync for ${pendingTransactions.size} transactions to $baseUrl (demoMode=$isDemoMode)")
+        Log.d(TAG, "Starting sync for ${pendingTransactions.size} transactions to $baseUrl")
 
         val api = try {
-            ApiClient.createApi(baseUrl, apiKey, isDemoMode)
+            ApiClient.createApi(baseUrl, apiKey)
         } catch (e: Exception) {
             Log.w(TAG, "Could not initialize API client: ${e.message}")
             return Result.retry()

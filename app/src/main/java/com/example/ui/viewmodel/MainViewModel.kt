@@ -167,14 +167,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun updateSettings(url: String, apiKey: String, deviceKey: String, demoMode: Boolean = true) {
+    fun updateSettings(url: String, apiKey: String, deviceKey: String) {
         viewModelScope.launch {
-            repository.updateSettings(url, apiKey, deviceKey, demoMode)
+            repository.updateSettings(url, apiKey, deviceKey)
         }
-    }
-
-    fun setDemoMode(enabled: Boolean) {
-        repository.setDemoMode(enabled)
     }
 
     fun generateNewDeviceKey(): String {
@@ -186,19 +182,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val currentSettings = settings.value
             val result = repository.testConnection(
                 currentSettings.serverBaseUrl,
-                currentSettings.apiKey,
-                prefs.isDemoMode()
+                currentSettings.apiKey
             )
-            _serverLatency.value = if (result.latencyMs > 0) result.latencyMs else 42L
+            _serverLatency.value = if (result.latencyMs > 0) result.latencyMs else null
             _serverHealthOk.value = result.isSuccess
         }
     }
 
-    fun testConnection(url: String, apiKey: String, demoMode: Boolean = true) {
+    fun testConnection(url: String, apiKey: String) {
         viewModelScope.launch {
             _connectionTestState.value = ConnectionTestState.Testing
-            val result = repository.testConnection(url, apiKey, demoMode)
-            _serverLatency.value = if (result.latencyMs > 0) result.latencyMs else 42L
+            val result = repository.testConnection(url, apiKey)
+            _serverLatency.value = if (result.latencyMs > 0) result.latencyMs else null
             _serverHealthOk.value = result.isSuccess
             _connectionTestState.value = ConnectionTestState.Finished(result)
         }
@@ -244,8 +239,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.completeOnboardingAndLogin(
                 url = trimmedUrl,
                 apiKey = trimmedPassword,
-                deviceKey = assignedDeviceKey,
-                demoMode = prefs.isDemoMode()
+                deviceKey = assignedDeviceKey
             )
             prefs.setOnboardingCompleted(true)
 
@@ -259,7 +253,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             // Run non-blocking background connection test to update latency/status
             try {
-                repository.testConnection(trimmedUrl, trimmedPassword, isDemoMode = prefs.isDemoMode())
+                repository.testConnection(trimmedUrl, trimmedPassword)
             } catch (_: Exception) {
                 // Ignore background test error
             }
@@ -274,7 +268,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Injects a sample SMS to verify parser, database, and background sync logic.
+     * Injects an SMS to test parser, database, and background sync logic.
      */
     fun simulateIncomingSms(senderAddress: String, body: String): Boolean {
         val parsed = MfsSmsParser.parse(senderAddress, body) ?: return false

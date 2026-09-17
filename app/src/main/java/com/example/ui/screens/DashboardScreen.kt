@@ -248,18 +248,18 @@ fun DashboardScreen(
                             }
                         }
 
-                        // Demo / Production Pill
+                        // Live Gateway Status Pill
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = if (settings.demoMode) EmeraldPrimary.copy(alpha = 0.15f) else Color(0xFF6366F1).copy(alpha = 0.15f),
-                            border = BorderStroke(1.dp, if (settings.demoMode) EmeraldPrimary.copy(alpha = 0.3f) else Color(0xFF6366F1).copy(alpha = 0.3f))
+                            color = EmeraldPrimary.copy(alpha = 0.15f),
+                            border = BorderStroke(1.dp, EmeraldPrimary.copy(alpha = 0.3f))
                         ) {
                             Text(
-                                text = if (settings.demoMode) "SANDBOX" else "PRODUCTION",
+                                text = "LIVE GATEWAY",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (settings.demoMode) EmeraldLight else Color(0xFFA5B4FC),
+                                color = EmeraldLight,
                                 letterSpacing = 0.5.sp
                             )
                         }
@@ -1430,7 +1430,7 @@ fun SmsSimulatorDialog(
                     }
                 }
 
-                OutlinedTextField(
+                androidx.compose.material3.OutlinedTextField(
                     value = customSender,
                     onValueChange = { customSender = it },
                     label = { Text("Sender Header") },
@@ -1438,7 +1438,7 @@ fun SmsSimulatorDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                OutlinedTextField(
+                androidx.compose.material3.OutlinedTextField(
                     value = customBody,
                     onValueChange = { customBody = it },
                     label = { Text("SMS Body") },
@@ -1457,7 +1457,7 @@ fun SmsSimulatorDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
                 Text("Cancel")
             }
         }

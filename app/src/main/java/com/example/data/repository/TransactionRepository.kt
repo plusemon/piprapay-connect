@@ -68,35 +68,30 @@ class TransactionRepository(private val context: Context) {
         dao.clearAll()
     }
 
-    suspend fun updateSettings(url: String, apiKey: String, deviceKey: String, demoMode: Boolean = prefs.isDemoMode()) = withContext(Dispatchers.IO) {
-        prefs.updateSettings(url, apiKey, deviceKey, demoMode)
+    suspend fun updateSettings(url: String, apiKey: String, deviceKey: String) = withContext(Dispatchers.IO) {
+        prefs.updateSettings(url, apiKey, deviceKey)
     }
 
     suspend fun completeOnboardingAndLogin(
         url: String,
         apiKey: String,
-        deviceKey: String = prefs.getDeviceKey(),
-        demoMode: Boolean = true
+        deviceKey: String = prefs.getDeviceKey()
     ) = withContext(Dispatchers.IO) {
-        prefs.completeOnboardingAndLogin(url, apiKey, deviceKey, demoMode)
+        prefs.completeOnboardingAndLogin(url, apiKey, deviceKey)
     }
 
     suspend fun resetOnboarding() = withContext(Dispatchers.IO) {
         prefs.resetOnboarding()
     }
 
-    fun setDemoMode(enabled: Boolean) {
-        prefs.setDemoMode(enabled)
-    }
-
     fun generateNewDeviceKey(): String {
         return prefs.generateNewDeviceKey()
     }
 
-    suspend fun testConnection(baseUrl: String, apiKey: String, isDemoMode: Boolean = prefs.isDemoMode()): ConnectionTestResult = withContext(Dispatchers.IO) {
+    suspend fun testConnection(baseUrl: String, apiKey: String): ConnectionTestResult = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         try {
-            val api = ApiClient.createApi(baseUrl, apiKey, isDemoMode)
+            val api = ApiClient.createApi(baseUrl, apiKey)
             val authHeader = if (apiKey.isNotBlank()) "Bearer $apiKey" else null
 
             val response = try {

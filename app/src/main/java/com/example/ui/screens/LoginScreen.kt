@@ -258,7 +258,7 @@ fun LoginScreen(
             )
         )
 
-        // Quick Preset URL Chips for convenient testing/demo
+        // Quick Preset URL Chips
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -284,7 +284,7 @@ fun LoginScreen(
                     panelUrl = "https://staging-api.piprapay.com"
                     urlError = null
                 },
-                label = { Text("Staging Sandbox", fontSize = 11.sp) },
+                label = { Text("Staging Server", fontSize = 11.sp) },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = BrandIndigo.copy(alpha = 0.12f),
                     selectedLabelColor = BrandIndigo
@@ -357,31 +357,6 @@ fun LoginScreen(
             )
         )
 
-        // Helper button: "Use Demo Credentials"
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp),
-            horizontalArrangement = Arrangement.End
-        ) {
-            TextButton(
-                onClick = {
-                    panelUrl = "https://api.piprapay.com"
-                    password = "DEMO_KEY_98765"
-                    urlError = null
-                    passwordError = null
-                    Toast.makeText(context, "Filled demo credentials!", Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier.testTag("use_demo_credentials_button")
-            ) {
-                Text(
-                    text = "Use Demo Credentials",
-                    fontSize = 13.sp,
-                    color = BrandIndigo,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
 
         // Login Error Banner if needed
         AnimatedVisibility(visible = loginState is LoginState.Error) {
@@ -587,7 +562,7 @@ fun LoginScreen(
                     },
                     placeholder = {
                         Text(
-                            "{\n  \"server_url\": \"https://api.piprapay.com\",\n  \"api_key\": \"DEMO_KEY_98765\"\n}",
+                            "{\n  \"server_url\": \"https://api.piprapay.com\",\n  \"api_key\": \"pipra_live_...\"\n}",
                             fontFamily = FontFamily.Monospace,
                             fontSize = 12.sp
                         )
@@ -603,43 +578,24 @@ fun LoginScreen(
                     )
                 )
 
-                // Paste from clipboard / Load Sample buttons
-                Row(
+                // Paste from clipboard button
+                OutlinedButton(
+                    onClick = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val text = clipboard.primaryClip?.getItemAt(0)?.text?.toString()
+                        if (!text.isNullOrBlank()) {
+                            qrRawPayload = text
+                            Toast.makeText(context, "Pasted from clipboard", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Clipboard is empty", Toast.LENGTH_SHORT).show()
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val text = clipboard.primaryClip?.getItemAt(0)?.text?.toString()
-                            if (!text.isNullOrBlank()) {
-                                qrRawPayload = text
-                                Toast.makeText(context, "Pasted from clipboard", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(context, "Clipboard is empty", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Paste Clipboard", fontSize = 12.sp)
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            qrRawPayload = """
-                            {
-                              "server_url": "https://api.piprapay.com",
-                              "api_key": "DEMO_KEY_98765",
-                              "device_key": "POS-TERMINAL-01"
-                            }
-                            """.trimIndent()
-                        },
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text("Load Sample", fontSize = 12.sp)
-                    }
+                    Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Paste Clipboard", fontSize = 12.sp)
                 }
 
                 qrParseError?.let { err ->

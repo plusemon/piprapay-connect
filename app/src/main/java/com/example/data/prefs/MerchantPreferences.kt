@@ -31,7 +31,6 @@ class MerchantPreferences private constructor(context: Context) {
             serviceEnabled = prefs.getBoolean(KEY_SERVICE_ENABLED, true),
             lastSyncTimestamp = prefs.getLong(KEY_LAST_SYNC_TIME, 0L),
             autoSyncEnabled = prefs.getBoolean(KEY_AUTO_SYNC, true),
-            demoMode = prefs.getBoolean(KEY_DEMO_MODE, true),
             onboardingCompleted = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
         )
     }
@@ -48,15 +47,13 @@ class MerchantPreferences private constructor(context: Context) {
     fun completeOnboardingAndLogin(
         serverBaseUrl: String,
         apiKey: String,
-        deviceKey: String = getDeviceKey(),
-        demoMode: Boolean = true
+        deviceKey: String = getDeviceKey()
     ) {
         val sanitizedUrl = if (serverBaseUrl.endsWith("/")) serverBaseUrl else "$serverBaseUrl/"
         prefs.edit()
             .putString(KEY_SERVER_BASE_URL, sanitizedUrl)
             .putString(KEY_API_KEY, apiKey)
             .putString(KEY_DEVICE_KEY, deviceKey.ifBlank { getDeviceKey() })
-            .putBoolean(KEY_DEMO_MODE, demoMode)
             .putBoolean(KEY_SERVICE_ENABLED, true)
             .putBoolean(KEY_ONBOARDING_COMPLETED, true)
             .apply()
@@ -96,27 +93,16 @@ class MerchantPreferences private constructor(context: Context) {
         _settingsFlow.value = loadSettings()
     }
 
-    fun isDemoMode(): Boolean {
-        return prefs.getBoolean(KEY_DEMO_MODE, true)
-    }
-
-    fun setDemoMode(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_DEMO_MODE, enabled).apply()
-        _settingsFlow.value = loadSettings()
-    }
-
     fun updateSettings(
         serverBaseUrl: String,
         apiKey: String,
-        deviceKey: String,
-        demoMode: Boolean = isDemoMode()
+        deviceKey: String
     ) {
         val sanitizedUrl = if (serverBaseUrl.endsWith("/")) serverBaseUrl else "$serverBaseUrl/"
         prefs.edit()
             .putString(KEY_SERVER_BASE_URL, sanitizedUrl)
             .putString(KEY_API_KEY, apiKey)
             .putString(KEY_DEVICE_KEY, deviceKey.ifBlank { getDeviceKey() })
-            .putBoolean(KEY_DEMO_MODE, demoMode)
             .apply()
         _settingsFlow.value = loadSettings()
     }
@@ -141,7 +127,6 @@ class MerchantPreferences private constructor(context: Context) {
         private const val KEY_SERVICE_ENABLED = "key_service_enabled"
         private const val KEY_LAST_SYNC_TIME = "key_last_sync_time"
         private const val KEY_AUTO_SYNC = "key_auto_sync"
-        private const val KEY_DEMO_MODE = "key_demo_mode"
         private const val KEY_ONBOARDING_COMPLETED = "key_onboarding_completed"
 
         const val DEFAULT_BASE_URL = "https://api.piprapay.com/"
@@ -183,6 +168,5 @@ data class MerchantSettings(
     val serviceEnabled: Boolean = true,
     val lastSyncTimestamp: Long = 0L,
     val autoSyncEnabled: Boolean = true,
-    val demoMode: Boolean = true,
     val onboardingCompleted: Boolean = false
 )

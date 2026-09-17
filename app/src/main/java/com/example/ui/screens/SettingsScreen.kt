@@ -102,7 +102,6 @@ fun SettingsScreen(
     var apiKey by remember(settings.apiKey) { mutableStateOf(settings.apiKey) }
     var deviceKey by remember(settings.deviceKey) { mutableStateOf(settings.deviceKey) }
     var isApiKeyVisible by remember { mutableStateOf(false) }
-    var isDemoMode by remember(settings.demoMode) { mutableStateOf(settings.demoMode) }
 
     // Check system permissions dynamically
     var hasSmsReceive by remember {
@@ -267,43 +266,6 @@ fun SettingsScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    // Demo / Simulator Mode Row
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isDemoMode) EmeraldPrimary.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Demo / Offline Simulator Mode",
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 13.sp,
-                                    color = if (isDemoMode) EmeraldPrimary else MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = if (isDemoMode) "Simulates PipraPay server replies offline (green sync confirmation)" else "Calls live external server via network",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Switch(
-                                checked = isDemoMode,
-                                onCheckedChange = { isDemoMode = it },
-                                modifier = Modifier.testTag("demo_mode_switch"),
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = androidx.compose.ui.graphics.Color.White,
-                                    checkedTrackColor = EmeraldPrimary
-                                )
-                            )
-                        }
-                    }
-
                     // Save & Test Connection Action Buttons
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -311,7 +273,7 @@ fun SettingsScreen(
                     ) {
                         Button(
                             onClick = {
-                                viewModel.updateSettings(serverUrl, apiKey, deviceKey, isDemoMode)
+                                viewModel.updateSettings(serverUrl, apiKey, deviceKey)
                                 Toast.makeText(context, "Settings saved securely!", Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier
@@ -328,7 +290,7 @@ fun SettingsScreen(
 
                         OutlinedButton(
                             onClick = {
-                                viewModel.testConnection(serverUrl, apiKey, isDemoMode)
+                                viewModel.testConnection(serverUrl, apiKey)
                             },
                             enabled = connectionState !is ConnectionTestState.Testing,
                             modifier = Modifier
@@ -586,7 +548,7 @@ fun SettingsScreen(
 
                         Button(
                             onClick = {
-                                viewModel.updateSettings("https://api.piprapay.com/", "", viewModel.generateNewDeviceKey(), demoMode = true)
+                                viewModel.updateSettings("https://api.piprapay.com/", "", viewModel.generateNewDeviceKey())
                                 viewModel.resetOnboarding()
                                 Toast.makeText(context, "Disconnected panel. Ready to connect a new panel.", Toast.LENGTH_SHORT).show()
                             },

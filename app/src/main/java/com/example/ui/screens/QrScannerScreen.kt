@@ -113,12 +113,12 @@ fun QrScannerScreen(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Hero Card: QR Pairing Simulator
+        // Hero Card: QR Pairing Viewfinder
         item {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("qr_mock_viewfinder_card"),
+                    .testTag("qr_viewfinder_card"),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -229,46 +229,6 @@ fun QrScannerScreen(
                         ),
                         shape = RoundedCornerShape(12.dp)
                     )
-
-                    // Quick Sample Config Loader
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                val sample = """
-                                {
-                                  "server_url": "https://api.piprapay.com/",
-                                  "api_key": "pipra_live_demo_982341",
-                                  "device_key": "DHAKA-FLAGSHIP-01"
-                                }
-                                """.trimIndent()
-                                parsePayload(sample)
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("Load Sample 1", fontSize = 11.sp)
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                val sample = """
-                                {
-                                  "server_url": "https://staging-api.piprapay.com/",
-                                  "api_key": "pipra_sandbox_771234",
-                                  "device_key": "CHITTAGONG-POS-02"
-                                }
-                                """.trimIndent()
-                                parsePayload(sample)
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("Load Staging Sample", fontSize = 11.sp)
-                        }
-                    }
                 }
             }
         }
