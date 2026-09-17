@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">PipraPay Companion</string>
+    <string name="channel_name">Transaction Listener Service</string>
+    <string name="channel_description">Notifications indicating active SMS listener state</string>
+    <string name="service_running_title">PipraPay Companion Active</string>
+    <string name="service_running_desc">Listening for MFS transactions and syncing to backend</string>
+</resources>

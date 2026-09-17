@@ -1,0 +1,273 @@
+package com.example.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Dashboard
+import androidx.compose.material.icons.outlined.QrCodeScanner
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.LaunchedEffect
+import com.example.ui.screens.DashboardScreen
+import com.example.ui.screens.LoginScreen
+import com.example.ui.screens.OnboardingScreen
+import com.example.ui.screens.QrScannerScreen
+import com.example.ui.screens.SettingsScreen
+import com.example.ui.theme.EmeraldPrimary
+import com.example.ui.theme.StatusFailed
+import com.example.ui.theme.StatusSynced
+import com.example.ui.viewmodel.MainViewModel
+
+const val ROUTE_ONBOARDING = "onboarding"
+const val ROUTE_LOGIN = "login"
+
+sealed class AppDestination(
+    val route: String,
+    val title: String,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector
+) {
+    data object Dashboard : AppDestination(
+        route = "dashboard",
+        title = "Dashboard",
+        selectedIcon = Icons.Filled.Dashboard,
+        unselectedIcon = Icons.Outlined.Dashboard
+    )
+
+    data object Settings : AppDestination(
+        route = "settings",
+        title = "Settings",
+        selectedIcon = Icons.Filled.Settings,
+        unselectedIcon = Icons.Outlined.Settings
+    )
+
+    data object QrSetup : AppDestination(
+        route = "qr_setup",
+        title = "QR Setup",
+        selectedIcon = Icons.Filled.QrCodeScanner,
+        unselectedIcon = Icons.Outlined.QrCodeScanner
+    )
+}
+
+val navDestinations = listOf(
+    AppDestination.Dashboard,
+    AppDestination.Settings,
+    AppDestination.QrSetup
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PipraPayApp(
+    viewModel: MainViewModel,
+    navController: NavHostController = rememberNavController()
+) {
+    val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route ?: (
+        if (settings.onboardingCompleted) AppDestination.Dashboard.route else ROUTE_ONBOARDING
+    )
+
+    val isTopLevelDestination = currentRoute in navDestinations.map { it.route }
+
+    // Reactively navigate to onboarding if user resets onboarding/panel from settings
+    LaunchedEffect(settings.onboardingCompleted) {
+        if (!settings.onboardingCompleted && currentRoute != ROUTE_ONBOARDING && currentRoute != ROUTE_LOGIN) {
+            navController.navigate(ROUTE_ONBOARDING) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            if (isTopLevelDestination && currentRoute != AppDestination.Dashboard.route) {
+                TopAppBar(
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text(
+                                text = "PipraPay",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Companion",
+                                fontWeight = FontWeight.Light,
+                                fontSize = 17.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    actions = {
+                        // Small header status pill
+                        Surface(
+                            modifier = Modifier.padding(end = 12.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (isServiceRunning) StatusSynced.copy(alpha = 0.15f) else StatusFailed.copy(alpha = 0.15f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isServiceRunning) StatusSynced else StatusFailed)
+                                )
+                                Text(
+                                    text = if (isServiceRunning) "ACTIVE" else "OFFLINE",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isServiceRunning) StatusSynced else StatusFailed
+                                )
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                )
+            }
+        },
+        bottomBar = {
+            if (isTopLevelDestination) {
+                NavigationBar(
+                    modifier = Modifier.testTag("bottom_nav_bar"),
+                    containerColor = MaterialTheme.colorScheme.surface
+                ) {
+                    navDestinations.forEach { destination ->
+                        val isSelected = currentRoute == destination.route
+                        NavigationBarItem(
+                            selected = isSelected,
+                            onClick = {
+                                if (currentRoute != destination.route) {
+                                    navController.navigate(destination.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            icon = {
+                                Icon(
+                                    if (isSelected) destination.selectedIcon else destination.unselectedIcon,
+                                    contentDescription = destination.title
+                                )
+                            },
+                            label = {
+                                Text(destination.title, fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = EmeraldPrimary,
+                                indicatorColor = EmeraldPrimary.copy(alpha = 0.15f)
+                            ),
+                            modifier = Modifier.testTag("nav_item_${destination.route}")
+                        )
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = if (settings.onboardingCompleted) AppDestination.Dashboard.route else ROUTE_ONBOARDING,
+            modifier = Modifier.padding(if (isTopLevelDestination) innerPadding else androidx.compose.foundation.layout.PaddingValues(0.dp))
+        ) {
+            composable(ROUTE_ONBOARDING) {
+                OnboardingScreen(
+                    viewModel = viewModel,
+                    onOnboardingFinished = {
+                        // Navigate directly to DashboardScreen and clear Login/Onboarding from backstack
+                        navController.navigate(AppDestination.Dashboard.route) {
+                            popUpTo(0) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+            composable(ROUTE_LOGIN) {
+                LoginScreen(
+                    viewModel = viewModel,
+                    onLoginSuccess = {
+                        // Navigate directly to DashboardScreen and clear Login/Onboarding from backstack
+                        navController.navigate(AppDestination.Dashboard.route) {
+                            popUpTo(0) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    onBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(AppDestination.Dashboard.route) {
+                DashboardScreen(viewModel = viewModel)
+            }
+
+            composable(AppDestination.Settings.route) {
+                SettingsScreen(viewModel = viewModel)
+            }
+
+            composable(AppDestination.QrSetup.route) {
+                QrScannerScreen(
+                    viewModel = viewModel,
+                    onConfigApplied = {
+                        navController.navigate(AppDestination.Dashboard.route) {
+                            popUpTo(AppDestination.Dashboard.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+        }
+    }
+}

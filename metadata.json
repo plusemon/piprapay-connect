@@ -1,0 +1,6 @@
+{
+  "name": "PipraPay Companion",
+  "description": "Production-grade MFS SMS listener and backend sync companion for PipraPay",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
