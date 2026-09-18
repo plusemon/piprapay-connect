@@ -9,23 +9,36 @@
         android:fillColor="#09090B"
         android:pathData="M8,0 L40,0 C44.418,0 48,3.582 48,8 L48,40 C48,44.418 44.418,48 40,48 L8,48 C3.582,48 0,44.418 0,40 L0,8 C0,3.582 3.582,0 8,0 Z" />
 
-    <!-- Monochrome White P Stem -->
+    <!-- Left Connection Port Bracket -->
     <path
-        android:fillColor="#FAFAFA"
-        android:pathData="M15,12 C13.343,12 12,13.343 12,15 L12,33 C12,34.657 13.343,36 15,36 C16.657,36 18,34.657 18,33 L18,15 C18,13.343 16.657,12 15,12 Z" />
+        android:strokeColor="#FAFAFA"
+        android:strokeWidth="3.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 21,18 L 18,18 A 6,6 0 0,0 18,30 L 21,30" />
 
-    <!-- Monochrome White P Loop -->
+    <!-- Right Connection Port Bracket -->
     <path
-        android:fillColor="#FAFAFA"
-        android:pathData="M17,12 L26,12 C30.418,12 34,15.582 34,20 C34,24.418 30.418,28 26,28 L17,28 L17,22.5 L26,22.5 C27.381,22.5 28.5,21.381 28.5,20 C28.5,18.619 27.381,17.5 26,17.5 L17,17.5 Z" />
+        android:strokeColor="#FAFAFA"
+        android:strokeWidth="3.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 27,18 L 30,18 A 6,6 0 0,1 30,30 L 27,30" />
 
-    <!-- Emerald Connect Node Outer Ring -->
+    <!-- Active Connector Bridge (Linking both ports) -->
+    <path
+        android:strokeColor="#10B981"
+        android:strokeWidth="3.6"
+        android:strokeLineCap="round"
+        android:pathData="M 15,24 L 33,24" />
+
+    <!-- Central Glowing Connector Node -->
     <path
         android:fillColor="#10B981"
-        android:pathData="M34,16 C36.209,16 38,17.791 38,20 C38,22.209 36.209,24 34,24 C31.791,24 30,22.209 30,20 C30,17.791 31.791,16 34,16 Z" />
+        android:pathData="M 24,24 m -5,0 a 5,5 0 1,1 10,0 a 5,5 0 1,1 -10,0" />
 
-    <!-- Emerald Connect Node Inner Highlight -->
+    <!-- Inner Core Connection Highlight -->
     <path
         android:fillColor="#6EE7B7"
-        android:pathData="M34,18.25 C34.966,18.25 35.75,19.034 35.75,20 C35.75,20.966 34.966,21.75 34,21.75 C33.034,21.75 32.25,20.966 32.25,20 C32.25,19.034 33.034,18.25 34,18.25 Z" />
+        android:pathData="M 24,24 m -2.5,0 a 2.5,2.5 0 1,1 5,0 a 2.5,2.5 0 1,1 -5,0" />
 </vector>

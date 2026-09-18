@@ -64,74 +64,86 @@ fun PipraPayIcon(
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = this.size.width
                 val h = this.size.height
+                val centerY = h / 2f
+                val strokeW = w * 0.08f
+                val r = w * 0.15f // radius of the arc
 
-                // 1. Stem of "P"
-                val stemWidth = w * 0.22f
-                val stemCorner = stemWidth / 2f
-                drawRoundRect(
-                    color = iconStemAndLoopColor,
-                    topLeft = Offset(0f, 0f),
-                    size = Size(stemWidth, h),
-                    cornerRadius = CornerRadius(stemCorner, stemCorner)
-                )
-
-                // 2. Loop of "P"
-                val loopTop = 0f
-                val loopHeight = h * 0.60f
-                val loopThickness = stemWidth * 0.85f
-                val loopRight = w * 0.82f
-
-                val outerPath = Path().apply {
-                    moveTo(stemWidth * 0.5f, loopTop)
-                    lineTo(loopRight - loopHeight / 2f, loopTop)
-                    // Outer arc on the right
+                // Left Connection Port Bracket
+                val leftBracketPath = Path().apply {
+                    moveTo(w * 0.44f, centerY - r)
+                    lineTo(w * 0.37f, centerY - r)
                     arcTo(
                         rect = androidx.compose.ui.geometry.Rect(
-                            left = loopRight - loopHeight,
-                            top = loopTop,
-                            right = loopRight,
-                            bottom = loopTop + loopHeight
+                            left = w * 0.37f - r,
+                            top = centerY - r,
+                            right = w * 0.37f + r,
+                            bottom = centerY + r
+                        ),
+                        startAngleDegrees = -90f,
+                        sweepAngleDegrees = -180f,
+                        forceMoveTo = false
+                    )
+                    lineTo(w * 0.44f, centerY + r)
+                }
+                drawPath(
+                    path = leftBracketPath,
+                    color = iconStemAndLoopColor,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = strokeW,
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                        join = androidx.compose.ui.graphics.StrokeJoin.Round
+                    )
+                )
+
+                // Right Connection Port Bracket
+                val rightBracketPath = Path().apply {
+                    moveTo(w * 0.56f, centerY - r)
+                    lineTo(w * 0.63f, centerY - r)
+                    arcTo(
+                        rect = androidx.compose.ui.geometry.Rect(
+                            left = w * 0.63f - r,
+                            top = centerY - r,
+                            right = w * 0.63f + r,
+                            bottom = centerY + r
                         ),
                         startAngleDegrees = -90f,
                         sweepAngleDegrees = 180f,
                         forceMoveTo = false
                     )
-                    lineTo(stemWidth * 0.5f, loopTop + loopHeight)
-                    lineTo(stemWidth * 0.5f, loopTop + loopHeight - loopThickness)
-                    lineTo(loopRight - loopHeight / 2f, loopTop + loopHeight - loopThickness)
-                    // Inner arc on the right
-                    arcTo(
-                        rect = androidx.compose.ui.geometry.Rect(
-                            left = loopRight - loopHeight + loopThickness,
-                            top = loopTop + loopThickness,
-                            right = loopRight - loopThickness,
-                            bottom = loopTop + loopHeight - loopThickness
-                        ),
-                        startAngleDegrees = 90f,
-                        sweepAngleDegrees = -180f,
-                        forceMoveTo = false
-                    )
-                    lineTo(stemWidth * 0.5f, loopTop + loopThickness)
-                    close()
+                    lineTo(w * 0.56f, centerY + r)
                 }
-                drawPath(outerPath, color = iconStemAndLoopColor, style = Fill)
-
-                // 3. Emerald Connect Node at loop apex/apex terminal
-                val nodeRadius = w * 0.14f
-                val nodeCenter = Offset(loopRight, loopTop + loopHeight / 2f)
-
-                // Outer Emerald Halo
-                drawCircle(
-                    color = Color(0xFF10B981),
-                    radius = nodeRadius,
-                    center = nodeCenter
+                drawPath(
+                    path = rightBracketPath,
+                    color = iconStemAndLoopColor,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = strokeW,
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                        join = androidx.compose.ui.graphics.StrokeJoin.Round
+                    )
                 )
 
-                // Inner Bright Node Highlight
+                // Active Connector Bridge (Linking both ports)
+                drawLine(
+                    color = Color(0xFF10B981),
+                    start = Offset(w * 0.32f, centerY),
+                    end = Offset(w * 0.68f, centerY),
+                    strokeWidth = strokeW,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round
+                )
+
+                // Central Glowing Connector Node
+                val outerNodeRadius = w * 0.11f
+                drawCircle(
+                    color = Color(0xFF10B981),
+                    radius = outerNodeRadius,
+                    center = Offset(w / 2f, centerY)
+                )
+
+                // Inner Core Connection Highlight
                 drawCircle(
                     color = Color(0xFF6EE7B7),
-                    radius = nodeRadius * 0.48f,
-                    center = nodeCenter
+                    radius = outerNodeRadius * 0.5f,
+                    center = Offset(w / 2f, centerY)
                 )
             }
         }
