@@ -1,8 +1,11 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.util.UpdateManager
+import com.example.util.UpdateState
 import com.example.data.api.HandshakeVerificationResponse
 import com.example.data.model.TransactionEntity
 import com.example.data.prefs.MerchantPreferences
@@ -35,8 +38,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = TransactionRepository(application)
     private val prefs = MerchantPreferences.getInstance(application)
     private val themePreferences = ThemePreferences.getInstance(application)
+    private val updateManager = UpdateManager(application)
 
     val settings: StateFlow<MerchantSettings> = repository.settingsFlow
+    val updateState: StateFlow<UpdateState> = updateManager.updateState
 
     val isDarkMode: StateFlow<Boolean> = themePreferences.isDarkModeFlow
         .stateIn(
@@ -519,6 +524,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.insertParsedTransaction(parsed)
         }
         return true
+    }
+
+    // Update checking and installation methods
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            updateManager.checkForUpdates(settings.value.githubRepo)
+        }
+    }
+
+    fun downloadUpdate(downloadUrl: String, fileName: String) {
+        viewModelScope.launch {
+            updateManager.downloadUpdate(downloadUrl, fileName)
+        }
+    }
+
+    fun installUpdate(uri: Uri) {
+        updateManager.installUpdate(uri)
+    }
+
+    fun resetUpdateState() {
+        updateManager.resetState()
+    }
+
+    fun updateGithubRepo(repo: String) {
+        prefs.updateGithubRepo(repo)
     }
 }
 

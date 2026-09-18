@@ -1089,46 +1089,469 @@ fun SettingsScreen(
                 border = BorderStroke(1.dp, colors.border),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                Column {
                     Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        PipraPayIcon(size = 28.dp)
-                        Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            PipraPayIcon(size = 28.dp)
+                            Column {
+                                Text(
+                                    text = "PipraPay Connect",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colors.textPrimary
+                                )
+                                Text(
+                                    text = "Automated MFS Gateway Node",
+                                    fontSize = 10.sp,
+                                    color = colors.textMuted
+                                )
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = colors.surfaceCard,
+                            border = BorderStroke(1.dp, colors.border)
+                        ) {
                             Text(
-                                text = "PipraPay Connect",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colors.textPrimary
-                            )
-                            Text(
-                                text = "Automated MFS Gateway Node",
-                                fontSize = 10.sp,
+                                text = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Medium,
                                 color = colors.textMuted
                             )
                         }
                     }
 
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = colors.surfaceCard,
-                        border = BorderStroke(1.dp, colors.border)
+                    HorizontalDivider(
+                        color = colors.border,
+                        modifier = Modifier.padding(horizontal = 14.dp)
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(
-                            text = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Medium,
-                            color = colors.textMuted
+                        // GitHub Repo setting
+                        var repoInput by remember(settings.githubRepo) { mutableStateOf(settings.githubRepo) }
+                        var isEditingRepo by remember { mutableStateOf(false) }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "GitHub Update Repository",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colors.textMuted
+                                )
+                                if (isEditingRepo) {
+                                    OutlinedTextField(
+                                        value = repoInput,
+                                        onValueChange = { repoInput = it },
+                                        singleLine = true,
+                                        textStyle = TextStyle(fontSize = 12.sp, color = colors.textPrimary),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 4.dp)
+                                            .testTag("github_repo_input"),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedContainerColor = colors.surfaceCard,
+                                            unfocusedContainerColor = colors.surfaceCard,
+                                            focusedBorderColor = AccentEmerald,
+                                            unfocusedBorderColor = colors.border,
+                                            focusedTextColor = colors.textPrimary,
+                                            unfocusedTextColor = colors.textPrimary
+                                        )
+                                    )
+                                } else {
+                                    Text(
+                                        text = settings.githubRepo,
+                                        fontSize = 13.sp,
+                                        color = colors.textPrimary,
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            if (isEditingRepo) {
+                                Button(
+                                    onClick = {
+                                        viewModel.updateGithubRepo(repoInput)
+                                        isEditingRepo = false
+                                        Toast.makeText(context, "Repository updated!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                                    modifier = Modifier.height(32.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = AccentEmerald,
+                                        contentColor = Color.White
+                                    )
+                                ) {
+                                    Text("Save", fontSize = 11.sp)
+                                }
+                            } else {
+                                OutlinedButton(
+                                    onClick = { isEditingRepo = true },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                                    modifier = Modifier.height(32.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        containerColor = colors.surfaceCard,
+                                        contentColor = colors.textPrimary
+                                    ),
+                                    border = BorderStroke(1.dp, colors.border)
+                                ) {
+                                    Text("Change", fontSize = 11.sp)
+                                }
+                            }
+                        }
+
+                        HorizontalDivider(
+                            color = colors.border.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(vertical = 4.dp)
                         )
+
+                        // Update State block
+                        val updateState by viewModel.updateState.collectAsStateWithLifecycle()
+
+                        when (val state = updateState) {
+                            is com.example.util.UpdateState.Idle -> {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "Search GitHub for newer releases",
+                                        fontSize = 11.sp,
+                                        color = colors.textMuted
+                                    )
+                                    Button(
+                                        onClick = { viewModel.checkForUpdates() },
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                        modifier = Modifier.height(36.dp).testTag("check_update_button"),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (colors.isDark) Color.White else Color(0xFF09090B),
+                                            contentColor = if (colors.isDark) Color.Black else Color.White
+                                        )
+                                    ) {
+                                        Text("Check for Updates", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                            is com.example.util.UpdateState.Checking -> {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = AccentEmerald
+                                    )
+                                    Text(
+                                        text = "Checking GitHub releases...",
+                                        fontSize = 12.sp,
+                                        color = colors.textPrimary,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                            is com.example.util.UpdateState.UpToDate -> {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = StatusSynced,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = "App is up to date",
+                                            fontSize = 12.sp,
+                                            color = StatusSynced,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                    OutlinedButton(
+                                        onClick = { viewModel.checkForUpdates() },
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                                        modifier = Modifier.height(32.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            containerColor = colors.surfaceCard,
+                                            contentColor = colors.textPrimary
+                                        ),
+                                        border = BorderStroke(1.dp, colors.border)
+                                    ) {
+                                        Text("Check Again", fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                            is com.example.util.UpdateState.UpdateAvailable -> {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = AccentEmerald.copy(alpha = 0.1f),
+                                        border = BorderStroke(1.dp, AccentEmerald.copy(alpha = 0.25f))
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(10.dp),
+                                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = "New Version Available: ${state.versionName}",
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = AccentEmerald
+                                                )
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = AccentEmerald
+                                                ) {
+                                                    Text(
+                                                        text = "UPDATE",
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                            Text(
+                                                text = "Release Notes:\n${state.releaseNotes}",
+                                                fontSize = 11.sp,
+                                                color = colors.textPrimary,
+                                                maxLines = 4,
+                                                lineHeight = 14.sp
+                                            )
+                                        }
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Button(
+                                            onClick = { viewModel.downloadUpdate(state.downloadUrl, state.fileName) },
+                                            shape = RoundedCornerShape(8.dp),
+                                            modifier = Modifier.weight(1f).height(38.dp).testTag("download_update_button"),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = AccentEmerald,
+                                                contentColor = Color.White
+                                            )
+                                        ) {
+                                            Text("Download & Install", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = { viewModel.resetUpdateState() },
+                                            shape = RoundedCornerShape(8.dp),
+                                            modifier = Modifier.height(38.dp),
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                containerColor = colors.surfaceCard,
+                                                contentColor = colors.textPrimary
+                                            ),
+                                            border = BorderStroke(1.dp, colors.border)
+                                        ) {
+                                            Text("Dismiss", fontSize = 12.sp)
+                                        }
+                                    }
+                                }
+                            }
+                            is com.example.util.UpdateState.Downloading -> {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "Downloading update...",
+                                            fontSize = 12.sp,
+                                            color = colors.textPrimary,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = "${(state.progress * 100).toInt()}%",
+                                            fontSize = 12.sp,
+                                            color = colors.textMuted,
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    androidx.compose.material3.LinearProgressIndicator(
+                                        progress = { state.progress },
+                                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                                        color = AccentEmerald,
+                                        trackColor = colors.border
+                                    )
+                                }
+                            }
+                            is com.example.util.UpdateState.Downloaded -> {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = StatusSynced.copy(alpha = 0.1f),
+                                        border = BorderStroke(1.dp, StatusSynced.copy(alpha = 0.25f))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(10.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.CheckCircle,
+                                                contentDescription = null,
+                                                tint = StatusSynced,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Text(
+                                                text = "Download complete! Ready to install.",
+                                                fontSize = 12.sp,
+                                                color = StatusSynced,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Button(
+                                            onClick = { viewModel.installUpdate(state.fileUri) },
+                                            shape = RoundedCornerShape(8.dp),
+                                            modifier = Modifier.weight(1f).height(38.dp).testTag("install_update_button"),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = StatusSynced,
+                                                contentColor = Color.White
+                                            )
+                                        ) {
+                                            Text("Install Now", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = { viewModel.resetUpdateState() },
+                                            shape = RoundedCornerShape(8.dp),
+                                            modifier = Modifier.height(38.dp),
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                containerColor = colors.surfaceCard,
+                                                contentColor = colors.textPrimary
+                                            ),
+                                            border = BorderStroke(1.dp, colors.border)
+                                        ) {
+                                            Text("Cancel", fontSize = 12.sp)
+                                        }
+                                    }
+                                }
+                            }
+                            is com.example.util.UpdateState.Error -> {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = StatusFailed.copy(alpha = 0.1f),
+                                        border = BorderStroke(1.dp, StatusFailed.copy(alpha = 0.25f))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(10.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Warning,
+                                                contentDescription = null,
+                                                tint = StatusFailed,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Text(
+                                                text = state.message,
+                                                fontSize = 12.sp,
+                                                color = StatusFailed,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Button(
+                                            onClick = { viewModel.checkForUpdates() },
+                                            shape = RoundedCornerShape(8.dp),
+                                            modifier = Modifier.weight(1f).height(38.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = StatusFailed,
+                                                contentColor = Color.White
+                                            )
+                                        ) {
+                                            Text("Retry", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = { viewModel.resetUpdateState() },
+                                            shape = RoundedCornerShape(8.dp),
+                                            modifier = Modifier.height(38.dp),
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                containerColor = colors.surfaceCard,
+                                                contentColor = colors.textPrimary
+                                            ),
+                                            border = BorderStroke(1.dp, colors.border)
+                                        ) {
+                                            Text("Dismiss", fontSize = 12.sp)
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

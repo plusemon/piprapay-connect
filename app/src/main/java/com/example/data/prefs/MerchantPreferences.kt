@@ -45,7 +45,8 @@ class MerchantPreferences private constructor(context: Context) {
             autoSyncEnabled = prefs.getBoolean(KEY_AUTO_SYNC, true),
             hapticEnabled = prefs.getBoolean(KEY_HAPTIC_ENABLED, true),
             audioToneEnabled = prefs.getBoolean(KEY_AUDIO_TONE_ENABLED, true),
-            onboardingCompleted = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+            onboardingCompleted = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false),
+            githubRepo = prefs.getString(KEY_GITHUB_REPO, DEFAULT_GITHUB_REPO) ?: DEFAULT_GITHUB_REPO
         )
     }
 
@@ -186,6 +187,15 @@ class MerchantPreferences private constructor(context: Context) {
         _settingsFlow.value = loadSettings()
     }
 
+    fun getGithubRepo(): String {
+        return prefs.getString(KEY_GITHUB_REPO, DEFAULT_GITHUB_REPO) ?: DEFAULT_GITHUB_REPO
+    }
+
+    fun updateGithubRepo(repo: String) {
+        prefs.edit().putString(KEY_GITHUB_REPO, repo.trim()).apply()
+        _settingsFlow.value = loadSettings()
+    }
+
     fun generateNewDeviceKey(): String {
         val newKey = "DEV-" + UUID.randomUUID().toString().take(8).uppercase()
         prefs.edit().putString(KEY_DEVICE_KEY, newKey).apply()
@@ -210,8 +220,10 @@ class MerchantPreferences private constructor(context: Context) {
         private const val KEY_HAPTIC_ENABLED = "key_haptic_enabled"
         private const val KEY_AUDIO_TONE_ENABLED = "key_audio_tone_enabled"
         private const val KEY_ONBOARDING_COMPLETED = "key_onboarding_completed"
+        private const val KEY_GITHUB_REPO = "key_github_repo"
 
         const val DEFAULT_BASE_URL = "https://pay.emon.bd/"
+        const val DEFAULT_GITHUB_REPO = "BdEmon00/piprapay-companion"
 
         @Volatile
         private var instance: MerchantPreferences? = null
@@ -261,5 +273,6 @@ data class MerchantSettings(
     val autoSyncEnabled: Boolean = true,
     val hapticEnabled: Boolean = true,
     val audioToneEnabled: Boolean = true,
-    val onboardingCompleted: Boolean = false
+    val onboardingCompleted: Boolean = false,
+    val githubRepo: String = MerchantPreferences.DEFAULT_GITHUB_REPO
 )
