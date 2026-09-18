@@ -1,12 +1,21 @@
 package com.example.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,19 +28,18 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -44,15 +52,22 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.runtime.LaunchedEffect
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.OnboardingScreen
 import com.example.ui.screens.QrScannerScreen
 import com.example.ui.screens.SettingsScreen
-import com.example.ui.theme.EmeraldPrimary
-import com.example.ui.theme.StatusFailed
-import com.example.ui.theme.StatusSynced
+import com.example.ui.theme.AccentEmerald
+import com.example.ui.theme.AccentRose
+import com.example.ui.theme.BorderZinc800
+import com.example.ui.theme.CanvasBlack
+import com.example.ui.theme.GhostEmeraldBg
+import com.example.ui.theme.GhostEmeraldBorder
+import com.example.ui.theme.GhostRoseBg
+import com.example.ui.theme.GhostRoseBorder
+import com.example.ui.theme.TextWhite
+import com.example.ui.theme.TextZinc400
+import com.example.ui.theme.TextZinc500
 import com.example.ui.viewmodel.MainViewModel
 
 const val ROUTE_ONBOARDING = "onboarding"
@@ -125,28 +140,29 @@ fun PipraPayApp(
                     title = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
                                 text = "PipraPay",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 20.sp,
-                                color = MaterialTheme.colorScheme.primary
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 17.sp,
+                                color = TextWhite
                             )
                             Text(
                                 text = "Companion",
-                                fontWeight = FontWeight.Light,
-                                fontSize = 17.sp,
-                                color = MaterialTheme.colorScheme.onSurface
+                                fontWeight = FontWeight.Normal,
+                                fontSize = 13.sp,
+                                color = TextZinc500
                             )
                         }
                     },
                     actions = {
-                        // Small header status pill
+                        // Ghost status pill (10% tint)
                         Surface(
                             modifier = Modifier.padding(end = 12.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            color = if (isServiceRunning) StatusSynced.copy(alpha = 0.15f) else StatusFailed.copy(alpha = 0.15f)
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isServiceRunning) GhostEmeraldBg else GhostRoseBg,
+                            border = BorderStroke(1.dp, if (isServiceRunning) GhostEmeraldBorder else GhostRoseBorder)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -155,61 +171,94 @@ fun PipraPayApp(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(8.dp)
+                                        .size(6.dp)
                                         .clip(CircleShape)
-                                        .background(if (isServiceRunning) StatusSynced else StatusFailed)
+                                        .background(if (isServiceRunning) AccentEmerald else AccentRose)
                                 )
                                 Text(
-                                    text = if (isServiceRunning) "ACTIVE" else "OFFLINE",
+                                    text = if (isServiceRunning) "ACTIVE" else "PAUSED",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isServiceRunning) StatusSynced else StatusFailed
+                                    color = if (isServiceRunning) AccentEmerald else AccentRose
                                 )
                             }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = CanvasBlack
                     )
                 )
             }
         },
         bottomBar = {
             if (isTopLevelDestination) {
-                NavigationBar(
-                    modifier = Modifier.testTag("bottom_nav_bar"),
-                    containerColor = MaterialTheme.colorScheme.surface
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("bottom_nav_bar"),
+                    color = CanvasBlack.copy(alpha = 0.92f),
+                    border = BorderStroke(1.dp, BorderZinc800.copy(alpha = 0.85f))
                 ) {
-                    navDestinations.forEach { destination ->
-                        val isSelected = currentRoute == destination.route
-                        NavigationBarItem(
-                            selected = isSelected,
-                            onClick = {
-                                if (currentRoute != destination.route) {
-                                    navController.navigate(destination.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .height(56.dp)
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        navDestinations.forEach { destination ->
+                            val isSelected = currentRoute == destination.route
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clickable {
+                                        if (currentRoute != destination.route) {
+                                            navController.navigate(destination.route) {
+                                                popUpTo(navController.graph.findStartDestination().id) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
                                         }
-                                        launchSingleTop = true
-                                        restoreState = true
                                     }
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    if (isSelected) destination.selectedIcon else destination.unselectedIcon,
-                                    contentDescription = destination.title
+                                    .testTag("nav_item_${destination.route}"),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                // Subtle top indicator line for active tab
+                                Box(
+                                    modifier = Modifier
+                                        .width(24.dp)
+                                        .height(2.dp)
+                                        .clip(RoundedCornerShape(1.dp))
+                                        .background(if (isSelected) TextWhite else Color.Transparent)
                                 )
-                            },
-                            label = {
-                                Text(destination.title, fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = EmeraldPrimary,
-                                indicatorColor = EmeraldPrimary.copy(alpha = 0.15f)
-                            ),
-                            modifier = Modifier.testTag("nav_item_${destination.route}")
-                        )
+
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
+                                        contentDescription = destination.title,
+                                        tint = if (isSelected) TextWhite else TextZinc500,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = destination.title,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = if (isSelected) TextWhite else TextZinc500
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(2.dp))
+                            }
+                        }
                     }
                 }
             }

@@ -16,7 +16,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -40,7 +39,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryAlert
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.HourglassTop
@@ -52,9 +50,6 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -82,31 +77,38 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.TransactionEntity
 import com.example.service.PipraPayService
-import com.example.ui.theme.BkashPink
-import com.example.ui.theme.EmeraldLight
-import com.example.ui.theme.EmeraldPrimary
-import com.example.ui.theme.NagadOrange
-import com.example.ui.theme.RocketPurple
-import com.example.ui.theme.SlateCard
-import com.example.ui.theme.SlateDark
-import com.example.ui.theme.SlateStroke
-import com.example.ui.theme.SlateTextMuted
-import com.example.ui.theme.StatusFailed
-import com.example.ui.theme.StatusPending
-import com.example.ui.theme.StatusSynced
-import com.example.ui.theme.UpayNavy
+import com.example.ui.theme.AccentAmber
+import com.example.ui.theme.AccentEmerald
+import com.example.ui.theme.AccentRose
+import com.example.ui.theme.Amber300
+import com.example.ui.theme.BorderZinc700
+import com.example.ui.theme.BorderZinc800
+import com.example.ui.theme.CanvasBlack
+import com.example.ui.theme.ContainerDark
+import com.example.ui.theme.GhostAmberBg
+import com.example.ui.theme.GhostAmberBorder
+import com.example.ui.theme.GhostEmeraldBg
+import com.example.ui.theme.GhostEmeraldBorder
+import com.example.ui.theme.GhostRoseBg
+import com.example.ui.theme.GhostRoseBorder
+import com.example.ui.theme.SurfaceCard
+import com.example.ui.theme.TextWhite
+import com.example.ui.theme.TextZinc300
+import com.example.ui.theme.TextZinc400
+import com.example.ui.theme.TextZinc500
 import com.example.ui.viewmodel.MainViewModel
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
@@ -137,7 +139,7 @@ fun DashboardScreen(
     var selectedTransaction by remember { mutableStateOf<TransactionEntity?>(null) }
     var showSmsSimulatorDialog by remember { mutableStateOf(false) }
 
-    // Pulsing animation for foreground service indicator
+    // Pulsing animation for subtle live indicator
     val infiniteTransition = rememberInfiniteTransition(label = "pulse_and_sync")
     val pulseAlpha by infiniteTransition.animateFloat(
         initialValue = 0.25f,
@@ -170,563 +172,486 @@ fun DashboardScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
+            .background(CanvasBlack)
             .testTag("dashboard_screen"),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // 1. Unified Hero Header & Service Switch
+        // 1. Unboxed Header: Clean Inline Layout
         item {
-            Card(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .testTag("live_status_card"),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = SlateDark
-                ),
-                border = BorderStroke(1.dp, SlateStroke),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                    .padding(top = 10.dp, bottom = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "PipraPay",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 21.sp,
+                            letterSpacing = (-0.5).sp,
+                            color = TextWhite
+                        )
+                        Text(
+                            text = "Companion",
+                            fontWeight = FontWeight.Normal,
+                            fontSize = 15.sp,
+                            color = TextZinc500
+                        )
+                    }
+                    Text(
+                        text = "MFS SMS Gateway Listener",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextZinc500
+                    )
+                }
+
+                // Minimal subtle status ghost badge
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (isServiceRunning) GhostEmeraldBg else Color(0x1871717A),
+                    border = BorderStroke(1.dp, if (isServiceRunning) GhostEmeraldBorder else BorderZinc800)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(if (isServiceRunning) AccentEmerald else TextZinc500)
+                        )
+                        Text(
+                            text = if (isServiceRunning) "GATEWAY ACTIVE" else "PAUSED",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp,
+                            color = if (isServiceRunning) AccentEmerald else TextZinc500
+                        )
+                    }
+                }
+            }
+        }
+
+        // 2. Compact Listener Status Row (Minimal Switch & Glowing Dot)
+        item {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("live_status_card"),
+                shape = RoundedCornerShape(12.dp),
+                color = ContainerDark,
+                border = BorderStroke(1.dp, BorderZinc800)
+            ) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Top row: Brand mark & Enterprise subline
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        // Subtle glowing green dot with soft pulse ring
+                        Box(
+                            modifier = Modifier.size(18.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(30.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(
-                                        Brush.linearGradient(
-                                            listOf(EmeraldLight, EmeraldPrimary)
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "P",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 17.sp
+                            if (isServiceRunning) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .scale(pulseScale)
+                                        .clip(CircleShape)
+                                        .background(AccentEmerald.copy(alpha = pulseAlpha * 0.35f))
                                 )
                             }
-                            Column {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isServiceRunning) AccentEmerald else TextZinc500)
+                            )
+                        }
+
+                        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                            Text(
+                                text = if (isServiceRunning) "Foreground Service Running" else "Foreground Service Paused",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isServiceRunning) TextWhite else TextZinc500
+                            )
+                            Text(
+                                text = if (isServiceRunning) "Capturing incoming MFS SMS packets" else "SMS background capture inactive",
+                                fontSize = 11.sp,
+                                color = TextZinc500
+                            )
+                        }
+                    }
+
+                    Switch(
+                        checked = isServiceRunning,
+                        onCheckedChange = { viewModel.toggleService(it) },
+                        modifier = Modifier.testTag("service_toggle_switch"),
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = CanvasBlack,
+                            checkedTrackColor = TextWhite,
+                            uncheckedThumbColor = TextZinc500,
+                            uncheckedTrackColor = BorderZinc800
+                        )
+                    )
+                }
+            }
+        }
+
+        // 3. System Telemetry & Battery Optimization Alert
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Combined System Telemetry Panel
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("companion_session_card"),
+                    shape = RoundedCornerShape(12.dp),
+                    color = ContainerDark,
+                    border = BorderStroke(1.dp, BorderZinc800)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            // Device Key Column with click-to-copy
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "DEVICE KEY",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextZinc500,
+                                    letterSpacing = 1.sp
+                                )
+                                Spacer(modifier = Modifier.height(3.dp))
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     Text(
-                                        text = "PipraPay",
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 17.sp,
-                                        color = EmeraldLight
+                                        text = settings.deviceKey.ifBlank { "unassigned" },
+                                        fontWeight = FontWeight.Medium,
+                                        fontSize = 12.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = TextWhite,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.widthIn(max = 140.dp)
                                     )
-                                    Text(
-                                        text = "Companion",
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 15.sp,
-                                        color = Color.White
-                                    )
+                                    IconButton(
+                                        onClick = {
+                                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                            clipboard.setPrimaryClip(ClipData.newPlainText("Device Key", settings.deviceKey))
+                                            Toast.makeText(context, "Device Key copied!", Toast.LENGTH_SHORT).show()
+                                        },
+                                        modifier = Modifier.size(22.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ContentCopy,
+                                            contentDescription = "Copy Device Key",
+                                            modifier = Modifier.size(12.dp),
+                                            tint = TextZinc400
+                                        )
+                                    }
                                 }
+                            }
+
+                            // Target Server Column with inline latency chip
+                            Column(
+                                horizontalAlignment = Alignment.End,
+                                modifier = Modifier.weight(1.1f)
+                            ) {
                                 Text(
-                                    text = "ENTERPRISE MFS GATEWAY",
-                                    fontSize = 9.sp,
+                                    text = "TARGET SERVER",
+                                    fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = SlateTextMuted,
+                                    color = TextZinc500,
                                     letterSpacing = 1.sp
                                 )
-                            }
-                        }
-
-                        // Live Gateway Status Pill
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = EmeraldPrimary.copy(alpha = 0.15f),
-                            border = BorderStroke(1.dp, EmeraldPrimary.copy(alpha = 0.3f))
-                        ) {
-                            Text(
-                                text = "LIVE GATEWAY",
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = EmeraldLight,
-                                letterSpacing = 0.5.sp
-                            )
-                        }
-                    }
-
-                    // Middle row: Animated Pulsing Service Switch & Status
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = SlateCard,
-                        border = BorderStroke(1.dp, SlateStroke.copy(alpha = 0.6f))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                // Animated pulsing green indicator (active) or red/grey (inactive)
-                                Box(
-                                    modifier = Modifier.size(24.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (isServiceRunning) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(24.dp)
-                                                .scale(pulseScale)
-                                                .clip(CircleShape)
-                                                .background(StatusSynced.copy(alpha = pulseAlpha * 0.4f))
-                                        )
-                                    }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(11.dp)
-                                            .clip(CircleShape)
-                                            .background(
-                                                if (isServiceRunning) StatusSynced else StatusFailed
-                                            )
-                                    )
-                                }
-
-                                Column {
-                                    Text(
-                                        text = if (isServiceRunning) "LISTENER ACTIVE" else "LISTENER PAUSED",
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 13.sp,
-                                        color = if (isServiceRunning) StatusSynced else StatusFailed,
-                                        letterSpacing = 1.sp
-                                    )
-                                    Text(
-                                        text = if (isServiceRunning) "Foreground SMS capture running" else "SMS background capture stopped",
-                                        fontSize = 11.sp,
-                                        color = SlateTextMuted
-                                    )
-                                }
-                            }
-
-                            Switch(
-                                checked = isServiceRunning,
-                                onCheckedChange = { viewModel.toggleService(it) },
-                                modifier = Modifier.testTag("service_toggle_switch"),
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = EmeraldPrimary,
-                                    uncheckedThumbColor = Color(0xFFCBD5E1),
-                                    uncheckedTrackColor = Color(0xFF334155)
-                                )
-                            )
-                        }
-                    }
-
-                    // Bottom Connectivity Row below the switch
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Device Key with subtle copy icon
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "DEVICE KEY",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SlateTextMuted,
-                                letterSpacing = 0.8.sp
-                            )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = settings.deviceKey.ifBlank { "unassigned" },
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 12.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = Color.White,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.widthIn(max = 140.dp)
-                                )
-                                IconButton(
-                                    onClick = {
-                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                        clipboard.setPrimaryClip(ClipData.newPlainText("Device Key", settings.deviceKey))
-                                        Toast.makeText(context, "Device Key copied!", Toast.LENGTH_SHORT).show()
-                                    },
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.ContentCopy,
-                                        contentDescription = "Copy Device Key",
-                                        modifier = Modifier.size(13.dp),
-                                        tint = EmeraldLight
-                                    )
-                                }
-                            }
-                        }
-
-                        // Truncated Server URL + inline Health/Latency Chip
-                        Column(
-                            horizontalAlignment = Alignment.End,
-                            modifier = Modifier.weight(1.2f)
-                        ) {
-                            Text(
-                                text = "TARGET SERVER",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SlateTextMuted,
-                                letterSpacing = 0.8.sp
-                            )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = settings.serverBaseUrl
-                                        .removePrefix("https://")
-                                        .removePrefix("http://")
-                                        .trimEnd('/'),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    color = Color.White,
-                                    modifier = Modifier.widthIn(max = 110.dp)
-                                )
-
-                                // Inline latency / health chip
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = if (serverHealthOk) StatusSynced.copy(alpha = 0.16f) else StatusFailed.copy(alpha = 0.16f),
-                                    border = BorderStroke(
-                                        1.dp,
-                                        if (serverHealthOk) StatusSynced.copy(alpha = 0.35f) else StatusFailed.copy(alpha = 0.35f)
-                                    ),
-                                    modifier = Modifier.clickable {
-                                        viewModel.pingServerHealth()
-                                        Toast.makeText(context, "Checking server ping...", Toast.LENGTH_SHORT).show()
-                                    }
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(5.dp)
-                                                .clip(CircleShape)
-                                                .background(if (serverHealthOk) StatusSynced else StatusFailed)
-                                        )
-                                        Text(
-                                            text = if (serverHealthOk) "${serverLatency ?: 42}ms" else "ERR",
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (serverHealthOk) StatusSynced else StatusFailed
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Battery optimization warning if not excluded
-                    if (!isBatteryOptimized) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = StatusPending.copy(alpha = 0.12f),
-                            border = BorderStroke(1.dp, StatusPending.copy(alpha = 0.3f))
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
+                                Spacer(modifier = Modifier.height(3.dp))
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(
-                                        Icons.Default.BatteryAlert,
-                                        contentDescription = "Battery Alert",
-                                        tint = StatusPending,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Text(
-                                        text = "Battery Optimization may kill listener",
-                                        fontSize = 11.sp,
-                                        color = Color.White
-                                    )
-                                }
-                                TextButton(
-                                    onClick = {
-                                        try {
-                                            context.startActivity(PipraPayService.getBatteryOptimizationIntent(context))
-                                        } catch (_: Exception) {
-                                            Toast.makeText(context, "Could not open battery settings", Toast.LENGTH_SHORT).show()
-                                        }
-                                    },
-                                    modifier = Modifier.testTag("fix_battery_optimization_button")
-                                ) {
-                                    Text("Fix Now", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusPending)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 1b. PipraPay Companion Session & Whitelist Card
-        item {
-            val merchantName = settings.accountName.ifBlank { accountInfo?.fullname ?: "" }
-            val merchantEmail = settings.accountEmail.ifBlank { accountInfo?.email ?: "" }
-            val hasToken = settings.sessionToken.isNotBlank()
-            val senders = if (settings.whitelistedSenders.isNotEmpty()) settings.whitelistedSenders else listOf("bKash", "NAGAD", "Rocket", "Upay")
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("companion_session_card"),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = SlateCard),
-                border = BorderStroke(1.dp, SlateStroke),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (hasToken) EmeraldPrimary.copy(alpha = 0.2f) else StatusPending.copy(alpha = 0.2f),
-                                border = BorderStroke(1.dp, if (hasToken) EmeraldPrimary else StatusPending)
-                            ) {
-                                Box(modifier = Modifier.padding(6.dp)) {
-                                    Icon(
-                                        imageVector = if (hasToken) Icons.Default.CheckCircle else Icons.Default.Sync,
-                                        contentDescription = null,
-                                        tint = if (hasToken) EmeraldLight else StatusPending,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                            Column {
-                                Text(
-                                    text = if (hasToken) (merchantName.ifBlank { "Companion Linked" }) else "Companion Pairing",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = Color.White
-                                )
-                                Text(
-                                    text = if (hasToken) (merchantEmail.ifBlank { "pay.emon.bd Active Session" }) else "Connect with OTP or QR to enable companion protocol",
-                                    fontSize = 11.sp,
-                                    color = SlateTextMuted
-                                )
-                            }
-                        }
-
-                        IconButton(
-                            onClick = {
-                                viewModel.refreshCompanionData()
-                                Toast.makeText(context, "Syncing companion status...", Toast.LENGTH_SHORT).show()
-                            },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Refresh,
-                                contentDescription = "Refresh Companion Info",
-                                tint = EmeraldLight,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-
-                    // Senders & Server Queue stats if available
-                    accountInfo?.let { info ->
-                        if (info.success) {
-                            HorizontalDivider(color = SlateStroke)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Stored", fontSize = 10.sp, color = SlateTextMuted, fontWeight = FontWeight.Bold)
-                                    Text("${info.storedCount}", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = EmeraldLight)
-                                }
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Used", fontSize = 10.sp, color = SlateTextMuted, fontWeight = FontWeight.Bold)
-                                    Text("${info.usedCount}", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-                                }
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Server Errors", fontSize = 10.sp, color = SlateTextMuted, fontWeight = FontWeight.Bold)
-                                    Text("${info.errorCount}", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = if (info.errorCount > 0) StatusFailed else Color(0xFF94A3B8))
-                                }
-                            }
-                        }
-                    }
-
-                    // Whitelisted senders row
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = "WHITELISTED MFS SENDERS",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = SlateTextMuted,
-                            letterSpacing = 0.8.sp
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            senders.forEach { sender ->
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = SlateDark,
-                                    border = BorderStroke(1.dp, SlateStroke)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Text(
-                                        text = sender,
-                                        fontSize = 11.sp,
+                                        text = settings.serverBaseUrl
+                                            .removePrefix("https://")
+                                            .removePrefix("http://")
+                                            .trimEnd('/'),
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Medium,
-                                        color = EmeraldLight,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        fontFamily = FontFamily.Monospace,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = TextWhite,
+                                        modifier = Modifier.widthIn(max = 110.dp)
                                     )
+
+                                    // Inline Latency / Ping chip
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = SurfaceCard,
+                                        border = BorderStroke(1.dp, BorderZinc800),
+                                        modifier = Modifier.clickable {
+                                            viewModel.pingServerHealth()
+                                            Toast.makeText(context, "Checking latency...", Toast.LENGTH_SHORT).show()
+                                        }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(4.dp)
+                                                    .clip(CircleShape)
+                                                    .background(if (serverHealthOk) AccentEmerald else AccentRose)
+                                            )
+                                            Text(
+                                                text = if (serverHealthOk) "${serverLatency ?: 42}ms" else "ERR",
+                                                fontSize = 10.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (serverHealthOk) AccentEmerald else AccentRose
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
-                }
-            }
-        }
 
-        // 2. Upgraded Metrics & Balance Card (Slate #1E293B, 1px stroke #334155, rounded 20.dp)
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("stats_summary_card"),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = SlateCard
-                ),
-                border = BorderStroke(1.dp, SlateStroke),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    // Header: TOTAL PROCESSED label & prominent sum with Bengali Taka sign in bold 28.sp typography
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
+                        // Whitelist Senders / Session info in clean neutral tags
+                        val senders = if (settings.whitelistedSenders.isNotEmpty()) settings.whitelistedSenders else listOf("bKash", "NAGAD", "Rocket", "Upay")
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "TOTAL PROCESSED",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SlateTextMuted,
-                                letterSpacing = 1.2.sp
-                            )
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = EmeraldPrimary.copy(alpha = 0.15f)
+                            Row(
+                                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "MFS INFLOW",
+                                    text = "FILTER:",
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = EmeraldLight,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    color = TextZinc500,
+                                    letterSpacing = 0.8.sp
+                                )
+                                senders.forEach { sender ->
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = SurfaceCard,
+                                        border = BorderStroke(1.dp, BorderZinc800)
+                                    ) {
+                                        Text(
+                                            text = sender,
+                                            fontSize = 10.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.Medium,
+                                            color = TextZinc300,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            IconButton(
+                                onClick = {
+                                    viewModel.refreshCompanionData()
+                                    Toast.makeText(context, "Syncing telemetry...", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = "Refresh Telemetry",
+                                    tint = TextZinc400,
+                                    modifier = Modifier.size(14.dp)
                                 )
                             }
                         }
-
-                        Text(
-                            text = formatTakaAmount(stats.totalAmount),
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
                     }
+                }
 
-                    HorizontalDivider(
-                        color = SlateStroke.copy(alpha = 0.7f),
-                        thickness = 1.dp
-                    )
+                // Battery Optimization slim alert ribbon
+                if (!isBatteryOptimized) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = GhostAmberBg,
+                        border = BorderStroke(1.dp, GhostAmberBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    Icons.Default.BatteryAlert,
+                                    contentDescription = "Battery Alert",
+                                    tint = Amber300,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = "Battery Optimization may kill listener",
+                                    fontSize = 11.sp,
+                                    color = Amber300
+                                )
+                            }
+                            Text(
+                                text = "Fix Now",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Amber300,
+                                textDecoration = TextDecoration.Underline,
+                                modifier = Modifier
+                                    .clickable {
+                                        try {
+                                            context.startActivity(PipraPayService.getBatteryOptimizationIntent(context))
+                                        } catch (_: Exception) {
+                                            Toast.makeText(context, "Could not open settings", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                    .testTag("fix_battery_optimization_button")
+                                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
-                    // 4-Column row of counters with dedicated status dot accents
+        // 4. Financial & Sync Metrics (Focal Total Inflow & Segmented Counters)
+        item {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("stats_summary_card"),
+                shape = RoundedCornerShape(12.dp),
+                color = ContainerDark,
+                border = BorderStroke(1.dp, BorderZinc800)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // Primary Focal Point: Total Inflow
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = "TOTAL PROCESSED INFLOW",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextZinc500,
+                                letterSpacing = 1.sp
+                            )
+                            Text(
+                                text = formatTakaAmount(stats.totalAmount),
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = (-0.8).sp,
+                                color = TextWhite
+                            )
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = GhostEmeraldBg,
+                            border = BorderStroke(1.dp, GhostEmeraldBorder)
+                        ) {
+                            Text(
+                                text = "MFS INFLOW",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp,
+                                color = AccentEmerald,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(color = BorderZinc800, thickness = 1.dp)
+
+                    // Sleek Segmented Counter Strip
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        MetricsCounterColumn(
+                        // Total
+                        SegmentedCounterItem(
                             label = "Total",
                             count = stats.totalCount.toString(),
-                            dotColor = Color.White,
-                            countColor = Color.White,
+                            countColor = TextWhite,
                             modifier = Modifier.weight(1f)
                         )
-                        MetricsCounterColumn(
+
+                        Box(modifier = Modifier.width(1.dp).height(24.dp).background(BorderZinc800))
+
+                        // Synced
+                        SegmentedCounterItem(
                             label = "Synced",
                             count = stats.syncedCount.toString(),
-                            dotColor = StatusSynced,
-                            countColor = StatusSynced,
+                            countColor = TextWhite,
                             modifier = Modifier.weight(1f)
                         )
-                        MetricsCounterColumn(
+
+                        Box(modifier = Modifier.width(1.dp).height(24.dp).background(BorderZinc800))
+
+                        // Pending (Amber only if > 0)
+                        SegmentedCounterItem(
                             label = "Pending",
                             count = stats.pendingCount.toString(),
-                            dotColor = StatusPending,
-                            countColor = StatusPending,
+                            countColor = if (stats.pendingCount > 0) AccentAmber else TextWhite,
                             modifier = Modifier.weight(1f)
                         )
-                        MetricsCounterColumn(
+
+                        Box(modifier = Modifier.width(1.dp).height(24.dp).background(BorderZinc800))
+
+                        // Failed (Rose only if > 0)
+                        SegmentedCounterItem(
                             label = "Failed",
                             count = stats.failedCount.toString(),
-                            dotColor = StatusFailed,
-                            countColor = StatusFailed,
+                            countColor = if (stats.failedCount > 0) AccentRose else TextWhite,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -734,40 +659,43 @@ fun DashboardScreen(
             }
         }
 
-        // 2.5 Verified Wallet Balances
+        // 5. MFS Wallet Grid (Matching Neutral Dark Surfaces)
         item {
             VerifiedBalancesCard(balances = latestBalances)
         }
 
-        // 3. Action Buttons: Sync Queue (Primary Solid) & Simulate SMS (Tonal / Outlined)
+        // 6. Action Controls: Solid White Primary & Outlined Secondary
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Primary solid action with animated rotating sync icon
+                // Primary Solid Clean White Action Button
                 Button(
                     onClick = { viewModel.triggerManualSync() },
                     enabled = !isSyncing,
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp)
+                        .height(44.dp)
                         .testTag("manual_sync_button"),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = EmeraldPrimary,
-                        contentColor = Color.White
+                        containerColor = TextWhite,
+                        contentColor = CanvasBlack,
+                        disabledContainerColor = SurfaceCard,
+                        disabledContentColor = TextZinc500
                     ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Sync,
                         contentDescription = "Sync",
+                        tint = if (!isSyncing) CanvasBlack else TextZinc500,
                         modifier = Modifier
-                            .size(18.dp)
+                            .size(16.dp)
                             .rotate(if (isSyncing) syncRotateAngle else 0f)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (isSyncing) "Syncing..." else "Sync Queue",
                         fontWeight = FontWeight.Bold,
@@ -775,40 +703,40 @@ fun DashboardScreen(
                     )
                 }
 
-                // Sleek tonal / outlined style with message bubble icon
+                // Secondary Outlined Ghost Action Button
                 OutlinedButton(
                     onClick = { showSmsSimulatorDialog = true },
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp)
+                        .height(44.dp)
                         .testTag("simulate_sms_button"),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, SlateStroke),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, BorderZinc700),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = SlateCard.copy(alpha = 0.5f),
-                        contentColor = MaterialTheme.colorScheme.onSurface
+                        containerColor = Color.Transparent,
+                        contentColor = TextZinc300
                     )
                 ) {
                     Icon(
                         Icons.Default.Sms,
                         contentDescription = "Simulate SMS",
-                        modifier = Modifier.size(18.dp),
-                        tint = EmeraldLight
+                        modifier = Modifier.size(16.dp),
+                        tint = TextZinc400
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Simulate SMS",
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         fontSize = 13.sp
                     )
                 }
             }
         }
 
-        // 3b. Search Toolbar & Filter Chips
+        // 7. Search Toolbar & Minimal Filter Chips
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                // Rounded-full search bar (30.dp) with clear button and placeholder
+                // Modern Dark Search Field
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.setSearchQuery(it) },
@@ -819,15 +747,15 @@ fun DashboardScreen(
                         Text(
                             text = "Search TrxID, sender, or amount...",
                             fontSize = 13.sp,
-                            color = SlateTextMuted
+                            color = TextZinc500
                         )
                     },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Search",
-                            tint = SlateTextMuted,
-                            modifier = Modifier.size(20.dp)
+                            tint = TextZinc500,
+                            modifier = Modifier.size(18.dp)
                         )
                     },
                     trailingIcon = {
@@ -836,23 +764,26 @@ fun DashboardScreen(
                                 Icon(
                                     imageVector = Icons.Default.Clear,
                                     contentDescription = "Clear search",
-                                    modifier = Modifier.size(18.dp),
-                                    tint = SlateTextMuted
+                                    modifier = Modifier.size(16.dp),
+                                    tint = TextZinc400
                                 )
                             }
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(30.dp),
+                    shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = EmeraldPrimary,
-                        unfocusedBorderColor = SlateStroke,
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        focusedBorderColor = BorderZinc700,
+                        unfocusedBorderColor = BorderZinc800,
+                        focusedContainerColor = ContainerDark,
+                        unfocusedContainerColor = ContainerDark,
+                        focusedTextColor = TextWhite,
+                        unfocusedTextColor = TextWhite,
+                        cursorColor = TextWhite
                     )
                 )
 
-                // Single-row horizontal scrolling chips for filtering (All, bKash, Nagad, Rocket, Upay) with active background tinting
+                // Single-row horizontal scrolling provider filter chips
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -870,43 +801,35 @@ fun DashboardScreen(
 
                     providers.forEach { (key, displayName) ->
                         val isSelected = providerFilter == key
-                        val brandColor = when (key) {
-                            "BKASH" -> BkashPink
-                            "NAGAD" -> NagadOrange
-                            "ROCKET" -> RocketPurple
-                            "UPAY" -> UpayNavy
-                            else -> EmeraldPrimary
-                        }
-
                         Surface(
-                            shape = RoundedCornerShape(18.dp),
-                            color = if (isSelected) brandColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected) BorderZinc800 else ContainerDark,
                             border = BorderStroke(
                                 1.dp,
-                                if (isSelected) brandColor else MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+                                if (isSelected) BorderZinc700 else BorderZinc800
                             ),
                             modifier = Modifier
-                                .clip(RoundedCornerShape(18.dp))
+                                .clip(RoundedCornerShape(8.dp))
                                 .clickable { viewModel.setProviderFilter(key) }
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
-                                if (key != "ALL") {
+                                if (isSelected) {
                                     Box(
                                         modifier = Modifier
-                                            .size(7.dp)
+                                            .size(5.dp)
                                             .clip(CircleShape)
-                                            .background(brandColor)
+                                            .background(TextWhite)
                                     )
                                 }
                                 Text(
                                     text = displayName,
                                     fontSize = 12.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) brandColor else MaterialTheme.colorScheme.onSurface
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = if (isSelected) TextWhite else TextZinc500
                                 )
                             }
                         }
@@ -923,29 +846,44 @@ fun DashboardScreen(
                 ) {
                     listOf("ALL", "SYNCED", "PENDING", "FAILED").forEach { status ->
                         val isSelected = statusFilter == status
-                        val statusColor = when (status) {
-                            "SYNCED" -> StatusSynced
-                            "PENDING" -> StatusPending
-                            "FAILED" -> StatusFailed
-                            else -> MaterialTheme.colorScheme.primary
-                        }
-
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { viewModel.setStatusFilter(status) },
-                            label = {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected) BorderZinc800 else ContainerDark,
+                            border = BorderStroke(
+                                1.dp,
+                                if (isSelected) BorderZinc700 else BorderZinc800
+                            ),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { viewModel.setStatusFilter(status) }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                if (status != "ALL") {
+                                    val dotColor = when (status) {
+                                        "SYNCED" -> AccentEmerald
+                                        "PENDING" -> AccentAmber
+                                        "FAILED" -> AccentRose
+                                        else -> TextZinc500
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .size(5.dp)
+                                            .clip(CircleShape)
+                                            .background(dotColor)
+                                    )
+                                }
                                 Text(
                                     text = if (status == "ALL") "All Status" else status,
                                     fontSize = 11.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = if (isSelected) TextWhite else TextZinc500
                                 )
-                            },
-                            shape = RoundedCornerShape(16.dp),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = statusColor.copy(alpha = 0.16f),
-                                selectedLabelColor = statusColor
-                            )
-                        )
+                            }
+                        }
                     }
                 }
             }
@@ -966,47 +904,52 @@ fun DashboardScreen(
                 ) {
                     Text(
                         text = "Transactions",
-                        fontSize = 16.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = TextWhite
                     )
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant
+                        shape = RoundedCornerShape(6.dp),
+                        color = SurfaceCard,
+                        border = BorderStroke(1.dp, BorderZinc800)
                     ) {
                         Text(
                             text = transactions.size.toString(),
                             fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                            color = TextZinc400,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
                 }
 
                 if (transactions.isNotEmpty()) {
                     TextButton(onClick = { viewModel.clearAllTransactions() }) {
-                        Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(15.dp), tint = StatusFailed)
+                        Icon(
+                            Icons.Outlined.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = AccentRose
+                        )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Clear All", fontSize = 12.sp, color = StatusFailed)
+                        Text("Clear All", fontSize = 12.sp, color = AccentRose)
                     }
                 }
             }
         }
 
-        // 4. High-Detail Transaction Cards or Empty State
+        // 8. High-Detail Transaction Cards or Empty State
         if (transactions.isEmpty()) {
             item {
-                Card(
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp)
+                        .padding(vertical = 12.dp)
                         .testTag("empty_transactions_card"),
-                    colors = CardDefaults.cardColors(
-                        containerColor = SlateCard.copy(alpha = 0.4f)
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    border = BorderStroke(1.dp, SlateStroke.copy(alpha = 0.5f))
+                    color = ContainerDark,
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, BorderZinc800)
                 ) {
                     Column(
                         modifier = Modifier
@@ -1017,46 +960,55 @@ fun DashboardScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(56.dp)
+                                .size(48.dp)
                                 .clip(CircleShape)
-                                .background(EmeraldPrimary.copy(alpha = 0.12f)),
+                                .background(SurfaceCard),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.HourglassTop,
                                 contentDescription = "Listening",
-                                modifier = Modifier.size(28.dp),
-                                tint = EmeraldLight
+                                modifier = Modifier.size(22.dp),
+                                tint = TextZinc400
                             )
                         }
 
                         Text(
                             text = "Listening for incoming transactions...",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                            fontSize = 15.sp,
+                            color = TextWhite
                         )
 
                         Text(
                             text = if (searchQuery.isNotBlank() || providerFilter != "ALL" || statusFilter != "ALL") {
                                 "No transactions match the active filters. Try adjusting your search query."
                             } else {
-                                "Incoming bKash, Nagad, Rocket, and Upay SMS notifications will appear here and sync in real-time."
+                                "Incoming bKash, Nagad, Rocket, and Upay SMS packets will capture and sync in real-time."
                             },
                             fontSize = 12.sp,
-                            color = SlateTextMuted,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            color = TextZinc500,
+                            textAlign = TextAlign.Center
                         )
 
-                        Button(
+                        OutlinedButton(
                             onClick = { showSmsSimulatorDialog = true },
-                            modifier = Modifier.padding(top = 6.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
+                            modifier = Modifier.padding(top = 4.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, BorderZinc700),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = SurfaceCard,
+                                contentColor = TextZinc300
+                            )
                         ) {
-                            Icon(Icons.Default.Sms, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(
+                                Icons.Default.Sms,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp),
+                                tint = TextZinc400
+                            )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Test with Sample SMS", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Test with Sample SMS", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                         }
                     }
                 }
@@ -1112,52 +1064,44 @@ fun DashboardScreen(
 }
 
 /**
- * 4-column row metrics item with dedicated status dot accent
+ * Sleek segmented counter item with neutral typography
  */
 @Composable
-private fun MetricsCounterColumn(
+private fun SegmentedCounterItem(
     label: String,
     count: String,
-    dotColor: Color,
     countColor: Color,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(7.dp)
-                    .clip(CircleShape)
-                    .background(dotColor)
-            )
-            Text(
-                text = count,
-                fontWeight = FontWeight.Bold,
-                fontSize = 17.sp,
-                color = countColor
-            )
-        }
+        Text(
+            text = count,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            fontFamily = FontFamily.Monospace,
+            color = countColor
+        )
         Text(
             text = label,
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
-            color = SlateTextMuted
+            color = TextZinc500
         )
     }
 }
 
 /**
  * High-Detail Transaction Card:
- * - Left: Provider badge with brand colors (bKash #E2136E, Nagad #F7941D, Rocket #8C3494, Upay #005696)
- * - Center: TrxID (bold monospace with one-tap copy toast), sender phone (From: 017...), relative timestamp
- * - Right: Amount (+ ৳ X,XXX.XX), status chip (SYNCED in soft green pill, PENDING in glowing yellow, FAILED in red with retry icon)
+ * - Matching neutral dark surface (#121215 with 1px border #27272a)
+ * - Provider badge in neutral surface (#18181b with 1px border #27272a) and bold white text
+ * - TrxID: Monospace, 13.sp, Bold, pure white, with copy icon
+ * - Sender phone & SIM in muted cool gray
+ * - Amount: + ৳ X,XXX.XX in pure white, bold, tight tracking
+ * - Ghost status badge (10% tint, small indicator dot)
  */
 @Composable
 fun HighDetailTransactionCard(
@@ -1167,55 +1111,44 @@ fun HighDetailTransactionCard(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val providerColor = when (transaction.provider.uppercase().trim()) {
-        "BKASH" -> BkashPink
-        "NAGAD" -> NagadOrange
-        "ROCKET", "16216" -> RocketPurple
-        "UPAY" -> UpayNavy
-        else -> EmeraldPrimary
+    val (statusBg, statusBorder, statusText) = when (transaction.syncStatus) {
+        "SYNCED" -> Triple(GhostEmeraldBg, GhostEmeraldBorder, AccentEmerald)
+        "PENDING" -> Triple(GhostAmberBg, GhostAmberBorder, AccentAmber)
+        "FAILED" -> Triple(GhostRoseBg, GhostRoseBorder, AccentRose)
+        else -> Triple(SurfaceCard, BorderZinc800, TextZinc500)
     }
 
-    val statusColor = when (transaction.syncStatus) {
-        "SYNCED" -> StatusSynced
-        "PENDING" -> StatusPending
-        "FAILED" -> StatusFailed
-        else -> Color.Gray
-    }
-
-    Card(
+    Surface(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() }
             .testTag("transaction_card_${transaction.trxId}"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = RoundedCornerShape(12.dp),
+        color = ContainerDark,
+        border = BorderStroke(1.dp, BorderZinc800)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(13.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Left: Provider badge with brand colors
+            // Left: Clean neutral provider badge
             Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = providerColor.copy(alpha = 0.14f),
-                border = BorderStroke(1.dp, providerColor.copy(alpha = 0.35f))
+                shape = RoundedCornerShape(8.dp),
+                color = SurfaceCard,
+                border = BorderStroke(1.dp, BorderZinc800)
             ) {
                 Box(
-                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = transaction.provider.uppercase(),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = providerColor,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextWhite,
                         letterSpacing = 0.5.sp
                     )
                 }
@@ -1226,7 +1159,6 @@ fun HighDetailTransactionCard(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                // Monospace TrxID with one-tap copy toast
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -1241,7 +1173,7 @@ fun HighDetailTransactionCard(
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = TextWhite,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -1249,29 +1181,30 @@ fun HighDetailTransactionCard(
                         imageVector = Icons.Default.ContentCopy,
                         contentDescription = "Copy TrxID",
                         modifier = Modifier.size(11.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = TextZinc400
                     )
                 }
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     Text(
                         text = "From: ${transaction.senderNumber}",
                         fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = TextZinc400
                     )
                     Surface(
                         shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                        color = SurfaceCard,
+                        border = BorderStroke(1.dp, BorderZinc800)
                     ) {
                         Text(
                             text = "SIM ${transaction.simSlot}",
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                             fontSize = 9.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontWeight = FontWeight.Medium,
+                            color = TextZinc400
                         )
                     }
                 }
@@ -1279,20 +1212,22 @@ fun HighDetailTransactionCard(
                 Text(
                     text = formatRelativeTime(transaction.timestamp),
                     fontSize = 10.sp,
-                    color = SlateTextMuted
+                    color = TextZinc500
                 )
             }
 
-            // Right: Amount (+ ৳ X,XXX.XX) and status chip
+            // Right: Amount (+ ৳ X,XXX.XX) and ghost status chip
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
                     text = formatPositiveAmount(transaction.amount),
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = EmeraldPrimary
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = (-0.3).sp,
+                    color = TextWhite
                 )
 
                 if (transaction.balance != null) {
@@ -1300,18 +1235,19 @@ fun HighDetailTransactionCard(
                         text = "Bal: ৳ ${DecimalFormat("#,##0.00").format(transaction.balance)}",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontFamily = FontFamily.Monospace,
+                        color = TextZinc500
                     )
                 }
 
-                // Status chip (SYNCED in soft green pill, PENDING in glowing yellow, FAILED with retry)
+                // Ghost status badge (10% tint, 20% border, small dot)
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = statusColor.copy(alpha = 0.14f),
-                    border = BorderStroke(1.dp, statusColor.copy(alpha = 0.3f))
+                    shape = RoundedCornerShape(6.dp),
+                    color = statusBg,
+                    border = BorderStroke(1.dp, statusBorder)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
@@ -1319,13 +1255,13 @@ fun HighDetailTransactionCard(
                             modifier = Modifier
                                 .size(5.dp)
                                 .clip(CircleShape)
-                                .background(statusColor)
+                                .background(statusText)
                         )
                         Text(
                             text = transaction.syncStatus,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = statusColor
+                            color = statusText
                         )
 
                         if (transaction.syncStatus == "FAILED") {
@@ -1337,8 +1273,8 @@ fun HighDetailTransactionCard(
                                 Icon(
                                     imageVector = Icons.Default.Refresh,
                                     contentDescription = "Retry",
-                                    tint = StatusFailed,
-                                    modifier = Modifier.size(12.dp)
+                                    tint = AccentRose,
+                                    modifier = Modifier.size(11.dp)
                                 )
                             }
                         }
@@ -1397,10 +1333,16 @@ fun TransactionDetailSheet(
 ) {
     val sheetState = rememberModalBottomSheetState()
     val dateFormatter = remember { SimpleDateFormat("EEEE, MMMM dd, yyyy • hh:mm:ss a", Locale.getDefault()) }
+    val (statusBg, statusBorder, statusText) = when (transaction.syncStatus) {
+        "SYNCED" -> Triple(GhostEmeraldBg, GhostEmeraldBorder, AccentEmerald)
+        "PENDING" -> Triple(GhostAmberBg, GhostAmberBorder, AccentAmber)
+        else -> Triple(GhostRoseBg, GhostRoseBorder, AccentRose)
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState
+        sheetState = sheetState,
+        containerColor = ContainerDark
     ) {
         Column(
             modifier = Modifier
@@ -1416,32 +1358,26 @@ fun TransactionDetailSheet(
             ) {
                 Text(
                     text = "Transaction Details",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextWhite
                 )
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = when (transaction.syncStatus) {
-                        "SYNCED" -> StatusSynced.copy(alpha = 0.2f)
-                        "PENDING" -> StatusPending.copy(alpha = 0.2f)
-                        else -> StatusFailed.copy(alpha = 0.2f)
-                    }
+                    shape = RoundedCornerShape(6.dp),
+                    color = statusBg,
+                    border = BorderStroke(1.dp, statusBorder)
                 ) {
                     Text(
                         text = transaction.syncStatus,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = when (transaction.syncStatus) {
-                            "SYNCED" -> StatusSynced
-                            "PENDING" -> StatusPending
-                            else -> StatusFailed
-                        }
+                        color = statusText
                     )
                 }
             }
 
-            HorizontalDivider()
+            HorizontalDivider(color = BorderZinc800)
 
             DetailRow("Provider", transaction.provider)
             DetailRow("Sender Key", transaction.senderKey)
@@ -1451,7 +1387,7 @@ fun TransactionDetailSheet(
                 DetailRow("Post-Trx Balance", "${transaction.currency} ${DecimalFormat("#,##0.00").format(bal)}")
             }
             DetailRow("SIM Slot", "SIM ${transaction.simSlot}")
-            DetailRow("Transaction ID", transaction.trxId)
+            DetailRow("Transaction ID", transaction.trxId, isMonospace = true)
             DetailRow("Sender Number", transaction.senderNumber)
             DetailRow("Captured Time", dateFormatter.format(Date(transaction.timestamp)))
             DetailRow("Retry Attempts", "${transaction.retryCount} times")
@@ -1462,14 +1398,16 @@ fun TransactionDetailSheet(
 
             Text(
                 text = "Raw SMS Message",
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = TextZinc500,
+                letterSpacing = 0.5.sp
             )
 
             Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(8.dp),
+                color = CanvasBlack,
+                border = BorderStroke(1.dp, BorderZinc800),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
@@ -1477,11 +1415,11 @@ fun TransactionDetailSheet(
                     modifier = Modifier.padding(12.dp),
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = TextZinc300
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1490,7 +1428,9 @@ fun TransactionDetailSheet(
                 OutlinedButton(
                     onClick = onDelete,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = StatusFailed)
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, BorderZinc700),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentRose)
                 ) {
                     Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
@@ -1500,11 +1440,12 @@ fun TransactionDetailSheet(
                 Button(
                     onClick = onResync,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TextWhite, contentColor = CanvasBlack)
                 ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp), tint = CanvasBlack)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Sync Now")
+                    Text("Sync Now", fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -1512,7 +1453,12 @@ fun TransactionDetailSheet(
 }
 
 @Composable
-private fun DetailRow(label: String, value: String, isError: Boolean = false) {
+private fun DetailRow(
+    label: String,
+    value: String,
+    isError: Boolean = false,
+    isMonospace: Boolean = false
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1520,17 +1466,18 @@ private fun DetailRow(label: String, value: String, isError: Boolean = false) {
     ) {
         Text(
             text = label,
-            fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp,
+            color = TextZinc500,
             modifier = Modifier.weight(1f)
         )
         Text(
             text = value,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = if (isError) StatusFailed else MaterialTheme.colorScheme.onSurface,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            fontFamily = if (isMonospace) FontFamily.Monospace else FontFamily.Default,
+            color = if (isError) AccentRose else TextWhite,
             modifier = Modifier.weight(1.5f),
-            textAlign = androidx.compose.ui.text.style.TextAlign.End
+            textAlign = TextAlign.End
         )
     }
 }
@@ -1568,8 +1515,11 @@ fun SmsSimulatorDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = ContainerDark,
+        titleContentColor = TextWhite,
+        textContentColor = TextZinc300,
         title = {
-            Text("Simulate MFS Incoming SMS", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            Text("Simulate MFS Incoming SMS", fontWeight = FontWeight.Bold, fontSize = 16.sp)
         },
         text = {
             Column(
@@ -1581,10 +1531,10 @@ fun SmsSimulatorDialog(
                 Text(
                     text = "Pick a sample Bangladeshi MFS SMS or type your own to test parsing, Room storage, and WorkManager sync:",
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = TextZinc400
                 )
 
-                // Quick sample buttons
+                // Quick sample buttons in neutral dark pills
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1592,29 +1542,55 @@ fun SmsSimulatorDialog(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     samples.forEach { (sender, body) ->
-                        FilterChip(
-                            selected = customBody == body,
-                            onClick = {
-                                customSender = sender
-                                customBody = body
-                            },
-                            label = { Text(sender, fontSize = 11.sp) }
-                        )
+                        val isSelected = customBody == body
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected) BorderZinc800 else SurfaceCard,
+                            border = BorderStroke(1.dp, if (isSelected) BorderZinc700 else BorderZinc800),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    customSender = sender
+                                    customBody = body
+                                }
+                        ) {
+                            Text(
+                                text = sender,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (isSelected) TextWhite else TextZinc400,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
                     }
                 }
 
-                androidx.compose.material3.OutlinedTextField(
+                OutlinedTextField(
                     value = customSender,
                     onValueChange = { customSender = it },
-                    label = { Text("Sender Header") },
+                    label = { Text("Sender Header", color = TextZinc500) },
                     singleLine = true,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = BorderZinc700,
+                        unfocusedBorderColor = BorderZinc800,
+                        focusedTextColor = TextWhite,
+                        unfocusedTextColor = TextWhite
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                androidx.compose.material3.OutlinedTextField(
+                OutlinedTextField(
                     value = customBody,
                     onValueChange = { customBody = it },
-                    label = { Text("SMS Body") },
+                    label = { Text("SMS Body", color = TextZinc500) },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = BorderZinc700,
+                        unfocusedBorderColor = BorderZinc800,
+                        focusedTextColor = TextWhite,
+                        unfocusedTextColor = TextWhite
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(110.dp)
@@ -1624,34 +1600,38 @@ fun SmsSimulatorDialog(
         confirmButton = {
             Button(
                 onClick = { onInject(customSender, customBody) },
-                colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = TextWhite, contentColor = CanvasBlack)
             ) {
-                Text("Process SMS")
+                Text("Process SMS", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            androidx.compose.material3.TextButton(onClick = onDismiss) {
-                Text("Cancel")
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = TextZinc400)
             }
         }
     )
 }
 
+/**
+ * Standardized MFS Wallet Grid:
+ * - Matching neutral dark surfaces (#18181b with border-zinc-800)
+ * - Wallet names cleanly in bold white
+ * - Status tags ("Waiting for SMS") displayed as neutral pill badges with small muted indicators
+ */
 @Composable
 fun VerifiedBalancesCard(
     balances: Map<String, Double>,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Surface(
         modifier = modifier
             .fillMaxWidth()
             .testTag("verified_balances_card"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        shape = RoundedCornerShape(12.dp),
+        color = ContainerDark,
+        border = BorderStroke(1.dp, BorderZinc800)
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
@@ -1668,24 +1648,24 @@ fun VerifiedBalancesCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(7.dp)
+                            .size(5.dp)
                             .clip(CircleShape)
-                            .background(EmeraldPrimary)
+                            .background(TextZinc500)
                     )
                     Text(
-                        text = "LIVE WALLET BALANCES",
-                        fontSize = 11.sp,
+                        text = "MFS WALLETS",
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.8.sp,
-                        color = MaterialTheme.colorScheme.primary
+                        letterSpacing = 1.sp,
+                        color = TextZinc500
                     )
                 }
 
                 Text(
                     text = "SMS Verified",
                     fontSize = 10.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = EmeraldPrimary
+                    fontWeight = FontWeight.Medium,
+                    color = TextZinc500
                 )
             }
 
@@ -1696,35 +1676,63 @@ fun VerifiedBalancesCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val providers = listOf(
-                    Triple("bKash", BkashPink, balances["bkash"] ?: balances["BKASH"]),
-                    Triple("Nagad", NagadOrange, balances["nagad"] ?: balances["NAGAD"]),
-                    Triple("Rocket", RocketPurple, balances["rocket"] ?: balances["ROCKET"]),
-                    Triple("Upay", UpayNavy, balances["upay"] ?: balances["UPAY"])
+                    Pair("bKash", balances["bkash"] ?: balances["BKASH"]),
+                    Pair("Nagad", balances["nagad"] ?: balances["NAGAD"]),
+                    Pair("Rocket", balances["rocket"] ?: balances["ROCKET"]),
+                    Pair("Upay", balances["upay"] ?: balances["UPAY"])
                 )
 
-                providers.forEach { (name, color, balance) ->
+                providers.forEach { (name, balance) ->
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = color.copy(alpha = 0.08f),
-                        border = BorderStroke(1.dp, color.copy(alpha = 0.25f)),
-                        modifier = Modifier.widthIn(min = 120.dp)
+                        shape = RoundedCornerShape(10.dp),
+                        color = SurfaceCard,
+                        border = BorderStroke(1.dp, BorderZinc800),
+                        modifier = Modifier.widthIn(min = 124.dp)
                     ) {
                         Column(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalArrangement = Arrangement.spacedBy(3.dp)
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
                                 text = name,
-                                fontSize = 11.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = color
+                                color = TextWhite
                             )
-                            Text(
-                                text = if (balance != null) "৳ ${DecimalFormat("#,##0.00").format(balance)}" else "Awaiting SMS",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = if (balance != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            )
+                            if (balance != null) {
+                                Text(
+                                    text = "৳ ${DecimalFormat("#,##0.00").format(balance)}",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = TextWhite
+                                )
+                            } else {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = ContainerDark,
+                                    border = BorderStroke(1.dp, BorderZinc800)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(4.dp)
+                                                .clip(CircleShape)
+                                                .background(TextZinc500)
+                                        )
+                                        Text(
+                                            text = "Waiting for SMS",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = TextZinc500
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
