@@ -31,8 +31,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,19 +52,26 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.ui.theme.BrandIndigo
-import com.example.ui.theme.BrandIndigoRing
+import com.example.ui.theme.AccentEmerald
+import com.example.ui.theme.BorderZinc800
+import com.example.ui.theme.BorderZinc700
+import com.example.ui.theme.CanvasBlack
+import com.example.ui.theme.ContainerDark
 import com.example.ui.theme.GhostRoseBg
 import com.example.ui.theme.GhostRoseBorder
-import com.example.ui.theme.InputBackgroundLight
-import com.example.ui.theme.InputBorderLight
 import com.example.ui.theme.StatusFailed
+import com.example.ui.theme.SurfaceCard
+import com.example.ui.theme.TextWhite
+import com.example.ui.theme.TextZinc300
+import com.example.ui.theme.TextZinc400
+import com.example.ui.theme.TextZinc500
 import com.example.ui.viewmodel.LoginState
 import com.example.ui.viewmodel.MainViewModel
 
@@ -152,6 +157,7 @@ fun LoginScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(CanvasBlack)
             .verticalScroll(scrollState)
             .padding(horizontal = 24.dp, vertical = 16.dp)
             .testTag("login_account_screen"),
@@ -164,16 +170,16 @@ fun LoginScreen(
                     .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .clickable(enabled = !isLoading) { onBack() }
-                    .border(1.dp, InputBorderLight, RoundedCornerShape(12.dp))
+                    .border(1.dp, BorderZinc800, RoundedCornerShape(12.dp))
                     .testTag("login_back_button"),
-                color = MaterialTheme.colorScheme.surface,
+                color = SurfaceCard,
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onSurface,
+                        tint = TextWhite,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -188,7 +194,7 @@ fun LoginScreen(
             text = "Login your account",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = TextWhite,
             modifier = Modifier.testTag("login_screen_title")
         )
 
@@ -199,7 +205,7 @@ fun LoginScreen(
             text = "Welcome back, Sign in to your account",
             fontSize = 15.sp,
             fontWeight = FontWeight.Normal,
-            color = Color(0xFF64748B)
+            color = TextZinc400
         )
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -209,7 +215,7 @@ fun LoginScreen(
             text = "Payment Panel URL",
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
+            color = TextWhite
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -225,57 +231,42 @@ fun LoginScreen(
             placeholder = {
                 Text(
                     text = "https://pay.emon.bd/",
-                    color = Color(0xFF94A3B8),
+                    color = TextZinc500,
                     fontSize = 14.sp
                 )
             },
             isError = urlError != null,
             supportingText = if (urlError != null) {
-                { Text(text = urlError ?: "", color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
+                { Text(text = urlError ?: "", color = Color(0xFFFB7185), fontSize = 12.sp) }
             } else null,
             singleLine = true,
+            textStyle = TextStyle(fontSize = 14.sp, color = TextWhite),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("payment_panel_url_input"),
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = InputBackgroundLight,
-                focusedBorderColor = BrandIndigo,
-                unfocusedBorderColor = InputBorderLight
+                focusedContainerColor = SurfaceCard,
+                unfocusedContainerColor = SurfaceCard,
+                focusedBorderColor = AccentEmerald,
+                unfocusedBorderColor = BorderZinc800,
+                focusedTextColor = TextWhite,
+                unfocusedTextColor = TextWhite,
+                focusedLabelColor = TextZinc400,
+                unfocusedLabelColor = TextZinc400,
+                focusedPlaceholderColor = TextZinc500,
+                unfocusedPlaceholderColor = TextZinc500
             )
         )
 
-        // Production Host Default Preset Chip
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            FilterChip(
-                selected = panelUrl.contains("pay.emon.bd"),
-                enabled = !isLoading,
-                onClick = {
-                    panelUrl = "https://pay.emon.bd/"
-                    urlError = null
-                },
-                label = { Text("pay.emon.bd (Production)", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = BrandIndigo.copy(alpha = 0.15f),
-                    selectedLabelColor = BrandIndigo
-                )
-            )
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
         // Label: One Time Password
         Text(
             text = "One Time Password",
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
+            color = TextWhite
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -291,15 +282,16 @@ fun LoginScreen(
             placeholder = {
                 Text(
                     text = "Enter OTP or secret token",
-                    color = Color(0xFF94A3B8),
+                    color = TextZinc500,
                     fontSize = 14.sp
                 )
             },
             isError = passwordError != null,
             supportingText = if (passwordError != null) {
-                { Text(text = passwordError ?: "", color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
+                { Text(text = passwordError ?: "", color = Color(0xFFFB7185), fontSize = 12.sp) }
             } else null,
             singleLine = true,
+            textStyle = TextStyle(fontSize = 14.sp, color = TextWhite),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("one_time_password_input"),
@@ -312,20 +304,26 @@ fun LoginScreen(
                     Icon(
                         imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                         contentDescription = "Toggle password visibility",
-                        tint = Color(0xFF94A3B8)
+                        tint = TextZinc400
                     )
                 }
             },
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = InputBackgroundLight,
-                focusedBorderColor = BrandIndigo,
-                unfocusedBorderColor = InputBorderLight
+                focusedContainerColor = SurfaceCard,
+                unfocusedContainerColor = SurfaceCard,
+                focusedBorderColor = AccentEmerald,
+                unfocusedBorderColor = BorderZinc800,
+                focusedTextColor = TextWhite,
+                unfocusedTextColor = TextWhite,
+                focusedLabelColor = TextZinc400,
+                unfocusedLabelColor = TextZinc400,
+                focusedPlaceholderColor = TextZinc500,
+                unfocusedPlaceholderColor = TextZinc500
             )
         )
 
-        // Login Error Banner (bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-3 text-xs)
+        // Login Error Banner
         AnimatedVisibility(visible = loginState is LoginState.Error) {
             Surface(
                 modifier = Modifier
@@ -360,7 +358,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Main "Login" Button (Disabled during handshake, shows inline spinner + "Verifying handshake...")
+        // Main "Login" Button (White background, black text. Loading: background #27272A, text #A1A1AA, emerald spinner)
         Button(
             onClick = {
                 validateAndExecuteLogin()
@@ -369,19 +367,18 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
-                .shadow(elevation = 6.dp, shape = RoundedCornerShape(12.dp), spotColor = BrandIndigo)
                 .testTag("login_button"),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.White,
                 contentColor = Color.Black,
-                disabledContainerColor = Color(0xFF27272A),
-                disabledContentColor = Color(0xFF71717A)
+                disabledContainerColor = BorderZinc800,
+                disabledContentColor = TextZinc400
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
-                    color = Color.White,
+                    color = AccentEmerald,
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp
                 )
@@ -390,7 +387,7 @@ fun LoginScreen(
                     text = "Verifying handshake...",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White
+                    color = TextZinc400
                 )
             } else {
                 Text(
@@ -411,18 +408,18 @@ fun LoginScreen(
         ) {
             HorizontalDivider(
                 modifier = Modifier.weight(1f),
-                color = InputBorderLight
+                color = BorderZinc800
             )
             Text(
                 text = "OR",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF94A3B8),
+                color = TextZinc500,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             HorizontalDivider(
                 modifier = Modifier.weight(1f),
-                color = InputBorderLight
+                color = BorderZinc800
             )
         }
 
@@ -437,11 +434,8 @@ fun LoginScreen(
                 modifier = Modifier
                     .size(68.dp)
                     .clip(CircleShape)
-                    .background(BrandIndigoRing.copy(alpha = 0.5f))
-                    .padding(4.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .border(2.dp, BrandIndigo, CircleShape)
+                    .background(SurfaceCard)
+                    .border(1.dp, BorderZinc800, CircleShape)
                     .clickable(enabled = !isLoading) {
                         onNavigateToQr?.invoke()
                     }
@@ -451,8 +445,8 @@ fun LoginScreen(
                 Icon(
                     imageVector = Icons.Default.QrCodeScanner,
                     contentDescription = "Log in with QR code",
-                    tint = BrandIndigo,
-                    modifier = Modifier.size(30.dp)
+                    tint = AccentEmerald,
+                    modifier = Modifier.size(28.dp)
                 )
             }
 
@@ -463,7 +457,7 @@ fun LoginScreen(
                 text = "Or log in with QR code",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Normal,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = TextWhite,
                 modifier = Modifier
                     .clickable(enabled = !isLoading) {
                         onNavigateToQr?.invoke()

@@ -109,12 +109,16 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.service.PipraPayService
 import com.example.ui.components.PipraPayIcon
-import com.example.ui.theme.BrandIndigo
-import com.example.ui.theme.BrandIndigoLight
-import com.example.ui.theme.BrandIndigoRing
-import com.example.ui.theme.EmeraldPrimary
-import com.example.ui.theme.InputBackgroundLight
-import com.example.ui.theme.InputBorderLight
+import com.example.ui.theme.AccentEmerald
+import com.example.ui.theme.BorderZinc800
+import com.example.ui.theme.BorderZinc700
+import com.example.ui.theme.CanvasBlack
+import com.example.ui.theme.ContainerDark
+import com.example.ui.theme.SurfaceCard
+import com.example.ui.theme.TextWhite
+import com.example.ui.theme.TextZinc300
+import com.example.ui.theme.TextZinc400
+import com.example.ui.theme.TextZinc500
 import com.example.ui.theme.StatusFailed
 import com.example.ui.theme.StatusPending
 import com.example.ui.theme.StatusSynced
@@ -150,7 +154,7 @@ fun OnboardingScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(CanvasBlack)
             .statusBarsPadding()
             .navigationBarsPadding()
             .testTag("onboarding_screen")
@@ -215,6 +219,7 @@ private fun SystemReadinessStep(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(CanvasBlack)
             .verticalScroll(scrollState)
             .padding(horizontal = 24.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -224,8 +229,8 @@ private fun SystemReadinessStep(
         // Step indicator badge
         Surface(
             shape = RoundedCornerShape(20.dp),
-            color = com.example.ui.theme.SurfaceCard,
-            border = androidx.compose.foundation.BorderStroke(1.dp, com.example.ui.theme.BorderZinc800),
+            color = SurfaceCard,
+            border = androidx.compose.foundation.BorderStroke(1.dp, BorderZinc800),
             modifier = Modifier.testTag("onboarding_step_badge")
         ) {
             Row(
@@ -243,7 +248,7 @@ private fun SystemReadinessStep(
                     text = "STEP 1 OF 3 • GETTING READY",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = com.example.ui.theme.TextZinc300,
+                    color = TextZinc300,
                     letterSpacing = 1.sp
                 )
             }
@@ -263,7 +268,7 @@ private fun SystemReadinessStep(
             text = "Welcome to PipraPay Connect",
             fontSize = 26.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = TextWhite,
             textAlign = TextAlign.Center
         )
 
@@ -272,7 +277,7 @@ private fun SystemReadinessStep(
         Text(
             text = "Preparing your phone as an automated 24/7 MFS Payment Gateway Node for bKash, Nagad, Rocket & Upay.",
             fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = TextZinc400,
             textAlign = TextAlign.Center,
             lineHeight = 20.sp,
             modifier = Modifier.padding(horizontal = 8.dp)
@@ -285,9 +290,10 @@ private fun SystemReadinessStep(
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("readiness_checklist_card"),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = ContainerDark),
+            border = androidx.compose.foundation.BorderStroke(1.dp, BorderZinc800),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(
                 modifier = Modifier.padding(18.dp),
@@ -297,7 +303,7 @@ private fun SystemReadinessStep(
                     text = "System Diagnostics & Setup",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = TextWhite
                 )
 
                 DiagnosticItem(
@@ -306,7 +312,7 @@ private fun SystemReadinessStep(
                     subtitle = "Hardware receiver ready for real-time MFS parsing"
                 )
 
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                HorizontalDivider(color = BorderZinc800)
 
                 DiagnosticItem(
                     icon = Icons.Default.Security,
@@ -314,7 +320,7 @@ private fun SystemReadinessStep(
                     subtitle = "Hardware-backed secure preferences active"
                 )
 
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                HorizontalDivider(color = BorderZinc800)
 
                 DiagnosticItem(
                     icon = Icons.Default.Speed,
@@ -322,7 +328,7 @@ private fun SystemReadinessStep(
                     subtitle = "bKash (16247), Nagad (16167), Rocket, Upay loaded"
                 )
 
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                HorizontalDivider(color = BorderZinc800)
 
                 DiagnosticItem(
                     icon = Icons.Default.Storage,
@@ -505,16 +511,16 @@ private fun PermissionsSetupStep(
                     .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .clickable { onBack() }
-                    .border(1.dp, InputBorderLight, RoundedCornerShape(12.dp))
+                    .border(1.dp, BorderZinc800, RoundedCornerShape(12.dp))
                     .testTag("permissions_back_button"),
-                color = MaterialTheme.colorScheme.surface,
+                color = SurfaceCard,
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onSurface,
+                        tint = TextWhite,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -522,14 +528,15 @@ private fun PermissionsSetupStep(
 
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = BrandIndigo.copy(alpha = 0.10f)
+                color = SurfaceCard,
+                border = androidx.compose.foundation.BorderStroke(1.dp, BorderZinc800)
             ) {
                 Text(
                     text = "STEP 2 OF 3",
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = BrandIndigo
+                    color = TextZinc300
                 )
             }
         }
@@ -540,7 +547,7 @@ private fun PermissionsSetupStep(
             text = "Required Permissions",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            color = TextWhite
         )
 
         Spacer(modifier = Modifier.height(6.dp))
@@ -548,7 +555,7 @@ private fun PermissionsSetupStep(
         Text(
             text = "To monitor incoming customer payments and forward them to your merchant panel seamlessly, PipraPay needs access to SMS alerts and background services.",
             fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = TextZinc400,
             lineHeight = 19.sp
         )
 
@@ -629,15 +636,16 @@ private fun PermissionsSetupStep(
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.White,
                 contentColor = Color.Black,
-                disabledContainerColor = Color(0xFF27272A),
-                disabledContentColor = Color(0xFF71717A)
+                disabledContainerColor = BorderZinc800,
+                disabledContentColor = TextZinc400
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
             Text(
                 text = "Continue to Panel Login",
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = if (allRequiredGranted) Color.Black else TextZinc400
             )
         }
 
@@ -646,7 +654,7 @@ private fun PermissionsSetupStep(
             Text(
                 text = "Please grant all required permissions above to continue.",
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = TextZinc400,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -669,9 +677,10 @@ private fun PermissionItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("permission_item_$tag"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = ContainerDark),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderZinc800),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -686,12 +695,13 @@ private fun PermissionItemCard(
                     text = title,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = TextWhite
                 )
 
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = if (isGranted) StatusSynced.copy(alpha = 0.12f) else StatusPending.copy(alpha = 0.12f)
+                    color = if (isGranted) StatusSynced.copy(alpha = 0.12f) else StatusPending.copy(alpha = 0.12f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isGranted) StatusSynced.copy(alpha = 0.25f) else StatusPending.copy(alpha = 0.25f))
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -717,7 +727,7 @@ private fun PermissionItemCard(
             Text(
                 text = description,
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = TextZinc400,
                 lineHeight = 16.sp
             )
 
@@ -729,13 +739,14 @@ private fun PermissionItemCard(
                         .height(38.dp),
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isExemption) StatusPending else BrandIndigo
+                        containerColor = if (isExemption) StatusPending else AccentEmerald
                     )
                 ) {
                     Text(
                         text = if (isExemption) "Request Battery Exemption" else "Grant Permission",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = if (isExemption) Color.White else CanvasBlack
                     )
                 }
             }
