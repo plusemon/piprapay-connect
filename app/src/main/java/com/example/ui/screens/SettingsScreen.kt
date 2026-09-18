@@ -82,6 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.BuildConfig
+import com.example.ui.components.PipraConfirmationDialog
 import com.example.ui.components.PipraPayIcon
 import com.example.ui.theme.AccentEmerald
 import com.example.ui.theme.AccentRose
@@ -1319,86 +1320,36 @@ fun SettingsScreen(
     }
 
     if (showDisconnectDialog) {
-        AlertDialog(
-            onDismissRequest = { showDisconnectDialog = false },
-            title = {
-                Text(
-                    text = "Disconnect Merchant Panel?",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = colors.textPrimary
-                )
-            },
-            text = {
-                Text(
-                    text = "This will purge your API key, device credentials, and session token, and immediately stop the background SMS listener service.",
-                    fontSize = 13.sp,
-                    color = colors.textMuted
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showDisconnectDialog = false
-                        viewModel.disconnectMerchantSession {
-                            Toast.makeText(context, "Merchant panel disconnected", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentRose),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Disconnect", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+        PipraConfirmationDialog(
+            title = "Disconnect Merchant Account?",
+            message = "Active telemetry and background SMS capture will be stopped immediately. Stored credentials will be wiped from this device.",
+            confirmLabel = "Disconnect",
+            cancelLabel = "Keep Connected",
+            onConfirm = {
+                showDisconnectDialog = false
+                viewModel.disconnectMerchantSession {
+                    Toast.makeText(context, "Merchant panel disconnected", Toast.LENGTH_SHORT).show()
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showDisconnectDialog = false }) {
-                    Text("Cancel", color = colors.textPrimary, fontSize = 12.sp)
-                }
-            },
-            containerColor = colors.container,
-            shape = RoundedCornerShape(16.dp)
+            onDismiss = { showDisconnectDialog = false },
+            testTag = "disconnect_merchant_dialog"
         )
     }
 
     if (showClearLogsDialog) {
-        AlertDialog(
-            onDismissRequest = { showClearLogsDialog = false },
-            title = {
-                Text(
-                    text = "Clear Local SMS Logs?",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = colors.textPrimary
-                )
-            },
-            text = {
-                Text(
-                    text = "This will wipe all locally stored transaction records from the database. Your merchant connection, API keys, and device routing settings will remain intact.",
-                    fontSize = 13.sp,
-                    color = colors.textMuted
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showClearLogsDialog = false
-                        viewModel.clearLocalSmsLogs {
-                            Toast.makeText(context, "Local transaction logs wiped", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentRose),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Clear Logs", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+        PipraConfirmationDialog(
+            title = "Purge Local SMS Cache?",
+            message = "Are you sure you want to delete all cached SMS records from local storage? This action cannot be undone.",
+            confirmLabel = "Purge Cache",
+            cancelLabel = "Cancel",
+            onConfirm = {
+                showClearLogsDialog = false
+                viewModel.clearLocalSmsLogs {
+                    Toast.makeText(context, "Local transaction logs wiped", Toast.LENGTH_SHORT).show()
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showClearLogsDialog = false }) {
-                    Text("Cancel", color = colors.textPrimary, fontSize = 12.sp)
-                }
-            },
-            containerColor = colors.container,
-            shape = RoundedCornerShape(16.dp)
+            onDismiss = { showClearLogsDialog = false },
+            testTag = "clear_logs_dialog"
         )
     }
 }

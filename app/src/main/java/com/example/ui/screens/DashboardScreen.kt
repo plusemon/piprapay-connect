@@ -91,6 +91,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.TransactionEntity
 import com.example.data.prefs.SUPPORTED_MFS_SENDERS
 import com.example.service.PipraPayService
+import com.example.ui.components.PipraConfirmationDialog
 import com.example.ui.components.PipraPayLogoLockup
 import com.example.ui.theme.AccentAmber
 import com.example.ui.theme.AccentEmerald
@@ -143,6 +144,8 @@ fun DashboardScreen(
 
     var selectedTransaction by remember { mutableStateOf<TransactionEntity?>(null) }
     var showSmsSimulatorDialog by remember { mutableStateOf(false) }
+    var showClearFeedDialog by remember { mutableStateOf(false) }
+    var transactionToDelete by remember { mutableStateOf<TransactionEntity?>(null) }
 
     // Pulsing animation for subtle live indicator
     val infiniteTransition = rememberInfiniteTransition(label = "pulse_and_sync")
@@ -954,7 +957,10 @@ fun DashboardScreen(
                 }
 
                 if (transactions.isNotEmpty()) {
-                    TextButton(onClick = { viewModel.clearAllTransactions() }) {
+                    TextButton(
+                        onClick = { showClearFeedDialog = true },
+                        modifier = Modifier.testTag("clear_all_feed_button")
+                    ) {
                         Icon(
                             Icons.Outlined.Delete,
                             contentDescription = null,
@@ -1069,9 +1075,39 @@ fun DashboardScreen(
                 selectedTransaction = null
             },
             onDelete = {
-                viewModel.deleteTransaction(trx.trxId)
-                selectedTransaction = null
+                transactionToDelete = trx
             }
+        )
+    }
+
+    if (showClearFeedDialog) {
+        PipraConfirmationDialog(
+            title = "Clear Activity Feed?",
+            message = "This will remove all recent transaction history displayed on this device. Confirmed transactions already synced to the server will not be affected.",
+            confirmLabel = "Clear Feed",
+            cancelLabel = "Cancel",
+            onConfirm = {
+                showClearFeedDialog = false
+                viewModel.clearAllTransactions()
+            },
+            onDismiss = { showClearFeedDialog = false },
+            testTag = "clear_feed_dialog"
+        )
+    }
+
+    transactionToDelete?.let { trx ->
+        PipraConfirmationDialog(
+            title = "Delete Transaction?",
+            message = "Are you sure you want to delete transaction ${trx.trxId}? This record will be permanently removed from local storage.",
+            confirmLabel = "Delete",
+            cancelLabel = "Cancel",
+            onConfirm = {
+                viewModel.deleteTransaction(trx.trxId)
+                transactionToDelete = null
+                selectedTransaction = null
+            },
+            onDismiss = { transactionToDelete = null },
+            testTag = "delete_transaction_dialog"
         )
     }
 
