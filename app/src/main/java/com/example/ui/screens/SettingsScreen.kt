@@ -1,12 +1,7 @@
 package com.example.ui.screens
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -28,8 +23,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Autorenew
-import androidx.compose.material.icons.filled.BatteryAlert
-import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
@@ -38,16 +31,11 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Power
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Smartphone
-import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -81,7 +69,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -93,12 +80,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.BuildConfig
-import com.example.data.prefs.SUPPORTED_MFS_SENDERS
-import com.example.service.PipraPayService
-import com.example.ui.components.OemOptimizationModal
 import com.example.ui.components.PipraPayIcon
 import com.example.ui.theme.AccentEmerald
 import com.example.ui.theme.AccentRose
@@ -133,7 +116,6 @@ fun SettingsScreen(
     val clipboardManager = LocalClipboardManager.current
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
-    val isBatteryOptimized by viewModel.isBatteryOptimizationIgnored.collectAsStateWithLifecycle()
     val connectionState by viewModel.connectionTestState.collectAsStateWithLifecycle()
     val settingsSaveState by viewModel.settingsSaveState.collectAsStateWithLifecycle()
     val isSaving = settingsSaveState is SettingsSaveState.Loading
@@ -145,43 +127,8 @@ fun SettingsScreen(
     var apiKey by remember(settings.apiKey) { mutableStateOf(settings.apiKey) }
     var deviceKey by remember(settings.deviceKey) { mutableStateOf(settings.deviceKey) }
     var isApiKeyVisible by remember { mutableStateOf(false) }
-    var showOemModal by remember { mutableStateOf(false) }
     var showDisconnectDialog by remember { mutableStateOf(false) }
     var showClearLogsDialog by remember { mutableStateOf(false) }
-    var isSyncingSenders by remember { mutableStateOf(false) }
-
-    // Check system permissions dynamically
-    var hasSmsReceive by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED
-        )
-    }
-    var hasSmsRead by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
-        )
-    }
-    var hasNotificationPermission by remember {
-        mutableStateOf(
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-            } else true
-        )
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        hasSmsReceive = permissions[Manifest.permission.RECEIVE_SMS] ?: hasSmsReceive
-        hasSmsRead = permissions[Manifest.permission.READ_SMS] ?: hasSmsRead
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            hasNotificationPermission = permissions[Manifest.permission.POST_NOTIFICATIONS] ?: hasNotificationPermission
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.refreshBatteryOptimizationStatus()
-    }
 
     LazyColumn(
         modifier = modifier
@@ -793,535 +740,7 @@ fun SettingsScreen(
             }
         }
 
-        // 2. Battery Optimization Card
-        item {
-            SettingsSectionHeader(title = "BACKGROUND OPERATION")
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("battery_optimization_card"),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.container),
-                border = BorderStroke(1.dp, colors.border),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (isBatteryOptimized) StatusSynced.copy(alpha = 0.12f)
-                                    else StatusPending.copy(alpha = 0.12f)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                if (isBatteryOptimized) Icons.Default.BatteryChargingFull else Icons.Default.Power,
-                                contentDescription = null,
-                                tint = if (isBatteryOptimized) StatusSynced else StatusPending,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Battery Optimization",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colors.textPrimary
-                            )
-                            Text(
-                                text = if (isBatteryOptimized) "Exempted • Continuous sync active" else "Restricted • OEM sleep may kill sync",
-                                fontSize = 11.sp,
-                                color = colors.textMuted
-                            )
-                        }
-
-                        if (isBatteryOptimized) {
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = StatusSynced.copy(alpha = 0.12f),
-                                border = BorderStroke(1.dp, StatusSynced.copy(alpha = 0.25f)),
-                                modifier = Modifier.testTag("open_battery_settings_button")
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .clickable {
-                                            try {
-                                                context.startActivity(PipraPayService.getBatteryOptimizationIntent(context))
-                                            } catch (_: Exception) { }
-                                        }
-                                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = StatusSynced,
-                                        modifier = Modifier.size(13.dp)
-                                    )
-                                    Text(
-                                        text = "Exempt",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = StatusSynced
-                                    )
-                                }
-                            }
-                        } else {
-                            Button(
-                                onClick = {
-                                    try {
-                                        context.startActivity(PipraPayService.getBatteryOptimizationIntent(context))
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "Settings error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                    }
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = StatusPending),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                                modifier = Modifier
-                                    .height(34.dp)
-                                    .testTag("open_battery_settings_button")
-                            ) {
-                                Text("Exempt", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            }
-                        }
-                    }
-
-                    HorizontalDivider(
-                        color = colors.border,
-                        modifier = Modifier.padding(vertical = 10.dp)
-                    )
-
-                    // OEM Workaround Guide row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "OEM Workaround Guide",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = colors.textPrimary
-                            )
-                            Text(
-                                text = "Xiaomi/MIUI, Samsung, Oppo & Vivo 24/7 background persistence",
-                                fontSize = 11.sp,
-                                color = colors.textMuted
-                            )
-                        }
-
-                        OutlinedButton(
-                            onClick = { showOemModal = true },
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier
-                                .height(32.dp)
-                                .testTag("open_oem_modal_button"),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = colors.surfaceCard,
-                                contentColor = colors.textPrimary
-                            ),
-                            border = BorderStroke(1.dp, colors.border)
-                        ) {
-                            Text("Guide", fontSize = 11.sp, color = colors.textPrimary)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Dedicated "SMS SENDER ROUTING" Section
-        item {
-            SettingsSectionHeader(title = "SMS SENDER ROUTING")
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("sms_sender_routing_card"),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.container),
-                border = BorderStroke(1.dp, colors.border),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Real-time Telephony Filter",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colors.textSubtle,
-                        letterSpacing = 0.5.sp
-                    )
-
-                    val gateways = if (settings.gatewayGroups.isNotEmpty()) settings.gatewayGroups else SUPPORTED_MFS_SENDERS
-
-                    gateways.forEachIndexed { index, config ->
-                        val isEnabled = viewModel.isSenderEnabled(config.id)
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                // Active status indicator dot (Emerald dot for enabled, Muted for disabled)
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isEnabled) AccentEmerald else colors.textMuted.copy(alpha = 0.4f))
-                                )
-
-                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text(
-                                            text = config.displayName,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = if (isEnabled) colors.textPrimary else colors.textMuted
-                                        )
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = colors.surfaceCard,
-                                            border = BorderStroke(1.dp, colors.border)
-                                        ) {
-                                            Text(
-                                                text = config.allAliases.joinToString(", "),
-                                                fontSize = 10.sp,
-                                                fontFamily = FontFamily.Monospace,
-                                                fontWeight = FontWeight.Medium,
-                                                color = colors.textMuted,
-                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
-                                            )
-                                        }
-                                    }
-
-                                    Text(
-                                        text = if (isEnabled) "Active: routes & forwards SMS packets" else "Disabled: discarded before regex parsing",
-                                        fontSize = 11.sp,
-                                        color = colors.textMuted
-                                    )
-                                }
-                            }
-
-                            Switch(
-                                checked = isEnabled,
-                                onCheckedChange = { enabled ->
-                                    viewModel.toggleSender(config.id, enabled)
-                                    Toast.makeText(
-                                        context,
-                                        "${config.displayName} ${if (enabled) "enabled" else "disabled"}",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-                                modifier = Modifier.testTag("sender_toggle_${config.id}"),
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = AccentEmerald,
-                                    uncheckedThumbColor = colors.textMuted,
-                                    uncheckedTrackColor = colors.border
-                                )
-                            )
-                        }
-
-                        if (index < gateways.lastIndex) {
-                            HorizontalDivider(color = colors.border, thickness = 1.dp)
-                        }
-                    }
-
-                    HorizontalDivider(color = colors.border, thickness = 1.dp)
-
-                    // Action Button at bottom of card: "Sync Senders from Panel"
-                    OutlinedButton(
-                        onClick = {
-                            isSyncingSenders = true
-                            viewModel.syncSendersFromPanel(
-                                onSuccess = { result ->
-                                    isSyncingSenders = false
-                                    Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
-                                },
-                                onFailure = { err ->
-                                    isSyncingSenders = false
-                                    Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        },
-                        enabled = !isSyncingSenders,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp)
-                            .testTag("sync_senders_button"),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = colors.surfaceCard,
-                            contentColor = colors.textPrimary
-                        ),
-                        border = BorderStroke(1.dp, colors.border)
-                    ) {
-                        if (isSyncingSenders) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(14.dp),
-                                strokeWidth = 2.dp,
-                                color = AccentEmerald
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Syncing Senders...", fontSize = 12.sp, color = colors.textMuted)
-                        } else {
-                            Icon(
-                                Icons.Default.Sync,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = colors.textPrimary
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                "Sync Senders from Panel",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colors.textPrimary
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Alerts & Audio Feedback Section
-        item {
-            SettingsSectionHeader(title = "ALERTS & AUDIO FEEDBACK")
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("alerts_feedback_card"),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.container),
-                border = BorderStroke(1.dp, colors.border),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    // Haptic Feedback Toggle
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                Icons.Default.Smartphone,
-                                contentDescription = null,
-                                tint = if (settings.hapticEnabled) AccentEmerald else colors.textMuted,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Column {
-                                Text(
-                                    text = "Haptic Pulse",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = colors.textPrimary
-                                )
-                                Text(
-                                    text = "Sharp tactile vibration on incoming SMS capture",
-                                    fontSize = 11.sp,
-                                    color = colors.textMuted
-                                )
-                            }
-                        }
-
-                        Switch(
-                            checked = settings.hapticEnabled,
-                            onCheckedChange = { viewModel.setHapticEnabled(it) },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = AccentEmerald,
-                                uncheckedThumbColor = colors.textMuted,
-                                uncheckedTrackColor = colors.border
-                            ),
-                            modifier = Modifier.testTag("haptic_toggle")
-                        )
-                    }
-
-                    HorizontalDivider(
-                        color = colors.border,
-                        modifier = Modifier.padding(vertical = 10.dp)
-                    )
-
-                    // Audio Tone Toggle
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                Icons.Default.Notifications,
-                                contentDescription = null,
-                                tint = if (settings.audioToneEnabled) AccentEmerald else colors.textMuted,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Column {
-                                Text(
-                                    text = "Transaction POS Chime",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = colors.textPrimary
-                                )
-                                Text(
-                                    text = "Crisp dual-tone sound when payment is parsed",
-                                    fontSize = 11.sp,
-                                    color = colors.textMuted
-                                )
-                            }
-                        }
-
-                        Switch(
-                            checked = settings.audioToneEnabled,
-                            onCheckedChange = { viewModel.setAudioToneEnabled(it) },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = AccentEmerald,
-                                uncheckedThumbColor = colors.textMuted,
-                                uncheckedTrackColor = colors.border
-                            ),
-                            modifier = Modifier.testTag("audio_tone_toggle")
-                        )
-                    }
-
-                    HorizontalDivider(
-                        color = colors.border,
-                        modifier = Modifier.padding(vertical = 10.dp)
-                    )
-
-                    // Test Alert Button
-                    OutlinedButton(
-                        onClick = {
-                            viewModel.testAlertFeedback()
-                            Toast.makeText(context, "Testing Alert Chime & Haptic...", Toast.LENGTH_SHORT).show()
-                        },
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(36.dp)
-                            .testTag("test_alert_button"),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = colors.surfaceCard,
-                            contentColor = colors.textPrimary
-                        ),
-                        border = BorderStroke(1.dp, colors.border)
-                    ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(14.dp), tint = colors.textPrimary)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Test Chime & Haptic Pulse", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
-                    }
-                }
-            }
-        }
-
-        // 3. System Permissions Checklist Card
-        item {
-            SettingsSectionHeader(title = "PERMISSIONS")
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("permissions_checklist_card"),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.container),
-                border = BorderStroke(1.dp, colors.border),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    MinimalPermissionRow(
-                        icon = Icons.Default.Sms,
-                        title = "Receive SMS",
-                        subtitle = "Detect incoming bKash, Nagad & Rocket alerts",
-                        isGranted = hasSmsReceive
-                    )
-
-                    HorizontalDivider(
-                        color = colors.border,
-                        modifier = Modifier.padding(vertical = 10.dp)
-                    )
-
-                    MinimalPermissionRow(
-                        icon = Icons.Default.Security,
-                        title = "Read SMS",
-                        subtitle = "Extract transaction code and amount",
-                        isGranted = hasSmsRead
-                    )
-
-                    HorizontalDivider(
-                        color = colors.border,
-                        modifier = Modifier.padding(vertical = 10.dp)
-                    )
-
-                    MinimalPermissionRow(
-                        icon = Icons.Default.Notifications,
-                        title = "Notifications",
-                        subtitle = "Background foreground service status",
-                        isGranted = hasNotificationPermission
-                    )
-
-                    val allGranted = hasSmsReceive && hasSmsRead && hasNotificationPermission
-                    if (!allGranted) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Button(
-                            onClick = {
-                                val permissionsToRequest = mutableListOf(
-                                    Manifest.permission.RECEIVE_SMS,
-                                    Manifest.permission.READ_SMS
-                                )
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
-                                }
-                                permissionLauncher.launch(permissionsToRequest.toTypedArray())
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(38.dp)
-                                .testTag("request_all_permissions_button"),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = AccentEmerald)
-                        ) {
-                            Text("Grant Missing Permissions", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = if (colors.isDark) CanvasBlack else Color.White)
-                        }
-                    }
-                }
-            }
-        }
-
-        // 4. Panel Session Management Card
+        // Panel Session Management Card
         item {
             SettingsSectionHeader(title = "PANEL SESSION")
 
@@ -1899,10 +1318,6 @@ fun SettingsScreen(
         }
     }
 
-    if (showOemModal) {
-        OemOptimizationModal(onDismiss = { showOemModal = false })
-    }
-
     if (showDisconnectDialog) {
         AlertDialog(
             onDismissRequest = { showDisconnectDialog = false },
@@ -1999,59 +1414,5 @@ private fun SettingsSectionHeader(title: String) {
         color = colors.textMuted,
         modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
     )
-}
-
-@Composable
-private fun MinimalPermissionRow(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    isGranted: Boolean
-) {
-    val colors = PipraTheme.colors
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = if (isGranted) AccentEmerald else colors.textSubtle,
-            modifier = Modifier.size(18.dp)
-        )
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = colors.textPrimary
-            )
-            Text(
-                text = subtitle,
-                fontSize = 11.sp,
-                color = colors.textMuted
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .size(20.dp)
-                .clip(CircleShape)
-                .background(
-                    if (isGranted) StatusSynced.copy(alpha = 0.12f)
-                    else StatusFailed.copy(alpha = 0.12f)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                if (isGranted) Icons.Default.Check else Icons.Default.Warning,
-                contentDescription = if (isGranted) "Granted" else "Missing",
-                tint = if (isGranted) StatusSynced else StatusFailed,
-                modifier = Modifier.size(12.dp)
-            )
-        }
-    }
 }
 

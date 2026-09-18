@@ -20,10 +20,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Dashboard
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.QrCodeScanner
+import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -56,7 +60,9 @@ import com.example.ui.components.PipraPayLogoLockup
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.OnboardingScreen
+import com.example.ui.screens.OperationsScreen
 import com.example.ui.screens.QrScannerScreen
+import com.example.ui.screens.SendersScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.AccentEmerald
 import com.example.ui.theme.AccentRose
@@ -66,6 +72,7 @@ import com.example.ui.theme.GhostEmeraldBg
 import com.example.ui.theme.GhostEmeraldBorder
 import com.example.ui.theme.GhostRoseBg
 import com.example.ui.theme.GhostRoseBorder
+import com.example.ui.theme.PipraTheme
 import com.example.ui.theme.TextWhite
 import com.example.ui.theme.TextZinc400
 import com.example.ui.theme.TextZinc500
@@ -87,6 +94,20 @@ sealed class AppDestination(
         unselectedIcon = Icons.Outlined.Dashboard
     )
 
+    data object Senders : AppDestination(
+        route = "senders",
+        title = "Senders",
+        selectedIcon = Icons.Filled.FilterList,
+        unselectedIcon = Icons.Outlined.FilterList
+    )
+
+    data object Operations : AppDestination(
+        route = "operations",
+        title = "Operations",
+        selectedIcon = Icons.Filled.Security,
+        unselectedIcon = Icons.Outlined.Security
+    )
+
     data object Settings : AppDestination(
         route = "settings",
         title = "Settings",
@@ -104,6 +125,8 @@ sealed class AppDestination(
 
 val navDestinations = listOf(
     AppDestination.Dashboard,
+    AppDestination.Senders,
+    AppDestination.Operations,
     AppDestination.Settings
 )
 
@@ -180,19 +203,21 @@ fun PipraPayApp(
         },
         bottomBar = {
             if (isTopLevelDestination) {
+                val colors = PipraTheme.colors
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("bottom_nav_bar"),
-                    color = MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.85f))
+                    color = colors.container,
+                    border = BorderStroke(1.dp, colors.border)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .navigationBarsPadding()
-                            .height(64.dp)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                            .padding(bottom = 6.dp)
+                            .height(60.dp)
+                            .padding(horizontal = 4.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -220,10 +245,10 @@ fun PipraPayApp(
                                 // Subtle top indicator line for active tab
                                 Box(
                                     modifier = Modifier
-                                        .width(24.dp)
+                                        .width(28.dp)
                                         .height(2.dp)
                                         .clip(RoundedCornerShape(1.dp))
-                                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                        .background(if (isSelected) AccentEmerald else Color.Transparent)
                                 )
 
                                 Column(
@@ -233,14 +258,14 @@ fun PipraPayApp(
                                     Icon(
                                         imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
                                         contentDescription = destination.title,
-                                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        tint = if (isSelected) AccentEmerald else colors.textMuted,
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Text(
                                         text = destination.title,
                                         fontSize = 11.sp,
-                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                        color = if (isSelected) AccentEmerald else colors.textMuted
                                     )
                                 }
 
@@ -291,6 +316,14 @@ fun PipraPayApp(
 
             composable(AppDestination.Dashboard.route) {
                 DashboardScreen(viewModel = viewModel)
+            }
+
+            composable(AppDestination.Senders.route) {
+                SendersScreen(viewModel = viewModel)
+            }
+
+            composable(AppDestination.Operations.route) {
+                OperationsScreen(viewModel = viewModel)
             }
 
             composable(AppDestination.Settings.route) {

@@ -1061,3 +1061,51 @@ public val Icons.Filled.LightMode: ImageVector
         return _lightmode_filled!!
     }
 
+private var _filterlist_filled: ImageVector? = null
+public val Icons.Filled.FilterList: ImageVector
+    get() {
+        if (_filterlist_filled != null) return _filterlist_filled!!
+        _filterlist_filled = materialIcon(name = "Filled.FilterList") {
+            materialPath {
+                moveTo(10.0f, 18.0f)
+                horizontalLineToRelative(4.0f)
+                verticalLineToRelative(-2.0f)
+                horizontalLineToRelative(-4.0f)
+                verticalLineToRelative(2.0f)
+                close()
+                moveTo(3.0f, 6.0f)
+                verticalLineToRelative(2.0f)
+                horizontalLineToRelative(18.0f)
+                lineTo(21.0f, 6.0f)
+                lineTo(3.0f, 6.0f)
+                close()
+                moveTo(6.0f, 13.0f)
+                horizontalLineToRelative(12.0f)
+                verticalLineToRelative(-2.0f)
+                lineTo(6.0f, 11.0f)
+                verticalLineToRelative(2.0f)
+                close()
+            }
+        }
+        return _filterlist_filled!!
+    }
+
+private var _send_filled: ImageVector? = null
+public val Icons.Filled.Send: ImageVector
+    get() {
+        if (_send_filled != null) return _send_filled!!
+        _send_filled = materialIcon(name = "Filled.Send") {
+            materialPath {
+                moveTo(2.01f, 21.0f)
+                lineTo(23.0f, 12.0f)
+                lineTo(2.01f, 3.0f)
+                lineTo(2.0f, 10.0f)
+                lineToRelative(15.0f, 2.0f)
+                lineToRelative(-15.0f, 2.0f)
+                close()
+            }
+        }
+        return _send_filled!!
+    }
+
+

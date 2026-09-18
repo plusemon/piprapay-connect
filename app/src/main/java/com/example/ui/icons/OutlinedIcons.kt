@@ -187,3 +187,87 @@ public val Icons.Outlined.QrCodeScanner: ImageVector
         return _qrcodescanner_outlined!!
     }
 
+private var _security_outlined: ImageVector? = null
+public val Icons.Outlined.Security: ImageVector
+    get() {
+        if (_security_outlined != null) return _security_outlined!!
+        _security_outlined = materialIcon(name = "Outlined.Security") {
+            materialPath {
+                moveTo(12.0f, 1.0f)
+                lineTo(3.0f, 5.0f)
+                verticalLineToRelative(6.0f)
+                curveToRelative(0.0f, 5.55f, 3.84f, 10.74f, 9.0f, 12.0f)
+                curveToRelative(5.16f, -1.26f, 9.0f, -6.45f, 9.0f, -12.0f)
+                lineTo(21.0f, 5.0f)
+                lineToRelative(-9.0f, -4.0f)
+                close()
+                moveTo(12.0f, 19.95f)
+                curveToRelative(-4.02f, -1.16f, -7.0f, -5.2f, -7.0f, -8.95f)
+                lineTo(5.0f, 6.3f)
+                lineToRelative(7.0f, -3.11f)
+                lineToRelative(7.0f, 3.11f)
+                verticalLineToRelative(4.7f)
+                curveToRelative(0.0f, 3.75f, -2.98f, 7.79f, -7.0f, 8.95f)
+                close()
+            }
+        }
+        return _security_outlined!!
+    }
+
+private var _filterlist_outlined: ImageVector? = null
+public val Icons.Outlined.FilterList: ImageVector
+    get() {
+        if (_filterlist_outlined != null) return _filterlist_outlined!!
+        _filterlist_outlined = materialIcon(name = "Outlined.FilterList") {
+            materialPath {
+                moveTo(10.0f, 18.0f)
+                horizontalLineToRelative(4.0f)
+                verticalLineToRelative(-2.0f)
+                horizontalLineToRelative(-4.0f)
+                verticalLineToRelative(2.0f)
+                close()
+                moveTo(3.0f, 6.0f)
+                verticalLineToRelative(2.0f)
+                horizontalLineToRelative(18.0f)
+                lineTo(21.0f, 6.0f)
+                lineTo(3.0f, 6.0f)
+                close()
+                moveTo(6.0f, 13.0f)
+                horizontalLineToRelative(12.0f)
+                verticalLineToRelative(-2.0f)
+                lineTo(6.0f, 11.0f)
+                verticalLineToRelative(2.0f)
+                close()
+            }
+        }
+        return _filterlist_outlined!!
+    }
+
+private var _send_outlined: ImageVector? = null
+public val Icons.Outlined.Send: ImageVector
+    get() {
+        if (_send_outlined != null) return _send_outlined!!
+        _send_outlined = materialIcon(name = "Outlined.Send") {
+            materialPath {
+                moveTo(4.01f, 6.03f)
+                lineToRelative(7.51f, 3.22f)
+                lineToRelative(-7.52f, -1.0f)
+                lineToRelative(0.01f, -2.22f)
+                moveToRelative(7.5f, 8.72f)
+                lineTo(4.0f, 17.97f)
+                verticalLineToRelative(-2.22f)
+                lineToRelative(7.51f, -1.0f)
+                moveTo(2.01f, 3.0f)
+                lineTo(2.0f, 10.0f)
+                lineToRelative(15.0f, 2.0f)
+                lineToRelative(-15.0f, 2.0f)
+                lineToRelative(0.01f, 7.0f)
+                lineTo(23.0f, 12.0f)
+                lineTo(2.01f, 3.0f)
+                close()
+            }
+        }
+        return _send_outlined!!
+    }
+
+
