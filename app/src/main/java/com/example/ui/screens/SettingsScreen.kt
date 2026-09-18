@@ -1142,12 +1142,9 @@ fun SettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        // GitHub Repo setting
-                        var repoInput by remember(settings.githubRepo) { mutableStateOf(settings.githubRepo) }
-                        var isEditingRepo by remember { mutableStateOf(false) }
-
+                        // GitHub Repo setting (Read-Only)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
@@ -1160,70 +1157,29 @@ fun SettingsScreen(
                                     fontWeight = FontWeight.SemiBold,
                                     color = colors.textMuted
                                 )
-                                if (isEditingRepo) {
-                                    OutlinedTextField(
-                                        value = repoInput,
-                                        onValueChange = { repoInput = it },
-                                        singleLine = true,
-                                        textStyle = TextStyle(fontSize = 12.sp, color = colors.textPrimary),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(top = 4.dp)
-                                            .testTag("github_repo_input"),
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedContainerColor = colors.surfaceCard,
-                                            unfocusedContainerColor = colors.surfaceCard,
-                                            focusedBorderColor = AccentEmerald,
-                                            unfocusedBorderColor = colors.border,
-                                            focusedTextColor = colors.textPrimary,
-                                            unfocusedTextColor = colors.textPrimary
-                                        )
-                                    )
-                                } else {
-                                    Text(
-                                        text = settings.githubRepo,
-                                        fontSize = 13.sp,
-                                        color = colors.textPrimary,
-                                        fontWeight = FontWeight.Medium,
-                                        modifier = Modifier.padding(top = 2.dp)
-                                    )
-                                }
+                                Text(
+                                    text = settings.githubRepo,
+                                    fontSize = 13.sp,
+                                    color = colors.textPrimary,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
                             }
 
                             Spacer(modifier = Modifier.width(8.dp))
 
-                            if (isEditingRepo) {
-                                Button(
-                                    onClick = {
-                                        viewModel.updateGithubRepo(repoInput)
-                                        isEditingRepo = false
-                                        Toast.makeText(context, "Repository updated!", Toast.LENGTH_SHORT).show()
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-                                    modifier = Modifier.height(32.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = AccentEmerald,
-                                        contentColor = Color.White
-                                    )
-                                ) {
-                                    Text("Save", fontSize = 11.sp)
-                                }
-                            } else {
-                                OutlinedButton(
-                                    onClick = { isEditingRepo = true },
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-                                    modifier = Modifier.height(32.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        containerColor = colors.surfaceCard,
-                                        contentColor = colors.textPrimary
-                                    ),
-                                    border = BorderStroke(1.dp, colors.border)
-                                ) {
-                                    Text("Change", fontSize = 11.sp)
-                                }
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = colors.surfaceCard,
+                                border = BorderStroke(1.dp, colors.border)
+                            ) {
+                                Text(
+                                    text = "Read-Only",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = colors.textMuted,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
                             }
                         }
 

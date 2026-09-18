@@ -49,7 +49,7 @@ class UpdateManager(private val context: Context) {
         _updateState.value = UpdateState.Idle
     }
 
-    suspend fun checkForUpdates(repoOwnerRepo: String = "BdEmon00/piprapay-companion") = withContext(Dispatchers.IO) {
+    suspend fun checkForUpdates(repoOwnerRepo: String = "plusemon/piprapay-connect") = withContext(Dispatchers.IO) {
         _updateState.value = UpdateState.Checking
         try {
             val url = "https://api.github.com/repos/${repoOwnerRepo.trim()}/releases/latest"

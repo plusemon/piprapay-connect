@@ -223,7 +223,7 @@ class MerchantPreferences private constructor(context: Context) {
         private const val KEY_GITHUB_REPO = "key_github_repo"
 
         const val DEFAULT_BASE_URL = "https://pay.emon.bd/"
-        const val DEFAULT_GITHUB_REPO = "BdEmon00/piprapay-companion"
+        const val DEFAULT_GITHUB_REPO = "plusemon/piprapay-connect"
 
         @Volatile
         private var instance: MerchantPreferences? = null
