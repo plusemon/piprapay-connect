@@ -132,6 +132,7 @@ fun DashboardScreen(
     val serverLatency by viewModel.serverLatency.collectAsStateWithLifecycle()
     val serverHealthOk by viewModel.serverHealthOk.collectAsStateWithLifecycle()
     val latestBalances by viewModel.latestBalances.collectAsStateWithLifecycle()
+    val accountInfo by viewModel.accountInfo.collectAsStateWithLifecycle()
 
     var selectedTransaction by remember { mutableStateOf<TransactionEntity?>(null) }
     var showSmsSimulatorDialog by remember { mutableStateOf(false) }
@@ -491,6 +492,140 @@ fun DashboardScreen(
                                     modifier = Modifier.testTag("fix_battery_optimization_button")
                                 ) {
                                     Text("Fix Now", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusPending)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 1b. PipraPay Companion Session & Whitelist Card
+        item {
+            val merchantName = settings.accountName.ifBlank { accountInfo?.fullname ?: "" }
+            val merchantEmail = settings.accountEmail.ifBlank { accountInfo?.email ?: "" }
+            val hasToken = settings.sessionToken.isNotBlank()
+            val senders = if (settings.whitelistedSenders.isNotEmpty()) settings.whitelistedSenders else listOf("bKash", "NAGAD", "Rocket", "Upay")
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("companion_session_card"),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = SlateCard),
+                border = BorderStroke(1.dp, SlateStroke),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (hasToken) EmeraldPrimary.copy(alpha = 0.2f) else StatusPending.copy(alpha = 0.2f),
+                                border = BorderStroke(1.dp, if (hasToken) EmeraldPrimary else StatusPending)
+                            ) {
+                                Box(modifier = Modifier.padding(6.dp)) {
+                                    Icon(
+                                        imageVector = if (hasToken) Icons.Default.CheckCircle else Icons.Default.Sync,
+                                        contentDescription = null,
+                                        tint = if (hasToken) EmeraldLight else StatusPending,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                            Column {
+                                Text(
+                                    text = if (hasToken) (merchantName.ifBlank { "Companion Linked" }) else "Companion Pairing",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = if (hasToken) (merchantEmail.ifBlank { "pay.emon.bd Active Session" }) else "Connect with OTP or QR to enable companion protocol",
+                                    fontSize = 11.sp,
+                                    color = SlateTextMuted
+                                )
+                            }
+                        }
+
+                        IconButton(
+                            onClick = {
+                                viewModel.refreshCompanionData()
+                                Toast.makeText(context, "Syncing companion status...", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = "Refresh Companion Info",
+                                tint = EmeraldLight,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    // Senders & Server Queue stats if available
+                    accountInfo?.let { info ->
+                        if (info.success) {
+                            HorizontalDivider(color = SlateStroke)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Stored", fontSize = 10.sp, color = SlateTextMuted, fontWeight = FontWeight.Bold)
+                                    Text("${info.storedCount}", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = EmeraldLight)
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Used", fontSize = 10.sp, color = SlateTextMuted, fontWeight = FontWeight.Bold)
+                                    Text("${info.usedCount}", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Server Errors", fontSize = 10.sp, color = SlateTextMuted, fontWeight = FontWeight.Bold)
+                                    Text("${info.errorCount}", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = if (info.errorCount > 0) StatusFailed else Color(0xFF94A3B8))
+                                }
+                            }
+                        }
+                    }
+
+                    // Whitelisted senders row
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = "WHITELISTED MFS SENDERS",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SlateTextMuted,
+                            letterSpacing = 0.8.sp
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            senders.forEach { sender ->
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = SlateDark,
+                                    border = BorderStroke(1.dp, SlateStroke)
+                                ) {
+                                    Text(
+                                        text = sender,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = EmeraldLight,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
                                 }
                             }
                         }

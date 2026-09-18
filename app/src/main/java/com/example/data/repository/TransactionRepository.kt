@@ -2,6 +2,9 @@ package com.example.data.repository
 
 import android.content.Context
 import com.example.data.api.ApiClient
+import com.example.data.api.CompanionAccountInfo
+import com.example.data.api.CompanionLoginResponse
+import com.example.data.api.PipraPayCompanionClient
 import com.example.data.db.AppDatabase
 import com.example.data.model.TransactionEntity
 import com.example.data.prefs.MerchantPreferences
@@ -77,6 +80,77 @@ class TransactionRepository(private val context: Context) {
         prefs.updateSettings(url, apiKey, deviceKey, otp)
     }
 
+    suspend fun companionLogin(
+        url: String,
+        otp: String,
+        deviceKey: String = prefs.getDeviceKey()
+    ): CompanionLoginResponse = withContext(Dispatchers.IO) {
+        val loginResp = PipraPayCompanionClient.login(
+            baseUrl = url,
+            otp = otp,
+            deviceName = prefs.getDeviceName(),
+            deviceModel = prefs.getDeviceModel(),
+            androidLevel = prefs.getAndroidLevel(),
+            appVersion = "1.0.0"
+        )
+
+        if (loginResp.success && !loginResp.token.isNullOrBlank()) {
+            val token = loginResp.token
+
+            // 1. Fetch Account Information (merchant name, email, stats)
+            val accountInfo = try {
+                PipraPayCompanionClient.getAccountInformation(url, token)
+            } catch (_: Exception) { null }
+
+            // 2. Fetch Whitelisted Senders (bkash, nagad, upay, etc.)
+            val senders = try {
+                PipraPayCompanionClient.getWhitelistedSenders(url, token)
+            } catch (_: Exception) { emptyList() }
+
+            // 3. Persist securely
+            prefs.completeOnboardingAndLogin(
+                serverBaseUrl = url,
+                apiKey = otp,
+                deviceKey = deviceKey,
+                otp = otp,
+                sessionToken = token
+            )
+            prefs.saveCompanionSession(
+                token = token,
+                accountName = accountInfo?.fullname,
+                accountEmail = accountInfo?.email,
+                senders = senders
+            )
+        }
+        loginResp
+    }
+
+    suspend fun refreshAccountInfo(): CompanionAccountInfo? = withContext(Dispatchers.IO) {
+        val url = prefs.getServerBaseUrl()
+        val token = prefs.getSessionToken()
+        if (token.isBlank()) return@withContext null
+        val info = PipraPayCompanionClient.getAccountInformation(url, token)
+        if (info.success) {
+            prefs.saveCompanionSession(
+                token = token,
+                accountName = info.fullname,
+                accountEmail = info.email
+            )
+        }
+        info
+    }
+
+    suspend fun refreshWhitelistedSenders(): List<String> = withContext(Dispatchers.IO) {
+        val url = prefs.getServerBaseUrl()
+        val token = prefs.getSessionToken()
+        if (token.isBlank()) return@withContext emptyList()
+        val senders = PipraPayCompanionClient.getWhitelistedSenders(url, token)
+        if (senders.isNotEmpty()) {
+            prefs.saveCompanionSession(token = token, senders = senders)
+        }
+        senders
+    }
+
     suspend fun completeOnboardingAndLogin(
         url: String,
         apiKey: String,
@@ -119,16 +193,50 @@ class TransactionRepository(private val context: Context) {
         return prefs.generateNewDeviceKey()
     }
 
-    suspend fun testConnection(baseUrl: String, apiKey: String): ConnectionTestResult = withContext(Dispatchers.IO) {
+    suspend fun testConnection(baseUrl: String, apiKeyOrOtp: String): ConnectionTestResult = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         try {
-            val api = ApiClient.createApi(baseUrl, apiKey)
-            val authHeader = if (apiKey.isNotBlank()) "Bearer $apiKey" else null
+            val token = prefs.getSessionToken()
+            if (token.isNotBlank()) {
+                val accountInfo = PipraPayCompanionClient.getAccountInformation(baseUrl, token)
+                val latency = System.currentTimeMillis() - startTime
+                if (accountInfo.success) {
+                    return@withContext ConnectionTestResult(
+                        isSuccess = true,
+                        httpCode = 200,
+                        latencyMs = latency,
+                        message = "Connected to PipraPay Companion (${accountInfo.fullname}) in ${latency}ms"
+                    )
+                }
+            }
+
+            // If OTP is provided, test companion login
+            if (apiKeyOrOtp.isNotBlank() && apiKeyOrOtp.length in 6..12 && apiKeyOrOtp.all { it.isDigit() }) {
+                val loginTest = PipraPayCompanionClient.login(
+                    baseUrl = baseUrl,
+                    otp = apiKeyOrOtp,
+                    deviceName = prefs.getDeviceName(),
+                    deviceModel = prefs.getDeviceModel(),
+                    androidLevel = prefs.getAndroidLevel()
+                )
+                val latency = System.currentTimeMillis() - startTime
+                if (loginTest.success) {
+                    return@withContext ConnectionTestResult(
+                        isSuccess = true,
+                        httpCode = 200,
+                        latencyMs = latency,
+                        message = "PipraPay OTP Verified! Token generated in ${latency}ms"
+                    )
+                }
+            }
+
+            // Fallback: ping endpoint / HTTP probe
+            val api = ApiClient.createApi(baseUrl, apiKeyOrOtp)
+            val authHeader = if (apiKeyOrOtp.isNotBlank()) "Bearer $apiKeyOrOtp" else null
 
             val response = try {
                 api.pingServer(authHeader)
             } catch (_: Exception) {
-                // Fallback to health endpoint
                 api.healthCheck()
             }
 
@@ -147,21 +255,21 @@ class TransactionRepository(private val context: Context) {
                     isSuccess = false,
                     httpCode = code,
                     latencyMs = latency,
-                    message = "Server reached, but Authentication failed (HTTP $code). Verify Merchant API Key."
+                    message = "Server reached, but Authentication failed (HTTP $code)."
                 )
             } else if (code == 404) {
                 ConnectionTestResult(
                     isSuccess = true,
                     httpCode = code,
                     latencyMs = latency,
-                    message = "Server reachable at $baseUrl (HTTP 404 on ping). Ready for /api/sms/receive."
+                    message = "PipraPay server online at $baseUrl in ${latency}ms"
                 )
             } else {
                 ConnectionTestResult(
                     isSuccess = false,
                     httpCode = code,
                     latencyMs = latency,
-                    message = "Server returned error HTTP $code: ${response.message()}"
+                    message = "Server returned HTTP $code: ${response.message()}"
                 )
             }
         } catch (e: Exception) {

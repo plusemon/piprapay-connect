@@ -86,4 +86,15 @@ class ExampleUnitTest {
         val settings = com.example.data.prefs.MerchantSettings()
         org.junit.Assert.assertFalse(settings.onboardingCompleted)
     }
+
+    @Test
+    fun `verify companion QR code parsing with separator`() {
+        val qrPayload = "https://pay.emon.bd/----0702746925"
+        val parts = qrPayload.split("----")
+        assertEquals(2, parts.size)
+        val url = parts[0].trim()
+        val otp = parts[1].trim()
+        assertEquals("https://pay.emon.bd/", if (url.endsWith("/")) url else "$url/")
+        assertEquals("0702746925", otp)
+    }
 }

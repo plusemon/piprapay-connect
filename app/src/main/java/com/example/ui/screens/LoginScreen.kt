@@ -95,7 +95,7 @@ fun LoginScreen(
     val settings by viewModel.settings.collectAsStateWithLifecycle()
 
     var panelUrl by remember(settings.serverBaseUrl) {
-        mutableStateOf(if (settings.serverBaseUrl.isNotBlank()) settings.serverBaseUrl else "https://api.piprapay.com")
+        mutableStateOf(if (settings.serverBaseUrl.isNotBlank()) settings.serverBaseUrl else "https://pay.emon.bd/")
     }
     var password by remember(settings.apiKey) {
         mutableStateOf(settings.apiKey)
@@ -267,12 +267,24 @@ fun LoginScreen(
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             FilterChip(
+                selected = panelUrl.contains("pay.emon.bd"),
+                onClick = {
+                    panelUrl = "https://pay.emon.bd/"
+                    urlError = null
+                },
+                label = { Text("pay.emon.bd", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = BrandIndigo.copy(alpha = 0.15f),
+                    selectedLabelColor = BrandIndigo
+                )
+            )
+            FilterChip(
                 selected = panelUrl == "https://api.piprapay.com",
                 onClick = {
                     panelUrl = "https://api.piprapay.com"
                     urlError = null
                 },
-                label = { Text("Default Live", fontSize = 11.sp) },
+                label = { Text("PipraPay Cloud", fontSize = 11.sp) },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = BrandIndigo.copy(alpha = 0.12f),
                     selectedLabelColor = BrandIndigo
@@ -579,23 +591,38 @@ fun LoginScreen(
                 )
 
                 // Paste from clipboard button
-                OutlinedButton(
-                    onClick = {
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val text = clipboard.primaryClip?.getItemAt(0)?.text?.toString()
-                        if (!text.isNullOrBlank()) {
-                            qrRawPayload = text
-                            Toast.makeText(context, "Pasted from clipboard", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, "Clipboard is empty", Toast.LENGTH_SHORT).show()
-                        }
-                    },
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Paste Clipboard", fontSize = 12.sp)
+                    OutlinedButton(
+                        onClick = {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val text = clipboard.primaryClip?.getItemAt(0)?.text?.toString()
+                            if (!text.isNullOrBlank()) {
+                                qrRawPayload = text
+                                Toast.makeText(context, "Pasted from clipboard", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Clipboard is empty", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Paste", fontSize = 12.sp)
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            qrRawPayload = "https://pay.emon.bd/----0702746925"
+                        },
+                        modifier = Modifier.weight(1.3f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("pay.emon.bd QR", fontSize = 12.sp)
+                    }
                 }
 
                 qrParseError?.let { err ->
@@ -610,40 +637,59 @@ fun LoginScreen(
                 // Apply and connect button
                 Button(
                     onClick = {
-                        try {
-                            val json = JSONObject(qrRawPayload)
-                            val parsedUrl = json.optString("server_url", json.optString("serverUrl", json.optString("url", ""))).trim()
-                            val parsedKey = json.optString(
-                                "api_key",
-                                json.optString(
-                                    "apiKey",
-                                    json.optString("otp", json.optString("password", json.optString("token", json.optString("key", ""))))
-                                )
-                            ).trim()
-                            val parsedDevice = json.optString("device_key", json.optString("deviceKey", json.optString("device_id", json.optString("deviceId", "")))).trim()
+                        val trimmed = qrRawPayload.trim()
+                        var parsedUrl = ""
+                        var parsedKey = ""
+                        var parsedDevice = ""
 
-                            if (parsedUrl.isBlank() && parsedKey.isBlank()) {
-                                qrParseError = "Invalid QR config. Please provide server URL and OTP or API key."
-                            } else if (parsedUrl.isBlank()) {
-                                qrParseError = "Payment Panel URL cannot be empty in QR configuration."
-                            } else if (parsedKey.isBlank()) {
-                                qrParseError = "OTP or API Key cannot be empty in QR configuration."
-                            } else {
-                                panelUrl = parsedUrl
-                                password = parsedKey
-                                showQrModal = false
-                                Toast.makeText(context, "Configuration loaded! Logging in...", Toast.LENGTH_SHORT).show()
-                                viewModel.loginToPanel(
-                                    panelUrl = panelUrl,
-                                    passwordOrToken = password,
-                                    deviceKey = parsedDevice.ifBlank { null },
-                                    onSuccess = {
-                                        onLoginSuccess()
-                                    }
-                                )
+                        if (trimmed.contains("----")) {
+                            val parts = trimmed.split("----")
+                            parsedUrl = parts[0].trim()
+                            parsedKey = parts.getOrNull(1)?.trim() ?: ""
+                        } else {
+                            try {
+                                val json = JSONObject(trimmed)
+                                parsedUrl = json.optString("server_url", json.optString("serverUrl", json.optString("url", ""))).trim()
+                                parsedKey = json.optString(
+                                    "api_key",
+                                    json.optString(
+                                        "apiKey",
+                                        json.optString("otp", json.optString("password", json.optString("token", json.optString("key", ""))))
+                                    )
+                                ).trim()
+                                parsedDevice = json.optString("device_key", json.optString("deviceKey", json.optString("device_id", json.optString("deviceId", "")))).trim()
+                            } catch (e: Exception) {
+                                val lines = trimmed.lines().map { it.trim() }.filter { it.isNotEmpty() }
+                                if (lines.size >= 2 && (lines[0].startsWith("http://") || lines[0].startsWith("https://"))) {
+                                    parsedUrl = lines[0]
+                                    parsedKey = lines[1]
+                                } else if (trimmed.all { it.isDigit() } && trimmed.length in 6..12) {
+                                    parsedUrl = "https://pay.emon.bd/"
+                                    parsedKey = trimmed
+                                }
                             }
-                        } catch (e: Exception) {
-                            qrParseError = "Malformed JSON: ${e.localizedMessage}"
+                        }
+
+                        if (parsedUrl.isBlank() && parsedKey.isBlank()) {
+                            qrParseError = "Invalid QR payload. Please scan a PipraPay QR code (URL----OTP) or valid JSON."
+                        } else if (parsedUrl.isBlank()) {
+                            qrParseError = "Payment Panel URL cannot be empty."
+                        } else if (parsedKey.isBlank()) {
+                            qrParseError = "OTP or API Key cannot be empty."
+                        } else {
+                            panelUrl = if (parsedUrl.endsWith("/")) parsedUrl else "$parsedUrl/"
+                            password = parsedKey
+                            showQrModal = false
+                            Toast.makeText(context, "Configuration loaded! Pairing with server...", Toast.LENGTH_SHORT).show()
+                            viewModel.loginToPanel(
+                                panelUrl = panelUrl,
+                                passwordOrToken = password,
+                                deviceKey = parsedDevice.ifBlank { null },
+                                otp = password,
+                                onSuccess = {
+                                    onLoginSuccess()
+                                }
+                            )
                         }
                     },
                     modifier = Modifier

@@ -73,7 +73,8 @@ fun QrScannerScreen(
 
     fun parsePayload(input: String) {
         qrRawPayload = input
-        if (input.isBlank()) {
+        val trimmed = input.trim()
+        if (trimmed.isBlank()) {
             parsedServerUrl = null
             parsedApiKey = null
             parsedDeviceKey = null
@@ -81,29 +82,66 @@ fun QrScannerScreen(
             return
         }
 
+        // 1. PipraPay Official Companion QR Format: <url>----<otp>
+        if (trimmed.contains("----")) {
+            val parts = trimmed.split("----")
+            val url = parts[0].trim()
+            val otp = parts.getOrNull(1)?.trim() ?: ""
+            if (url.startsWith("http://") || url.startsWith("https://")) {
+                parsedServerUrl = if (url.endsWith("/")) url else "$url/"
+                parsedApiKey = otp
+                parsedDeviceKey = "DEV-" + (1000..9999).random()
+                parseError = null
+                return
+            }
+        }
+
+        // 2. JSON configuration format
         try {
-            val json = JSONObject(input)
-            val serverUrl = json.optString("server_url", json.optString("serverUrl", ""))
-            val apiKey = json.optString("api_key", json.optString("apiKey", ""))
-            val deviceKey = json.optString("device_key", json.optString("deviceKey", ""))
+            val json = JSONObject(trimmed)
+            val serverUrl = json.optString("server_url", json.optString("serverUrl", json.optString("url", ""))).trim()
+            val apiKey = json.optString("api_key", json.optString("apiKey", json.optString("otp", json.optString("token", "")))).trim()
+            val deviceKey = json.optString("device_key", json.optString("deviceKey", json.optString("device_id", ""))).trim()
 
             if (serverUrl.isBlank() && apiKey.isBlank()) {
-                parseError = "Invalid configuration: Missing 'server_url' or 'api_key' in JSON"
+                parseError = "Invalid configuration: Missing server URL or OTP in QR payload"
                 parsedServerUrl = null
                 parsedApiKey = null
                 parsedDeviceKey = null
             } else {
-                parsedServerUrl = serverUrl.ifBlank { "https://api.piprapay.com/" }
+                parsedServerUrl = serverUrl.ifBlank { "https://pay.emon.bd/" }
                 parsedApiKey = apiKey
-                parsedDeviceKey = deviceKey.ifBlank { "POS-" + (1000..9999).random() }
+                parsedDeviceKey = deviceKey.ifBlank { "DEV-" + (1000..9999).random() }
                 parseError = null
             }
-        } catch (e: Exception) {
-            parseError = "Could not parse JSON: ${e.localizedMessage}"
-            parsedServerUrl = null
-            parsedApiKey = null
-            parsedDeviceKey = null
+            return
+        } catch (_: Exception) {
+            // Not JSON
         }
+
+        // 3. Multi-line format: Line 1 = URL, Line 2 = OTP
+        val lines = trimmed.lines().map { it.trim() }.filter { it.isNotEmpty() }
+        if (lines.size >= 2 && (lines[0].startsWith("http://") || lines[0].startsWith("https://"))) {
+            parsedServerUrl = lines[0]
+            parsedApiKey = lines[1]
+            parsedDeviceKey = lines.getOrNull(2) ?: ("DEV-" + (1000..9999).random())
+            parseError = null
+            return
+        }
+
+        // 4. Single OTP code
+        if (trimmed.all { it.isDigit() } && trimmed.length in 6..12) {
+            parsedServerUrl = "https://pay.emon.bd/"
+            parsedApiKey = trimmed
+            parsedDeviceKey = "DEV-" + (1000..9999).random()
+            parseError = null
+            return
+        }
+
+        parseError = "Unrecognized QR format. Expected PipraPay QR code (URL----OTP) or JSON."
+        parsedServerUrl = null
+        parsedApiKey = null
+        parsedDeviceKey = null
     }
 
     LazyColumn(
@@ -209,12 +247,36 @@ fun QrScannerScreen(
                         }
                     }
 
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                parsePayload("https://pay.emon.bd/----0702746925")
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("pay.emon.bd QR", fontSize = 11.sp)
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                parsePayload("{\n  \"server_url\": \"https://pay.emon.bd/\",\n  \"api_key\": \"0702746925\"\n}")
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Sample JSON", fontSize = 11.sp)
+                        }
+                    }
+
                     OutlinedTextField(
                         value = qrRawPayload,
                         onValueChange = { parsePayload(it) },
                         placeholder = {
                             Text(
-                                "{\n  \"server_url\": \"https://api.piprapay.com/\",\n  \"api_key\": \"pipra_live_...\",\n  \"device_key\": \"STORE-01\"\n}",
+                                "https://pay.emon.bd/----0702746925\n\nor JSON:\n{\n  \"server_url\": \"https://pay.emon.bd/\",\n  \"api_key\": \"0702746925\"\n}",
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace
                             )
@@ -296,13 +358,16 @@ fun QrScannerScreen(
 
                         Button(
                             onClick = {
-                                viewModel.updateSettings(
-                                    server,
-                                    parsedApiKey ?: "",
-                                    parsedDeviceKey ?: ""
+                                viewModel.loginToPanel(
+                                    panelUrl = server,
+                                    passwordOrToken = parsedApiKey ?: "",
+                                    deviceKey = parsedDeviceKey,
+                                    otp = parsedApiKey ?: "",
+                                    onSuccess = {
+                                        Toast.makeText(context, "Pairing applied successfully!", Toast.LENGTH_SHORT).show()
+                                        onConfigApplied()
+                                    }
                                 )
-                                Toast.makeText(context, "Pairing applied successfully!", Toast.LENGTH_SHORT).show()
-                                onConfigApplied()
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -311,7 +376,7 @@ fun QrScannerScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Apply to App Settings", fontWeight = FontWeight.Bold)
+                            Text("Pair and Connect Device", fontWeight = FontWeight.Bold)
                         }
                     }
                 }

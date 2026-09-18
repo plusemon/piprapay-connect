@@ -37,8 +37,53 @@ class SyncWorker(
         val baseUrl = prefs.getServerBaseUrl()
         val apiKey = prefs.getApiKey()
         val deviceKey = prefs.getDeviceKey()
+        val sessionToken = prefs.getSessionToken()
 
         Log.d(TAG, "Starting sync for ${pendingTransactions.size} transactions to $baseUrl")
+
+        // 1. Try Official PipraPay Companion Protocol first if sessionToken is present
+        if (sessionToken.isNotBlank()) {
+            try {
+                val jsonArray = org.json.JSONArray()
+                for (trx in pendingTransactions) {
+                    val item = org.json.JSONObject().apply {
+                        put("id", trx.trxId)
+                        put("sender", trx.provider.ifBlank { trx.senderKey })
+                        put("message", trx.rawMessage)
+                        put("simSlot", (trx.simSlot - 1).coerceAtLeast(0).toString())
+                        put("timestamp", trx.timestamp.toString())
+                    }
+                    jsonArray.put(item)
+                }
+
+                val transmitResult = com.example.data.api.PipraPayCompanionClient.transmitSmsBulk(
+                    baseUrl = baseUrl,
+                    token = sessionToken,
+                    smsListJson = jsonArray.toString()
+                )
+
+                if (transmitResult.success) {
+                    Log.d(TAG, "PipraPay Companion transmit succeeded: ${transmitResult.message}")
+                    for (trx in pendingTransactions) {
+                        transactionDao.updateStatus(trx.trxId, "SYNCED")
+                    }
+                    prefs.updateLastSyncTimestamp()
+                    return Result.success()
+                } else {
+                    Log.w(TAG, "Companion transmit warning: ${transmitResult.title} - ${transmitResult.message}")
+                    // If duplicate or specific notice, check individual messages
+                    if (transmitResult.title?.contains("Duplicate", ignoreCase = true) == true) {
+                        for (trx in pendingTransactions) {
+                            transactionDao.updateStatus(trx.trxId, "SYNCED")
+                        }
+                        prefs.updateLastSyncTimestamp()
+                        return Result.success()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Companion transmit failed, falling back to REST: ${e.message}")
+            }
+        }
 
         val api = try {
             ApiClient.createApi(baseUrl, apiKey)

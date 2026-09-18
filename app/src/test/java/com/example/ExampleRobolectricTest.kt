@@ -114,4 +114,23 @@ class ExampleRobolectricTest {
         // On Step 2, continue button must be enabled when required permissions are granted
         composeTestRule.onNodeWithTag("proceed_to_login_button").performScrollTo().assertIsEnabled()
     }
+
+    @Test
+    fun `verify companion bulk sms JSON structure`() {
+        val jsonArray = org.json.JSONArray()
+        val item = org.json.JSONObject().apply {
+            put("id", "9ABC123XYZ")
+            put("sender", "BKASH")
+            put("message", "You have received Tk 1,500.00")
+            put("simSlot", "0")
+            put("timestamp", "1726588800000")
+        }
+        jsonArray.put(item)
+
+        val serialized = jsonArray.toString()
+        val parsed = org.json.JSONArray(serialized)
+        assertEquals(1, parsed.length())
+        assertEquals("9ABC123XYZ", parsed.getJSONObject(0).getString("id"))
+        assertEquals("BKASH", parsed.getJSONObject(0).getString("sender"))
+    }
 }

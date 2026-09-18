@@ -81,8 +81,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _serverHealthOk = MutableStateFlow(true)
     val serverHealthOk: StateFlow<Boolean> = _serverHealthOk.asStateFlow()
 
+    private val _accountInfo = MutableStateFlow<com.example.data.api.CompanionAccountInfo?>(null)
+    val accountInfo: StateFlow<com.example.data.api.CompanionAccountInfo?> = _accountInfo.asStateFlow()
+
     init {
         pingServerHealth()
+        viewModelScope.launch {
+            if (prefs.getSessionToken().isNotBlank()) {
+                val info = repository.refreshAccountInfo()
+                _accountInfo.value = info
+                repository.refreshWhitelistedSenders()
+            }
+        }
     }
 
     val rawTransactions = repository.allTransactions
@@ -227,6 +237,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _loginState.value = LoginState.Error(message)
     }
 
+    fun refreshCompanionData() {
+        viewModelScope.launch {
+            _isSyncing.value = true
+            val info = repository.refreshAccountInfo()
+            _accountInfo.value = info
+            repository.refreshWhitelistedSenders()
+            _isSyncing.value = false
+        }
+    }
+
     fun loginToPanel(
         panelUrl: String,
         passwordOrToken: String,
@@ -250,9 +270,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _loginState.value = LoginState.Loading
             val assignedDeviceKey = deviceKey?.ifBlank { null } ?: prefs.getDeviceKey()
+            val effectiveOtp = otp.ifBlank { trimmedPassword }
 
-            // 1. Save credentials and pp_device pairing info
-            // 2. Set isOnboardingCompleted = true
+            // 1. Attempt Official PipraPay Companion Handshake (OTP -> Token)
+            val companionResp = repository.companionLogin(
+                url = trimmedUrl,
+                otp = effectiveOtp,
+                deviceKey = assignedDeviceKey
+            )
+
+            if (companionResp.success) {
+                val info = repository.refreshAccountInfo()
+                _accountInfo.value = info
+                prefs.setOnboardingCompleted(true)
+
+                val app = getApplication<Application>()
+                com.example.service.PipraPayForegroundService.start(app)
+                _isServiceRunning.value = true
+
+                val merchantName = info?.fullname?.ifBlank { "PipraPay Merchant" } ?: "PipraPay Merchant"
+                _loginState.value = LoginState.Success("Connected to $merchantName!")
+                onSuccess()
+                return@launch
+            }
+
+            // 2. Fallback for Direct API Key or Legacy Handshake
             repository.completeOnboardingAndLogin(
                 url = trimmedUrl,
                 apiKey = trimmedPassword,
@@ -261,7 +303,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
             prefs.setOnboardingCompleted(true)
 
-            // 3. Start PipraPayForegroundService immediately so the background listener goes live
+            // Start foreground listener
             val app = getApplication<Application>()
             com.example.service.PipraPayForegroundService.start(app)
             _isServiceRunning.value = true

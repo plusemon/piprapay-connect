@@ -3,9 +3,15 @@ package com.example.data.api
 import com.squareup.moshi.Json
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.FormBody
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
+import org.json.JSONArray
+import org.json.JSONObject
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -131,5 +137,285 @@ object ApiClient {
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
             .create(PipraPayApi::class.java)
+    }
+}
+
+data class CompanionLoginResponse(
+    val success: Boolean,
+    val token: String? = null,
+    val title: String? = null,
+    val message: String? = null
+)
+
+data class CompanionAccountInfo(
+    val success: Boolean,
+    val fullname: String = "",
+    val email: String = "",
+    val storedCount: Int = 0,
+    val usedCount: Int = 0,
+    val errorCount: Int = 0,
+    val storedList: List<CompanionSmsItem> = emptyList(),
+    val usedList: List<CompanionSmsItem> = emptyList(),
+    val errorList: List<CompanionSmsItem> = emptyList(),
+    val errorMessage: String? = null
+)
+
+data class CompanionSmsItem(
+    val id: String = "",
+    val sender: String = "",
+    val message: String = "",
+    val reason: String = "",
+    val simslot: String = "0",
+    val timestamp: String = "",
+    val status: String = ""
+)
+
+data class CompanionTransmitResult(
+    val success: Boolean,
+    val title: String? = null,
+    val message: String? = null
+)
+
+object PipraPayCompanionClient {
+
+    private val client: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
+            .build()
+    }
+
+    private fun sanitizeUrl(baseUrl: String): String {
+        val trimmed = baseUrl.trim()
+        return if (trimmed.endsWith("/")) trimmed else "$trimmed/"
+    }
+
+    suspend fun login(
+        baseUrl: String,
+        otp: String,
+        deviceName: String,
+        deviceModel: String,
+        androidLevel: String,
+        appVersion: String = "1.0.0"
+    ): CompanionLoginResponse = withContext(Dispatchers.IO) {
+        try {
+            val url = sanitizeUrl(baseUrl)
+            val formBody = FormBody.Builder()
+                .add("action-companion", "login")
+                .add("onetimepassword", otp.trim())
+                .add("name", deviceName)
+                .add("model", deviceModel)
+                .add("android_level", androidLevel)
+                .add("app_version", appVersion)
+                .build()
+
+            val request = Request.Builder()
+                .url(url)
+                .post(formBody)
+                .header("User-Agent", "PipraPay-Companion-Android/1.0")
+                .header("Accept", "application/json")
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                val body = response.body?.string().orEmpty()
+                if (response.isSuccessful && body.isNotBlank()) {
+                    val json = JSONObject(body)
+                    val status = json.optString("status")
+                    if (status.equals("true", ignoreCase = true)) {
+                        CompanionLoginResponse(
+                            success = true,
+                            token = json.optString("token"),
+                            title = "Connected",
+                            message = "Paired with PipraPay server successfully"
+                        )
+                    } else {
+                        CompanionLoginResponse(
+                            success = false,
+                            title = json.optString("title", "Connection Failed"),
+                            message = json.optString("message", "Invalid credentials or expired OTP")
+                        )
+                    }
+                } else {
+                    CompanionLoginResponse(
+                        success = false,
+                        title = "HTTP Error ${response.code}",
+                        message = "Server returned status ${response.code}"
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            CompanionLoginResponse(
+                success = false,
+                title = "Network Exception",
+                message = e.localizedMessage ?: "Failed to connect to PipraPay server"
+            )
+        }
+    }
+
+    suspend fun getAccountInformation(
+        baseUrl: String,
+        token: String
+    ): CompanionAccountInfo = withContext(Dispatchers.IO) {
+        try {
+            val url = sanitizeUrl(baseUrl)
+            val formBody = FormBody.Builder()
+                .add("action-companion", "account-information")
+                .add("token", token.trim())
+                .build()
+
+            val request = Request.Builder()
+                .url(url)
+                .post(formBody)
+                .header("User-Agent", "PipraPay-Companion-Android/1.0")
+                .header("Accept", "application/json")
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                val body = response.body?.string().orEmpty()
+                if (response.isSuccessful && body.isNotBlank()) {
+                    val json = JSONObject(body)
+                    val status = json.optString("status")
+                    if (status.equals("true", ignoreCase = true)) {
+                        fun parseList(key: String): List<CompanionSmsItem> {
+                            val arr = json.optJSONArray(key) ?: return emptyList()
+                            val list = mutableListOf<CompanionSmsItem>()
+                            for (i in 0 until arr.length()) {
+                                val obj = arr.optJSONObject(i) ?: continue
+                                list.add(
+                                    CompanionSmsItem(
+                                        id = obj.optString("id"),
+                                        sender = obj.optString("sender"),
+                                        message = obj.optString("message"),
+                                        reason = obj.optString("reason"),
+                                        simslot = obj.optString("simslot", "0"),
+                                        timestamp = obj.optString("timestamp"),
+                                        status = obj.optString("status")
+                                    )
+                                )
+                            }
+                            return list
+                        }
+
+                        CompanionAccountInfo(
+                            success = true,
+                            fullname = json.optString("fullname"),
+                            email = json.optString("email"),
+                            storedCount = json.optInt("stored_count"),
+                            usedCount = json.optInt("used_count"),
+                            errorCount = json.optInt("error_count"),
+                            storedList = parseList("stored"),
+                            usedList = parseList("used"),
+                            errorList = parseList("error")
+                        )
+                    } else {
+                        CompanionAccountInfo(
+                            success = false,
+                            errorMessage = json.optString("message", "Failed to retrieve account details")
+                        )
+                    }
+                } else {
+                    CompanionAccountInfo(
+                        success = false,
+                        errorMessage = "HTTP ${response.code}"
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            CompanionAccountInfo(
+                success = false,
+                errorMessage = e.localizedMessage
+            )
+        }
+    }
+
+    suspend fun getWhitelistedSenders(
+        baseUrl: String,
+        token: String
+    ): List<String> = withContext(Dispatchers.IO) {
+        try {
+            val url = sanitizeUrl(baseUrl)
+            val formBody = FormBody.Builder()
+                .add("action-companion", "sms-transmit-sender")
+                .add("token", token.trim())
+                .build()
+
+            val request = Request.Builder()
+                .url(url)
+                .post(formBody)
+                .header("User-Agent", "PipraPay-Companion-Android/1.0")
+                .header("Accept", "application/json")
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                val body = response.body?.string().orEmpty()
+                if (response.isSuccessful && body.isNotBlank()) {
+                    val json = JSONObject(body)
+                    val status = json.optString("status")
+                    if (status.equals("true", ignoreCase = true)) {
+                        val arr = json.optJSONArray("senders")
+                        if (arr != null) {
+                            val list = mutableListOf<String>()
+                            for (i in 0 until arr.length()) {
+                                val s = arr.optString(i)
+                                if (s.isNotBlank()) list.add(s.trim())
+                            }
+                            return@withContext list
+                        }
+                    }
+                }
+            }
+            emptyList()
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun transmitSmsBulk(
+        baseUrl: String,
+        token: String,
+        smsListJson: String
+    ): CompanionTransmitResult = withContext(Dispatchers.IO) {
+        try {
+            val url = sanitizeUrl(baseUrl)
+            val formBody = FormBody.Builder()
+                .add("action-companion", "sms-transmit-bulk")
+                .add("token", token.trim())
+                .add("sms_list", smsListJson)
+                .build()
+
+            val request = Request.Builder()
+                .url(url)
+                .post(formBody)
+                .header("User-Agent", "PipraPay-Companion-Android/1.0")
+                .header("Accept", "application/json")
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                val body = response.body?.string().orEmpty()
+                if (response.isSuccessful && body.isNotBlank()) {
+                    val json = JSONObject(body)
+                    val status = json.optString("status")
+                    val isSuccess = status.equals("true", ignoreCase = true)
+                    CompanionTransmitResult(
+                        success = isSuccess,
+                        title = json.optString("title", if (isSuccess) "SMS Transmitted" else "Transmit Notice"),
+                        message = json.optString("message")
+                    )
+                } else {
+                    CompanionTransmitResult(
+                        success = false,
+                        title = "HTTP ${response.code}",
+                        message = "Server returned error status ${response.code}"
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            CompanionTransmitResult(
+                success = false,
+                title = "Network Error",
+                message = e.localizedMessage ?: "Failed to transmit SMS"
+            )
+        }
     }
 }

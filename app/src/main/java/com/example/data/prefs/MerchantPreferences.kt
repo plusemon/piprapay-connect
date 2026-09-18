@@ -24,11 +24,18 @@ class MerchantPreferences private constructor(context: Context) {
             prefs.edit().putString(KEY_DEVICE_KEY, deviceKey).apply()
         }
 
+        val sendersRaw = prefs.getString(KEY_WHITELISTED_SENDERS, "") ?: ""
+        val sendersList = if (sendersRaw.isBlank()) emptyList() else sendersRaw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+
         return MerchantSettings(
             serverBaseUrl = prefs.getString(KEY_SERVER_BASE_URL, DEFAULT_BASE_URL) ?: DEFAULT_BASE_URL,
             apiKey = prefs.getString(KEY_API_KEY, "") ?: "",
             deviceKey = deviceKey,
             otp = prefs.getString(KEY_OTP, "") ?: "",
+            sessionToken = prefs.getString(KEY_SESSION_TOKEN, "") ?: "",
+            accountName = prefs.getString(KEY_ACCOUNT_NAME, "") ?: "",
+            accountEmail = prefs.getString(KEY_ACCOUNT_EMAIL, "") ?: "",
+            whitelistedSenders = sendersList,
             deviceName = prefs.getString(KEY_DEVICE_NAME, getDefaultDeviceName()) ?: getDefaultDeviceName(),
             deviceModel = android.os.Build.MODEL ?: "Android Device",
             androidLevel = "API ${android.os.Build.VERSION.SDK_INT} (Android ${android.os.Build.VERSION.RELEASE})",
@@ -47,9 +54,30 @@ class MerchantPreferences private constructor(context: Context) {
     }
 
     fun getOtp(): String = prefs.getString(KEY_OTP, "") ?: ""
+    fun getSessionToken(): String = prefs.getString(KEY_SESSION_TOKEN, "") ?: ""
+    fun getAccountName(): String = prefs.getString(KEY_ACCOUNT_NAME, "") ?: ""
+    fun getAccountEmail(): String = prefs.getString(KEY_ACCOUNT_EMAIL, "") ?: ""
+    fun getWhitelistedSenders(): List<String> {
+        val raw = prefs.getString(KEY_WHITELISTED_SENDERS, "") ?: ""
+        return if (raw.isBlank()) emptyList() else raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    }
     fun getDeviceName(): String = prefs.getString(KEY_DEVICE_NAME, getDefaultDeviceName()) ?: getDefaultDeviceName()
     fun getDeviceModel(): String = android.os.Build.MODEL ?: "Android"
     fun getAndroidLevel(): String = "API ${android.os.Build.VERSION.SDK_INT}"
+
+    fun saveCompanionSession(
+        token: String,
+        accountName: String? = null,
+        accountEmail: String? = null,
+        senders: List<String>? = null
+    ) {
+        val editor = prefs.edit().putString(KEY_SESSION_TOKEN, token)
+        if (accountName != null) editor.putString(KEY_ACCOUNT_NAME, accountName)
+        if (accountEmail != null) editor.putString(KEY_ACCOUNT_EMAIL, accountEmail)
+        if (senders != null) editor.putString(KEY_WHITELISTED_SENDERS, senders.joinToString(","))
+        editor.apply()
+        _settingsFlow.value = loadSettings()
+    }
 
     fun isOnboardingCompleted(): Boolean {
         return prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
@@ -64,17 +92,21 @@ class MerchantPreferences private constructor(context: Context) {
         serverBaseUrl: String,
         apiKey: String,
         deviceKey: String = getDeviceKey(),
-        otp: String = ""
+        otp: String = "",
+        sessionToken: String = ""
     ) {
         val sanitizedUrl = if (serverBaseUrl.endsWith("/")) serverBaseUrl else "$serverBaseUrl/"
-        prefs.edit()
+        val editor = prefs.edit()
             .putString(KEY_SERVER_BASE_URL, sanitizedUrl)
             .putString(KEY_API_KEY, apiKey)
             .putString(KEY_DEVICE_KEY, deviceKey.ifBlank { getDeviceKey() })
             .putString(KEY_OTP, otp)
             .putBoolean(KEY_SERVICE_ENABLED, true)
             .putBoolean(KEY_ONBOARDING_COMPLETED, true)
-            .apply()
+        if (sessionToken.isNotBlank()) {
+            editor.putString(KEY_SESSION_TOKEN, sessionToken)
+        }
+        editor.apply()
         _settingsFlow.value = loadSettings()
     }
 
@@ -147,13 +179,17 @@ class MerchantPreferences private constructor(context: Context) {
         private const val KEY_API_KEY = "key_api_key"
         private const val KEY_DEVICE_KEY = "key_device_key"
         private const val KEY_OTP = "key_otp"
+        private const val KEY_SESSION_TOKEN = "key_session_token"
+        private const val KEY_ACCOUNT_NAME = "key_account_name"
+        private const val KEY_ACCOUNT_EMAIL = "key_account_email"
+        private const val KEY_WHITELISTED_SENDERS = "key_whitelisted_senders"
         private const val KEY_DEVICE_NAME = "key_device_name"
         private const val KEY_SERVICE_ENABLED = "key_service_enabled"
         private const val KEY_LAST_SYNC_TIME = "key_last_sync_time"
         private const val KEY_AUTO_SYNC = "key_auto_sync"
         private const val KEY_ONBOARDING_COMPLETED = "key_onboarding_completed"
 
-        const val DEFAULT_BASE_URL = "https://api.piprapay.com/"
+        const val DEFAULT_BASE_URL = "https://pay.emon.bd/"
 
         @Volatile
         private var instance: MerchantPreferences? = null
@@ -190,6 +226,10 @@ data class MerchantSettings(
     val apiKey: String = "",
     val deviceKey: String = "",
     val otp: String = "",
+    val sessionToken: String = "",
+    val accountName: String = "",
+    val accountEmail: String = "",
+    val whitelistedSenders: List<String> = emptyList(),
     val deviceName: String = "",
     val deviceModel: String = "",
     val androidLevel: String = "",
