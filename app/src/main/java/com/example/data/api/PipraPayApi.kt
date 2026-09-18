@@ -22,47 +22,47 @@ import retrofit2.http.POST
 import java.util.concurrent.TimeUnit
 
 data class SmsSyncRequest(
-    @Json(name = "source") val source: String = "app",
-    @Json(name = "device_id") val deviceId: String,
-    @Json(name = "device_key") val deviceKey: String = deviceId,
-    @Json(name = "sender") val sender: String,
-    @Json(name = "sender_key") val senderKey: String,
-    @Json(name = "simslot") val simslot: Int = 1,
-    @Json(name = "number") val number: String,
-    @Json(name = "sender_number") val senderNumber: String = number,
-    @Json(name = "amount") val amount: Double,
-    @Json(name = "currency") val currency: String = "BDT",
-    @Json(name = "trx_id") val trxId: String,
-    @Json(name = "balance") val balance: Double? = null,
-    @Json(name = "message") val message: String,
-    @Json(name = "raw_sms") val rawSms: String = message,
-    @Json(name = "type") val type: String = "received",
-    @Json(name = "provider") val provider: String = senderKey.uppercase(),
-    @Json(name = "timestamp") val timestamp: Long = System.currentTimeMillis()
+    @field:Json(name = "source") val source: String = "app",
+    @field:Json(name = "device_id") val deviceId: String,
+    @field:Json(name = "device_key") val deviceKey: String = deviceId,
+    @field:Json(name = "sender") val sender: String,
+    @field:Json(name = "sender_key") val senderKey: String,
+    @field:Json(name = "simslot") val simslot: Int = 1,
+    @field:Json(name = "number") val number: String,
+    @field:Json(name = "sender_number") val senderNumber: String = number,
+    @field:Json(name = "amount") val amount: Double,
+    @field:Json(name = "currency") val currency: String = "BDT",
+    @field:Json(name = "trx_id") val trxId: String,
+    @field:Json(name = "balance") val balance: Double? = null,
+    @field:Json(name = "message") val message: String,
+    @field:Json(name = "raw_sms") val rawSms: String = message,
+    @field:Json(name = "type") val type: String = "received",
+    @field:Json(name = "provider") val provider: String = senderKey.uppercase(),
+    @field:Json(name = "timestamp") val timestamp: Long = System.currentTimeMillis()
 )
 
 data class DeviceRegisterRequest(
-    @Json(name = "device_id") val deviceId: String,
-    @Json(name = "otp") val otp: String,
-    @Json(name = "name") val name: String,
-    @Json(name = "model") val model: String,
-    @Json(name = "android_level") val androidLevel: String,
-    @Json(name = "app_version") val appVersion: String,
-    @Json(name = "status") val status: String = "active"
+    @field:Json(name = "device_id") val deviceId: String,
+    @field:Json(name = "otp") val otp: String,
+    @field:Json(name = "name") val name: String,
+    @field:Json(name = "model") val model: String,
+    @field:Json(name = "android_level") val androidLevel: String,
+    @field:Json(name = "app_version") val appVersion: String,
+    @field:Json(name = "status") val status: String = "active"
 )
 
 data class DeviceHeartbeatRequest(
-    @Json(name = "device_id") val deviceId: String,
-    @Json(name = "status") val status: String = "active",
-    @Json(name = "battery_level") val batteryLevel: Int? = null,
-    @Json(name = "last_sync") val lastSync: Long = System.currentTimeMillis()
+    @field:Json(name = "device_id") val deviceId: String,
+    @field:Json(name = "status") val status: String = "active",
+    @field:Json(name = "battery_level") val batteryLevel: Int? = null,
+    @field:Json(name = "last_sync") val lastSync: Long = System.currentTimeMillis()
 )
 
 data class SmsSyncResponse(
-    @Json(name = "success") val success: Boolean? = true,
-    @Json(name = "message") val message: String? = null,
-    @Json(name = "status") val status: String? = null,
-    @Json(name = "trx_id") val trxId: String? = null
+    @field:Json(name = "success") val success: Boolean? = true,
+    @field:Json(name = "message") val message: String? = null,
+    @field:Json(name = "status") val status: String? = null,
+    @field:Json(name = "trx_id") val trxId: String? = null
 )
 
 interface PipraPayApi {
