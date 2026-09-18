@@ -77,13 +77,17 @@ jobs:
           fi
 
       - name: Build APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleRelease --stacktrace || ./gradlew assembleDebug --stacktrace
 
       - name: Stage Release APK
         run: |
           TAG="${{ steps.release_meta.outputs.tag }}"
           mkdir -p release-assets
-          cp app/build/outputs/apk/debug/app-debug.apk "release-assets/piprapay-companion-${TAG}.apk"
+          if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
+            cp app/build/outputs/apk/release/app-release.apk "release-assets/piprapay-companion-${TAG}.apk"
+          else
+            cp app/build/outputs/apk/debug/app-debug.apk "release-assets/piprapay-companion-${TAG}.apk"
+          fi
           echo "Packaged APK: release-assets/piprapay-companion-${TAG}.apk"
 
       - name: Publish GitHub Release
