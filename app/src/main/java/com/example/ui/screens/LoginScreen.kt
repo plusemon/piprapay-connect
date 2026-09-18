@@ -612,16 +612,22 @@ fun LoginScreen(
                     onClick = {
                         try {
                             val json = JSONObject(qrRawPayload)
-                            val parsedUrl = json.optString("server_url", json.optString("serverUrl", "")).trim()
-                            val parsedKey = json.optString("api_key", json.optString("apiKey", "")).trim()
-                            val parsedDevice = json.optString("device_key", json.optString("deviceKey", "")).trim()
+                            val parsedUrl = json.optString("server_url", json.optString("serverUrl", json.optString("url", ""))).trim()
+                            val parsedKey = json.optString(
+                                "api_key",
+                                json.optString(
+                                    "apiKey",
+                                    json.optString("otp", json.optString("password", json.optString("token", json.optString("key", ""))))
+                                )
+                            ).trim()
+                            val parsedDevice = json.optString("device_key", json.optString("deviceKey", json.optString("device_id", json.optString("deviceId", "")))).trim()
 
                             if (parsedUrl.isBlank() && parsedKey.isBlank()) {
-                                qrParseError = "Invalid JSON. Please provide server_url and api_key."
+                                qrParseError = "Invalid QR config. Please provide server URL and OTP or API key."
                             } else if (parsedUrl.isBlank()) {
                                 qrParseError = "Payment Panel URL cannot be empty in QR configuration."
                             } else if (parsedKey.isBlank()) {
-                                qrParseError = "Credentials / One Time Password cannot be empty in QR configuration."
+                                qrParseError = "OTP or API Key cannot be empty in QR configuration."
                             } else {
                                 panelUrl = parsedUrl
                                 password = parsedKey

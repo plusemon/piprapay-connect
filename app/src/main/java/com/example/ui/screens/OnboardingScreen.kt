@@ -79,6 +79,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -86,6 +87,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -100,6 +104,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.service.PipraPayService
@@ -410,6 +415,14 @@ private fun PermissionsSetupStep(
     val scrollState = rememberScrollState()
     val isBatteryOptimized by viewModel.isBatteryOptimizationIgnored.collectAsStateWithLifecycle()
 
+    fun checkNotificationGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        } else {
+            NotificationManagerCompat.from(context).areNotificationsEnabled()
+        }
+    }
+
     var hasSmsReceive by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED
@@ -421,24 +434,37 @@ private fun PermissionsSetupStep(
         )
     }
     var hasNotificationPermission by remember {
-        mutableStateOf(
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-            } else true
-        )
+        mutableStateOf(checkNotificationGranted())
+    }
+
+    fun updatePermissionsState() {
+        hasSmsReceive = ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED
+        hasSmsRead = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+        hasNotificationPermission = checkNotificationGranted()
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        hasSmsReceive = permissions[Manifest.permission.RECEIVE_SMS] ?: hasSmsReceive
-        hasSmsRead = permissions[Manifest.permission.READ_SMS] ?: hasSmsRead
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            hasNotificationPermission = permissions[Manifest.permission.POST_NOTIFICATIONS] ?: hasNotificationPermission
+    ) { _ ->
+        updatePermissionsState()
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                updatePermissionsState()
+                viewModel.refreshBatteryOptimizationStatus()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
     LaunchedEffect(Unit) {
+        updatePermissionsState()
         viewModel.refreshBatteryOptimizationStatus()
     }
 
@@ -540,6 +566,15 @@ private fun PermissionsSetupStep(
             onActionClick = {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     permissionLauncher.launch(arrayOf(Manifest.permission.POST_NOTIFICATIONS))
+                } else {
+                    try {
+                        val intent = android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        }
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Please enable notifications in system settings", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         )
@@ -564,56 +599,38 @@ private fun PermissionsSetupStep(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Master "Grant All" Button if not all granted
-        if (!allRequiredGranted) {
-            OutlinedButton(
-                onClick = {
-                    val perms = mutableListOf(
-                        Manifest.permission.RECEIVE_SMS,
-                        Manifest.permission.READ_SMS
-                    )
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        perms.add(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                    permissionLauncher.launch(perms.toTypedArray())
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .testTag("grant_all_permissions_button"),
-                shape = RoundedCornerShape(24.dp)
-            ) {
-                Text("Grant Missing Permissions", fontWeight = FontWeight.SemiBold)
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
         // Continue to Login Screen Button
         Button(
-            onClick = onContinue,
+            onClick = {
+                if (allRequiredGranted) {
+                    onContinue()
+                }
+            },
+            enabled = allRequiredGranted,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
                 .testTag("proceed_to_login_button"),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (smsGranted) BrandIndigo else BrandIndigo.copy(alpha = 0.8f)
+                containerColor = BrandIndigo,
+                contentColor = Color.White,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
             ),
             shape = RoundedCornerShape(26.dp)
         ) {
             Text(
                 text = "Continue to Panel Login",
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+                fontWeight = FontWeight.Bold
             )
         }
 
-        if (!smsGranted) {
+        if (!allRequiredGranted) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Note: SMS permission can also be granted later in Settings.",
-                fontSize = 11.sp,
+                text = "Please grant all required permissions above to continue.",
+                fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()

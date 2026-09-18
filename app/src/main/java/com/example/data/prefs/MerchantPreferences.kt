@@ -28,12 +28,28 @@ class MerchantPreferences private constructor(context: Context) {
             serverBaseUrl = prefs.getString(KEY_SERVER_BASE_URL, DEFAULT_BASE_URL) ?: DEFAULT_BASE_URL,
             apiKey = prefs.getString(KEY_API_KEY, "") ?: "",
             deviceKey = deviceKey,
+            otp = prefs.getString(KEY_OTP, "") ?: "",
+            deviceName = prefs.getString(KEY_DEVICE_NAME, getDefaultDeviceName()) ?: getDefaultDeviceName(),
+            deviceModel = android.os.Build.MODEL ?: "Android Device",
+            androidLevel = "API ${android.os.Build.VERSION.SDK_INT} (Android ${android.os.Build.VERSION.RELEASE})",
+            appVersion = "1.0.0",
             serviceEnabled = prefs.getBoolean(KEY_SERVICE_ENABLED, true),
             lastSyncTimestamp = prefs.getLong(KEY_LAST_SYNC_TIME, 0L),
             autoSyncEnabled = prefs.getBoolean(KEY_AUTO_SYNC, true),
             onboardingCompleted = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
         )
     }
+
+    private fun getDefaultDeviceName(): String {
+        val manufacturer = android.os.Build.MANUFACTURER.orEmpty().replaceFirstChar { it.uppercase() }
+        val model = android.os.Build.MODEL.orEmpty()
+        return if (model.startsWith(manufacturer, ignoreCase = true)) model else "$manufacturer $model"
+    }
+
+    fun getOtp(): String = prefs.getString(KEY_OTP, "") ?: ""
+    fun getDeviceName(): String = prefs.getString(KEY_DEVICE_NAME, getDefaultDeviceName()) ?: getDefaultDeviceName()
+    fun getDeviceModel(): String = android.os.Build.MODEL ?: "Android"
+    fun getAndroidLevel(): String = "API ${android.os.Build.VERSION.SDK_INT}"
 
     fun isOnboardingCompleted(): Boolean {
         return prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
@@ -47,13 +63,15 @@ class MerchantPreferences private constructor(context: Context) {
     fun completeOnboardingAndLogin(
         serverBaseUrl: String,
         apiKey: String,
-        deviceKey: String = getDeviceKey()
+        deviceKey: String = getDeviceKey(),
+        otp: String = ""
     ) {
         val sanitizedUrl = if (serverBaseUrl.endsWith("/")) serverBaseUrl else "$serverBaseUrl/"
         prefs.edit()
             .putString(KEY_SERVER_BASE_URL, sanitizedUrl)
             .putString(KEY_API_KEY, apiKey)
             .putString(KEY_DEVICE_KEY, deviceKey.ifBlank { getDeviceKey() })
+            .putString(KEY_OTP, otp)
             .putBoolean(KEY_SERVICE_ENABLED, true)
             .putBoolean(KEY_ONBOARDING_COMPLETED, true)
             .apply()
@@ -96,14 +114,18 @@ class MerchantPreferences private constructor(context: Context) {
     fun updateSettings(
         serverBaseUrl: String,
         apiKey: String,
-        deviceKey: String
+        deviceKey: String,
+        otp: String? = null
     ) {
         val sanitizedUrl = if (serverBaseUrl.endsWith("/")) serverBaseUrl else "$serverBaseUrl/"
-        prefs.edit()
+        val editor = prefs.edit()
             .putString(KEY_SERVER_BASE_URL, sanitizedUrl)
             .putString(KEY_API_KEY, apiKey)
             .putString(KEY_DEVICE_KEY, deviceKey.ifBlank { getDeviceKey() })
-            .apply()
+        if (otp != null) {
+            editor.putString(KEY_OTP, otp)
+        }
+        editor.apply()
         _settingsFlow.value = loadSettings()
     }
 
@@ -124,6 +146,8 @@ class MerchantPreferences private constructor(context: Context) {
         private const val KEY_SERVER_BASE_URL = "key_server_base_url"
         private const val KEY_API_KEY = "key_api_key"
         private const val KEY_DEVICE_KEY = "key_device_key"
+        private const val KEY_OTP = "key_otp"
+        private const val KEY_DEVICE_NAME = "key_device_name"
         private const val KEY_SERVICE_ENABLED = "key_service_enabled"
         private const val KEY_LAST_SYNC_TIME = "key_last_sync_time"
         private const val KEY_AUTO_SYNC = "key_auto_sync"
@@ -165,6 +189,11 @@ data class MerchantSettings(
     val serverBaseUrl: String = MerchantPreferences.DEFAULT_BASE_URL,
     val apiKey: String = "",
     val deviceKey: String = "",
+    val otp: String = "",
+    val deviceName: String = "",
+    val deviceModel: String = "",
+    val androidLevel: String = "",
+    val appVersion: String = "1.0.0",
     val serviceEnabled: Boolean = true,
     val lastSyncTimestamp: Long = 0L,
     val autoSyncEnabled: Boolean = true,

@@ -52,12 +52,22 @@ class SyncWorker(
         for (trx in pendingTransactions) {
             try {
                 val request = SmsSyncRequest(
+                    source = "app",
+                    deviceId = deviceKey,
                     deviceKey = deviceKey,
-                    provider = trx.provider,
-                    trxId = trx.trxId,
+                    sender = trx.provider,
+                    senderKey = trx.senderKey,
+                    simslot = trx.simSlot,
+                    number = trx.senderNumber,
                     senderNumber = trx.senderNumber,
                     amount = trx.amount,
+                    currency = trx.currency,
+                    trxId = trx.trxId,
+                    balance = trx.balance,
+                    message = trx.rawMessage,
                     rawSms = trx.rawMessage,
+                    type = trx.type,
+                    provider = trx.provider,
                     timestamp = trx.timestamp
                 )
 

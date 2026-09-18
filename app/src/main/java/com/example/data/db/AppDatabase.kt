@@ -8,7 +8,7 @@ import com.example.data.model.TransactionEntity
 
 @Database(
     entities = [TransactionEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -24,7 +24,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "piprapay_companion.db"
-                ).fallbackToDestructiveMigration(false)
+                ).fallbackToDestructiveMigration()
                     .build()
                     .also { instance = it }
             }

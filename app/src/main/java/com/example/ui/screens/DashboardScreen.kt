@@ -131,6 +131,7 @@ fun DashboardScreen(
     val isSyncing by viewModel.isSyncing.collectAsStateWithLifecycle()
     val serverLatency by viewModel.serverLatency.collectAsStateWithLifecycle()
     val serverHealthOk by viewModel.serverHealthOk.collectAsStateWithLifecycle()
+    val latestBalances by viewModel.latestBalances.collectAsStateWithLifecycle()
 
     var selectedTransaction by remember { mutableStateOf<TransactionEntity?>(null) }
     var showSmsSimulatorDialog by remember { mutableStateOf(false) }
@@ -596,6 +597,11 @@ fun DashboardScreen(
                     }
                 }
             }
+        }
+
+        // 2.5 Verified Wallet Balances
+        item {
+            VerifiedBalancesCard(balances = latestBalances)
         }
 
         // 3. Action Buttons: Sync Queue (Primary Solid) & Simulate SMS (Tonal / Outlined)
@@ -1112,11 +1118,28 @@ fun HighDetailTransactionCard(
                     )
                 }
 
-                Text(
-                    text = "From: ${transaction.senderNumber}",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "From: ${transaction.senderNumber}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    ) {
+                        Text(
+                            text = "SIM ${transaction.simSlot}",
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
 
                 Text(
                     text = formatRelativeTime(transaction.timestamp),
@@ -1136,6 +1159,15 @@ fun HighDetailTransactionCard(
                     fontWeight = FontWeight.Bold,
                     color = EmeraldPrimary
                 )
+
+                if (transaction.balance != null) {
+                    Text(
+                        text = "Bal: ৳ ${DecimalFormat("#,##0.00").format(transaction.balance)}",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
                 // Status chip (SYNCED in soft green pill, PENDING in glowing yellow, FAILED with retry)
                 Surface(
@@ -1277,7 +1309,13 @@ fun TransactionDetailSheet(
             HorizontalDivider()
 
             DetailRow("Provider", transaction.provider)
-            DetailRow("Amount", formatPositiveAmount(transaction.amount))
+            DetailRow("Sender Key", transaction.senderKey)
+            DetailRow("Type", transaction.type)
+            DetailRow("Amount", "${transaction.currency} ${DecimalFormat("#,##0.00").format(transaction.amount)}")
+            transaction.balance?.let { bal ->
+                DetailRow("Post-Trx Balance", "${transaction.currency} ${DecimalFormat("#,##0.00").format(bal)}")
+            }
+            DetailRow("SIM Slot", "SIM ${transaction.simSlot}")
             DetailRow("Transaction ID", transaction.trxId)
             DetailRow("Sender Number", transaction.senderNumber)
             DetailRow("Captured Time", dateFormatter.format(Date(transaction.timestamp)))
@@ -1462,4 +1500,100 @@ fun SmsSimulatorDialog(
             }
         }
     )
+}
+
+@Composable
+fun VerifiedBalancesCard(
+    balances: Map<String, Double>,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("verified_balances_card"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(EmeraldPrimary)
+                    )
+                    Text(
+                        text = "LIVE WALLET BALANCES",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Text(
+                    text = "SMS Verified",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = EmeraldPrimary
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val providers = listOf(
+                    Triple("bKash", BkashPink, balances["bkash"] ?: balances["BKASH"]),
+                    Triple("Nagad", NagadOrange, balances["nagad"] ?: balances["NAGAD"]),
+                    Triple("Rocket", RocketPurple, balances["rocket"] ?: balances["ROCKET"]),
+                    Triple("Upay", UpayNavy, balances["upay"] ?: balances["UPAY"])
+                )
+
+                providers.forEach { (name, color, balance) ->
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = color.copy(alpha = 0.08f),
+                        border = BorderStroke(1.dp, color.copy(alpha = 0.25f)),
+                        modifier = Modifier.widthIn(min = 120.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Text(
+                                text = name,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = color
+                            )
+                            Text(
+                                text = if (balance != null) "৳ ${DecimalFormat("#,##0.00").format(balance)}" else "Awaiting SMS",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = if (balance != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

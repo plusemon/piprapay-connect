@@ -47,6 +47,10 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
         // Group multi-part SMS messages by originating address
         val messagesBySender = messages.filterNotNull().groupBy { it.displayOriginatingAddress ?: it.originatingAddress ?: "UNKNOWN" }
 
+        // Extract SIM slot index from SMS broadcast intent (0-indexed converted to 1-indexed)
+        val slotIndex = intent.getIntExtra("slot", intent.getIntExtra("simSlot", intent.getIntExtra("simId", -1)))
+        val detectedSimSlot = if (slotIndex >= 0) slotIndex + 1 else 1
+
         for ((sender, smsList) in messagesBySender) {
             val fullBody = smsList.joinToString(separator = "") { it.displayMessageBody ?: it.messageBody ?: "" }
             val timestamp = smsList.firstOrNull()?.timestampMillis ?: System.currentTimeMillis()
@@ -58,7 +62,7 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
             )
 
             if (parsed != null) {
-                Log.d(TAG, "MFS transaction recognized: ${parsed.provider} TrxID=${parsed.trxId} Amount=${parsed.amount}")
+                Log.d(TAG, "MFS transaction recognized: ${parsed.provider} TrxID=${parsed.trxId} Amount=${parsed.amount} Balance=${parsed.balance}")
 
                 val pendingResult = goAsync()
                 receiverScope.launch {
@@ -67,8 +71,13 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
                         val entity = TransactionEntity(
                             trxId = parsed.trxId,
                             provider = parsed.provider,
+                            senderKey = parsed.senderKey,
                             senderNumber = parsed.senderNumber,
                             amount = parsed.amount,
+                            balance = parsed.balance,
+                            currency = parsed.currency,
+                            type = parsed.type,
+                            simSlot = detectedSimSlot,
                             rawMessage = parsed.rawMessage,
                             timestamp = parsed.timestamp,
                             syncStatus = "PENDING",

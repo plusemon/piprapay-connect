@@ -35,8 +35,13 @@ class TransactionRepository(private val context: Context) {
         val entity = TransactionEntity(
             trxId = parsed.trxId,
             provider = parsed.provider,
+            senderKey = parsed.senderKey,
             senderNumber = parsed.senderNumber,
             amount = parsed.amount,
+            balance = parsed.balance,
+            currency = parsed.currency,
+            type = parsed.type,
+            simSlot = 1,
             rawMessage = parsed.rawMessage,
             timestamp = parsed.timestamp,
             syncStatus = "PENDING",
@@ -68,16 +73,42 @@ class TransactionRepository(private val context: Context) {
         dao.clearAll()
     }
 
-    suspend fun updateSettings(url: String, apiKey: String, deviceKey: String) = withContext(Dispatchers.IO) {
-        prefs.updateSettings(url, apiKey, deviceKey)
+    suspend fun updateSettings(url: String, apiKey: String, deviceKey: String, otp: String? = null) = withContext(Dispatchers.IO) {
+        prefs.updateSettings(url, apiKey, deviceKey, otp)
     }
 
     suspend fun completeOnboardingAndLogin(
         url: String,
         apiKey: String,
-        deviceKey: String = prefs.getDeviceKey()
+        deviceKey: String = prefs.getDeviceKey(),
+        otp: String = ""
     ) = withContext(Dispatchers.IO) {
-        prefs.completeOnboardingAndLogin(url, apiKey, deviceKey)
+        prefs.completeOnboardingAndLogin(url, apiKey, deviceKey, otp)
+        registerDeviceWithBackend(url, apiKey, deviceKey, otp)
+    }
+
+    private suspend fun registerDeviceWithBackend(
+        url: String,
+        apiKey: String,
+        deviceKey: String,
+        otp: String
+    ) {
+        try {
+            val api = ApiClient.createApi(url, apiKey)
+            val req = com.example.data.api.DeviceRegisterRequest(
+                deviceId = deviceKey,
+                otp = otp,
+                name = prefs.getDeviceName(),
+                model = prefs.getDeviceModel(),
+                androidLevel = prefs.getAndroidLevel(),
+                appVersion = "1.0.0",
+                status = "active"
+            )
+            val authHeader = if (apiKey.isNotBlank()) "Bearer $apiKey" else ""
+            api.registerDevice(authHeader, req)
+        } catch (_: Exception) {
+            // Non-blocking - device will also be tracked on first SMS sync
+        }
     }
 
     suspend fun resetOnboarding() = withContext(Dispatchers.IO) {

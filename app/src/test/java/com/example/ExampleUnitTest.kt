@@ -15,9 +15,13 @@ class ExampleUnitTest {
 
         assertNotNull(parsed)
         assertEquals("BKASH", parsed?.provider)
+        assertEquals("bkash", parsed?.senderKey)
         assertEquals("9ABC123XYZ", parsed?.trxId)
         assertEquals("01712345678", parsed?.senderNumber)
         assertEquals(1500.0, parsed?.amount ?: 0.0, 0.001)
+        assertEquals(6240.0, parsed?.balance ?: 0.0, 0.001)
+        assertEquals("BDT", parsed?.currency)
+        assertEquals("received", parsed?.type)
     }
 
     @Test
@@ -27,9 +31,12 @@ class ExampleUnitTest {
 
         assertNotNull(parsed)
         assertEquals("NAGAD", parsed?.provider)
+        assertEquals("nagad", parsed?.senderKey)
         assertEquals("7XYZ456", parsed?.trxId)
         assertEquals("01887654321", parsed?.senderNumber)
         assertEquals(2000.0, parsed?.amount ?: 0.0, 0.001)
+        assertEquals(12300.0, parsed?.balance ?: 0.0, 0.001)
+        assertEquals("BDT", parsed?.currency)
     }
 
     @Test
@@ -39,8 +46,10 @@ class ExampleUnitTest {
 
         assertNotNull(parsed)
         assertEquals("ROCKET", parsed?.provider)
+        assertEquals("rocket", parsed?.senderKey)
         assertEquals("9876543210", parsed?.trxId)
         assertEquals(1200.0, parsed?.amount ?: 0.0, 0.001)
+        assertEquals(4500.0, parsed?.balance ?: 0.0, 0.001)
     }
 
     @Test
@@ -50,8 +59,10 @@ class ExampleUnitTest {
 
         assertNotNull(parsed)
         assertEquals("UPAY", parsed?.provider)
+        assertEquals("upay", parsed?.senderKey)
         assertEquals("UP123456", parsed?.trxId)
         assertEquals(1000.0, parsed?.amount ?: 0.0, 0.001)
+        assertEquals(3100.0, parsed?.balance ?: 0.0, 0.001)
     }
 
     @Test

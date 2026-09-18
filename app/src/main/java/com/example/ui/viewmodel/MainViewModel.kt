@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -32,6 +33,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = MerchantPreferences.getInstance(application)
 
     val settings: StateFlow<MerchantSettings> = repository.settingsFlow
+
+    // Tracks latest verified wallet balance per provider (matching PipraPay pp_balance_verification)
+    val latestBalances: StateFlow<Map<String, Double>> = repository.allTransactions.map { list ->
+        val balanceMap = mutableMapOf<String, Double>()
+        list.filter { it.balance != null }
+            .sortedBy { it.timestamp }
+            .forEach { trx ->
+                balanceMap[trx.provider.uppercase()] = trx.balance ?: 0.0
+            }
+        balanceMap
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyMap()
+    )
 
     private val _isServiceRunning = MutableStateFlow(prefs.isServiceEnabled())
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
@@ -167,9 +183,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun updateSettings(url: String, apiKey: String, deviceKey: String) {
+    fun updateSettings(url: String, apiKey: String, deviceKey: String, otp: String? = null) {
         viewModelScope.launch {
-            repository.updateSettings(url, apiKey, deviceKey)
+            repository.updateSettings(url, apiKey, deviceKey, otp)
         }
     }
 
@@ -215,6 +231,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         panelUrl: String,
         passwordOrToken: String,
         deviceKey: String? = null,
+        otp: String = "",
         onSuccess: () -> Unit
     ) {
         val trimmedUrl = panelUrl.trim()
@@ -234,12 +251,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _loginState.value = LoginState.Loading
             val assignedDeviceKey = deviceKey?.ifBlank { null } ?: prefs.getDeviceKey()
 
-            // 1. Save credentials to EncryptedSharedPreferences
+            // 1. Save credentials and pp_device pairing info
             // 2. Set isOnboardingCompleted = true
             repository.completeOnboardingAndLogin(
                 url = trimmedUrl,
                 apiKey = trimmedPassword,
-                deviceKey = assignedDeviceKey
+                deviceKey = assignedDeviceKey,
+                otp = otp.trim()
             )
             prefs.setOnboardingCompleted(true)
 

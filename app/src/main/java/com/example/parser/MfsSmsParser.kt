@@ -3,10 +3,14 @@ package com.example.parser
 import java.util.Locale
 
 data class ParsedMfsTransaction(
-    val provider: String,      // "BKASH", "NAGAD", "ROCKET", "UPAY"
+    val provider: String,          // "BKASH", "NAGAD", "ROCKET", "UPAY"
+    val senderKey: String,         // "bkash", "nagad", "rocket", "upay"
     val trxId: String,
     val senderNumber: String,
     val amount: Double,
+    val balance: Double? = null,   // Remaining wallet balance from SMS (for pp_balance_verification)
+    val currency: String = "BDT",
+    val type: String = "received", // "received", "payment", "cash_in"
     val rawMessage: String,
     val timestamp: Long = System.currentTimeMillis()
 )
@@ -28,8 +32,7 @@ object MfsSmsParser {
         "authorization code"
     )
 
-    // bKash: "You have received Tk 1,500.00 from 017XXXXXXXX... TrxID 9ABC123XYZ"
-    // Also "Payment received Tk 1,500.00 from 017XXXXXXXX ... TrxID 9ABC123XYZ"
+    // bKash: "You have received Tk 1,500.00 from 017XXXXXXXX... Fee Tk 0.00. Balance Tk 14,250.00. TrxID 9ABC123XYZ"
     private val BKASH_AMOUNT_REGEX = Regex(
         """(?:received|received\s+deposit|payment\s+received)\s+(?:Tk\.?|BDT)?\s*([0-9,]+(?:\.[0-9]{1,2})?)""",
         RegexOption.IGNORE_CASE
@@ -42,9 +45,12 @@ object MfsSmsParser {
         """TrxID\s*[:\s]?\s*([A-Za-z0-9]+)""",
         RegexOption.IGNORE_CASE
     )
+    private val BKASH_BALANCE_REGEX = Regex(
+        """(?:Balance|Current\s*Balance)\s*[:\s]*\s*(?:(?:Tk\.?|BDT)\s*)?([0-9,]+(?:\.[0-9]{1,2})?)""",
+        RegexOption.IGNORE_CASE
+    )
 
-    // Nagad: "Amount: Tk 2,000.00, Sender: 018XXXXXXXX, TxnID: 7XYZ456"
-    // Or "You have received Tk 2,000.00 from 018XXXXXXXX. TxnID: 7XYZ456"
+    // Nagad: "Amount: Tk 2,000.00, Sender: 018XXXXXXXX, TxnID: 7XYZ456, Balance: Tk 12,300.00"
     private val NAGAD_AMOUNT_REGEX = Regex(
         """(?:Amount\s*:\s*(?:Tk\.?|BDT)?\s*|received\s+(?:Tk\.?|BDT)?\s*)([0-9,]+(?:\.[0-9]{1,2})?)""",
         RegexOption.IGNORE_CASE
@@ -57,9 +63,12 @@ object MfsSmsParser {
         """(?:TxnID|TrxID)\s*[:\s]?\s*([A-Za-z0-9]+)""",
         RegexOption.IGNORE_CASE
     )
+    private val NAGAD_BALANCE_REGEX = Regex(
+        """(?:Balance|Current\s*Balance)\s*[:\s]*\s*(?:(?:Tk\.?|BDT)\s*)?([0-9,]+(?:\.[0-9]{1,2})?)""",
+        RegexOption.IGNORE_CASE
+    )
 
-    // Rocket (DBBL 16216): "Cash In Tk 1,200.00 from 01XXXXXXXXX successful... TxnId: 1234567890"
-    // Or "You have received Tk 1,200.00 from 01XXXXXXXXX... TxnId: 1234567890"
+    // Rocket (DBBL 16216): "Cash In Tk 1,200.00 from 01XXXXXXXXX successful... Balance Tk 4,500.00. TxnId: 1234567890"
     private val ROCKET_AMOUNT_REGEX = Regex(
         """(?:Cash\s*In\s+(?:Tk\.?|BDT)?\s*|received\s+(?:Tk\.?|BDT)?\s*)([0-9,]+(?:\.[0-9]{1,2})?)""",
         RegexOption.IGNORE_CASE
@@ -72,14 +81,22 @@ object MfsSmsParser {
         """(?:TxnId|TxnID|TrxID)\s*[:\s]?\s*([A-Za-z0-9]+)""",
         RegexOption.IGNORE_CASE
     )
+    private val ROCKET_BALANCE_REGEX = Regex(
+        """(?:Balance|A\/C\s*Balance)\s*[:\s]*\s*(?:(?:Tk\.?|BDT)\s*)?([0-9,]+(?:\.[0-9]{1,2})?)""",
+        RegexOption.IGNORE_CASE
+    )
 
-    // Upay: "You have received Tk 1,000.00 from 01XXXXXXXXX. TrxID: UP123456"
+    // Upay: "You have received Tk 1,000.00 from 01XXXXXXXXX. TrxID: UP123456. Balance Tk 5,400.00"
     private val UPAY_AMOUNT_REGEX = Regex(
         """(?:received\s+(?:Tk\.?|BDT)?\s*|Cash\s*In\s+of\s+(?:Tk\.?|BDT)?\s*)([0-9,]+(?:\.[0-9]{1,2})?)""",
         RegexOption.IGNORE_CASE
     )
     private val UPAY_TRX_REGEX = Regex(
         """(?:TrxID|TxnID)\s*[:\s]?\s*([A-Za-z0-9]+)""",
+        RegexOption.IGNORE_CASE
+    )
+    private val UPAY_BALANCE_REGEX = Regex(
+        """(?:Balance|New\s*Balance)\s*[:\s]*\s*(?:(?:Tk\.?|BDT)\s*)?([0-9,]+(?:\.[0-9]{1,2})?)""",
         RegexOption.IGNORE_CASE
     )
 
@@ -94,6 +111,10 @@ object MfsSmsParser {
     )
     private val GENERIC_SENDER_REGEX = Regex(
         """(?:from|sender\s*:?)\s*([0-9A-Za-z*+\-_]{6,15})""",
+        RegexOption.IGNORE_CASE
+    )
+    private val GENERIC_BALANCE_REGEX = Regex(
+        """\b(?:Balance|Bal|Current\s*Balance|Rem\s*Balance)\s*[:\s]*\s*(?:(?:Tk\.?|BDT)\s*)?([0-9,]+(?:\.[0-9]{1,2})?)\b""",
         RegexOption.IGNORE_CASE
     )
 
@@ -142,6 +163,15 @@ object MfsSmsParser {
         }
     }
 
+    private fun detectType(messageBody: String): String {
+        val lower = messageBody.lowercase(Locale.ROOT)
+        return when {
+            lower.contains("cash in") -> "cash_in"
+            lower.contains("payment received") || lower.contains("payment") -> "payment"
+            else -> "received"
+        }
+    }
+
     private fun parseBkash(body: String, senderAddress: String?, timestamp: Long): ParsedMfsTransaction? {
         val trxMatch = BKASH_TRX_REGEX.find(body) ?: return null
         val trxId = trxMatch.groupValues[1].trim()
@@ -154,11 +184,18 @@ object MfsSmsParser {
         val senderMatch = BKASH_SENDER_REGEX.find(body)
         val senderNumber = cleanSender(senderMatch?.groupValues?.get(1) ?: senderAddress ?: "UNKNOWN")
 
+        val balanceMatch = BKASH_BALANCE_REGEX.find(body)
+        val balance = balanceMatch?.groupValues?.get(1)?.let { parseAmount(it) }
+
         return ParsedMfsTransaction(
             provider = "BKASH",
+            senderKey = "bkash",
             trxId = trxId,
             senderNumber = senderNumber,
             amount = amount,
+            balance = balance,
+            currency = "BDT",
+            type = detectType(body),
             rawMessage = body,
             timestamp = timestamp
         )
@@ -176,11 +213,18 @@ object MfsSmsParser {
         val senderMatch = NAGAD_SENDER_REGEX.find(body)
         val senderNumber = cleanSender(senderMatch?.groupValues?.get(1) ?: senderAddress ?: "UNKNOWN")
 
+        val balanceMatch = NAGAD_BALANCE_REGEX.find(body)
+        val balance = balanceMatch?.groupValues?.get(1)?.let { parseAmount(it) }
+
         return ParsedMfsTransaction(
             provider = "NAGAD",
+            senderKey = "nagad",
             trxId = trxId,
             senderNumber = senderNumber,
             amount = amount,
+            balance = balance,
+            currency = "BDT",
+            type = detectType(body),
             rawMessage = body,
             timestamp = timestamp
         )
@@ -198,11 +242,18 @@ object MfsSmsParser {
         val senderMatch = ROCKET_SENDER_REGEX.find(body)
         val senderNumber = cleanSender(senderMatch?.groupValues?.get(1) ?: senderAddress ?: "UNKNOWN")
 
+        val balanceMatch = ROCKET_BALANCE_REGEX.find(body)
+        val balance = balanceMatch?.groupValues?.get(1)?.let { parseAmount(it) }
+
         return ParsedMfsTransaction(
             provider = "ROCKET",
+            senderKey = "rocket",
             trxId = trxId,
             senderNumber = senderNumber,
             amount = amount,
+            balance = balance,
+            currency = "BDT",
+            type = detectType(body),
             rawMessage = body,
             timestamp = timestamp
         )
@@ -220,11 +271,18 @@ object MfsSmsParser {
         val senderMatch = GENERIC_SENDER_REGEX.find(body)
         val senderNumber = cleanSender(senderMatch?.groupValues?.get(1) ?: senderAddress ?: "UNKNOWN")
 
+        val balanceMatch = UPAY_BALANCE_REGEX.find(body)
+        val balance = balanceMatch?.groupValues?.get(1)?.let { parseAmount(it) }
+
         return ParsedMfsTransaction(
             provider = "UPAY",
+            senderKey = "upay",
             trxId = trxId,
             senderNumber = senderNumber,
             amount = amount,
+            balance = balance,
+            currency = "BDT",
+            type = detectType(body),
             rawMessage = body,
             timestamp = timestamp
         )
@@ -242,13 +300,21 @@ object MfsSmsParser {
         val senderMatch = GENERIC_SENDER_REGEX.find(body)
         val senderNumber = cleanSender(senderMatch?.groupValues?.get(1) ?: senderAddress ?: "UNKNOWN")
 
+        val balanceMatch = GENERIC_BALANCE_REGEX.find(body)
+        val balance = balanceMatch?.groupValues?.get(1)?.let { parseAmount(it) }
+
         val finalProvider = if (detectedProvider == "UNKNOWN") "MFS" else detectedProvider
+        val senderKey = finalProvider.lowercase(Locale.ROOT)
 
         return ParsedMfsTransaction(
             provider = finalProvider,
+            senderKey = senderKey,
             trxId = trxId,
             senderNumber = senderNumber,
             amount = amount,
+            balance = balance,
+            currency = "BDT",
+            type = detectType(body),
             rawMessage = body,
             timestamp = timestamp
         )
@@ -264,7 +330,6 @@ object MfsSmsParser {
 
     private fun cleanSender(raw: String): String {
         val trimmed = raw.trim()
-        // Remove trailing punctuation if regex matched dot or comma
         return trimmed.trimEnd('.', ',', ';', ':')
     }
 }
