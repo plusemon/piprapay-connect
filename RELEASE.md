@@ -71,9 +71,10 @@ The GitHub Actions workflow will automatically start, assemble the APK, generate
 
 1. **Checks out the repository** with full commit history for automatic changelog generation.
 2. **Sets up JDK 21** with Gradle dependency caching for fast build speeds.
-3. **Runs `./gradlew assembleDebug --stacktrace`** to build a standalone, installable APK.
-4. **Renames the artifact** to `piprapay-connect-<version>.apk`.
-5. **Publishes the release** to GitHub Releases with downloadable APK assets and release notes.
+3. **Prepares signing keys** from GitHub Secrets (e.g., `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`) or repository fallback keystore.
+4. **Runs `./gradlew assembleRelease --stacktrace`** to produce an optimized, shrunk, production-ready release APK.
+5. **Packages & stages the artifact** to `piprapay-connect-<version>.apk`.
+6. **Publishes the release** to GitHub Releases with downloadable APK assets and release notes.
 
 ---
 

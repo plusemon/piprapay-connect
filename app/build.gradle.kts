@@ -24,26 +24,45 @@ android {
   }
 
   val debugKeystore = file("${rootDir}/debug.keystore")
-  val releaseKeystorePath = System.getenv("KEYSTORE_PATH")
-  val releaseKeystoreFile = if (releaseKeystorePath != null) file(releaseKeystorePath) else null
+  val userDebugKeystore = file("${System.getProperty("user.home")}/.android/debug.keystore")
+  val releaseKeystorePath = System.getenv("KEYSTORE_PATH") ?: System.getenv("RELEASE_KEYSTORE_PATH")
+  val releaseKeystoreFile = if (!releaseKeystorePath.isNullOrBlank()) file(releaseKeystorePath) else null
+
+  val fallbackDebugKeystore = when {
+    debugKeystore.exists() -> debugKeystore
+    userDebugKeystore.exists() -> userDebugKeystore
+    else -> null
+  }
 
   signingConfigs {
     create("release") {
-      if (releaseKeystoreFile != null && releaseKeystoreFile.exists()) {
+      if (releaseKeystoreFile != null) {
+        if (!releaseKeystoreFile.exists()) {
+          throw GradleException("Release keystore specified via KEYSTORE_PATH was not found at: ${releaseKeystoreFile.absolutePath}")
+        }
+        val storePass = System.getenv("STORE_PASSWORD") ?: System.getenv("KEYSTORE_PASSWORD")
+        val keyPass = System.getenv("KEY_PASSWORD") ?: storePass
+        val alias = System.getenv("KEY_ALIAS") ?: "upload"
+
+        if (storePass.isNullOrBlank()) {
+          logger.warn("[PipraPay Build] Warning: STORE_PASSWORD is not set for release keystore.")
+        }
+
         storeFile = releaseKeystoreFile
-        storePassword = System.getenv("STORE_PASSWORD")
-        keyAlias = System.getenv("KEY_ALIAS") ?: "upload"
-        keyPassword = System.getenv("KEY_PASSWORD")
-      } else if (debugKeystore.exists()) {
-        storeFile = debugKeystore
+        storePassword = storePass
+        keyAlias = alias
+        keyPassword = keyPass
+      } else if (fallbackDebugKeystore != null) {
+        logger.info("[PipraPay Build] Using fallback debug keystore for release signing.")
+        storeFile = fallbackDebugKeystore
         storePassword = "android"
         keyAlias = "androiddebugkey"
         keyPassword = "android"
       }
     }
-    if (debugKeystore.exists()) {
+    if (fallbackDebugKeystore != null) {
       create("debugConfig") {
-        storeFile = debugKeystore
+        storeFile = fallbackDebugKeystore
         storePassword = "android"
         keyAlias = "androiddebugkey"
         keyPassword = "android"
@@ -57,10 +76,13 @@ android {
       isMinifyEnabled = true
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
+      val releaseSigning = signingConfigs.getByName("release")
+      if (releaseSigning.storeFile != null && releaseSigning.storeFile?.exists() == true) {
+        signingConfig = releaseSigning
+      }
     }
     debug {
-      if (debugKeystore.exists()) {
+      if (fallbackDebugKeystore != null) {
         signingConfig = signingConfigs.getByName("debugConfig")
       }
     }
