@@ -514,6 +514,69 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun toggleSender(senderId: String, enabled: Boolean) {
+        prefs.toggleSender(senderId, enabled)
+    }
+
+    fun isSenderEnabled(senderId: String): Boolean {
+        return prefs.isSenderEnabled(senderId)
+    }
+
+    fun syncSendersFromPanel(
+        onSuccess: (count: Int) -> Unit = {},
+        onFailure: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            try {
+                val senders = repository.refreshWhitelistedSenders()
+                if (senders.isNotEmpty()) {
+                    onSuccess(senders.size)
+                } else {
+                    val defaults = com.example.data.prefs.DEFAULT_SENDERS
+                    prefs.setWhitelistedSenders(defaults)
+                    onSuccess(defaults.size)
+                }
+            } catch (e: Exception) {
+                onFailure(e.message ?: "Failed to sync senders from panel")
+            }
+        }
+    }
+
+    fun disconnectMerchantSession(onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            com.example.service.PipraPayForegroundService.stop(app)
+            _isServiceRunning.value = false
+
+            prefs.saveCompanionSession(
+                token = "",
+                accountName = "",
+                accountEmail = "",
+                senders = com.example.data.prefs.DEFAULT_SENDERS
+            )
+            prefs.updateSettings(
+                serverBaseUrl = com.example.data.prefs.MerchantPreferences.DEFAULT_BASE_URL,
+                apiKey = "",
+                deviceKey = prefs.generateNewDeviceKey(),
+                otp = ""
+            )
+            prefs.setOnboardingCompleted(false)
+
+            _accountInfo.value = null
+            _loginState.value = LoginState.Idle
+            _serverHealthOk.value = false
+            _serverLatency.value = null
+            onComplete()
+        }
+    }
+
+    fun clearLocalSmsLogs(onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.clearAll()
+            onComplete()
+        }
+    }
+
     /**
      * Injects an SMS to test parser, database, and background sync logic.
      */

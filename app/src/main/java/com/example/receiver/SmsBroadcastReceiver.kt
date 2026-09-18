@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import com.example.R
 import com.example.data.db.AppDatabase
 import com.example.data.model.TransactionEntity
+import com.example.data.prefs.MerchantPreferences
 import com.example.parser.MfsSmsParser
 import com.example.sync.SyncWorker
 import com.example.util.AlertManager
@@ -52,7 +53,17 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
         val slotIndex = intent.getIntExtra("slot", intent.getIntExtra("simSlot", intent.getIntExtra("simId", -1)))
         val detectedSimSlot = if (slotIndex >= 0) slotIndex + 1 else 1
 
+        val prefs = MerchantPreferences.getInstance(context)
+
         for ((sender, smsList) in messagesBySender) {
+            // Background Telephony Filter Logic:
+            // Before invoking regex extraction on incoming SMS packets, evaluate the originating address
+            // against the active sender set. Discard non-matching messages immediately without disk writes.
+            if (!prefs.isSenderAllowed(sender)) {
+                Log.d(TAG, "Telephony filter: discarded SMS from unrouted sender '$sender' without parsing or disk write.")
+                continue
+            }
+
             val fullBody = smsList.joinToString(separator = "") { it.displayMessageBody ?: it.messageBody ?: "" }
             val timestamp = smsList.firstOrNull()?.timestampMillis ?: System.currentTimeMillis()
 

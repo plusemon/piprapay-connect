@@ -89,6 +89,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.TransactionEntity
+import com.example.data.prefs.SUPPORTED_MFS_SENDERS
 import com.example.service.PipraPayService
 import com.example.ui.components.PipraPayLogoLockup
 import com.example.ui.theme.AccentAmber
@@ -432,14 +433,15 @@ fun DashboardScreen(
                         }
 
                         // Whitelist Senders / Session info in clean neutral tags
-                        val senders = if (settings.whitelistedSenders.isNotEmpty()) settings.whitelistedSenders else listOf("bKash", "NAGAD", "Rocket", "Upay")
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(
-                                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -450,20 +452,48 @@ fun DashboardScreen(
                                     color = colors.textSubtle,
                                     letterSpacing = 0.8.sp
                                 )
-                                senders.forEach { sender ->
+
+                                SUPPORTED_MFS_SENDERS.forEach { config ->
+                                    val isEnabled = viewModel.isSenderEnabled(config.id)
                                     Surface(
                                         shape = RoundedCornerShape(6.dp),
-                                        color = colors.surfaceCard,
-                                        border = BorderStroke(1.dp, colors.border)
+                                        color = if (isEnabled) colors.surfaceCard else colors.surfaceCard.copy(alpha = 0.4f),
+                                        border = BorderStroke(
+                                            1.dp,
+                                            if (isEnabled) AccentEmerald.copy(alpha = 0.35f) else colors.border
+                                        ),
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .clickable {
+                                                val newState = !isEnabled
+                                                viewModel.toggleSender(config.id, newState)
+                                                Toast.makeText(
+                                                    context,
+                                                    "${config.displayName}: ${if (newState) "Enabled" else "Disabled"}",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                            .testTag("quick_sender_chip_${config.id}")
                                     ) {
-                                        Text(
-                                            text = sender,
-                                            fontSize = 10.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontWeight = FontWeight.Medium,
-                                            color = colors.textSecondary,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(4.dp)
+                                                    .clip(CircleShape)
+                                                    .background(if (isEnabled) AccentEmerald else colors.textMuted.copy(alpha = 0.5f))
+                                            )
+                                            Text(
+                                                text = config.id,
+                                                fontSize = 10.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontWeight = FontWeight.Medium,
+                                                color = if (isEnabled) colors.textPrimary else colors.textMuted
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -784,7 +814,9 @@ fun DashboardScreen(
                         "BKASH" to "bKash",
                         "NAGAD" to "Nagad",
                         "ROCKET" to "Rocket",
-                        "UPAY" to "Upay"
+                        "UPAY" to "Upay",
+                        "TAP" to "TAP",
+                        "IBBL" to "Islami Bank"
                     )
 
                     providers.forEach { (key, displayName) ->

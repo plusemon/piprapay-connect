@@ -146,6 +146,8 @@ object MfsSmsParser {
                 ?: parseFallback(messageBody, "ROCKET", senderAddress, smsTimestamp)
             "UPAY" -> parseUpay(messageBody, senderAddress, smsTimestamp)
                 ?: parseFallback(messageBody, "UPAY", senderAddress, smsTimestamp)
+            "TAP" -> parseFallback(messageBody, "TAP", senderAddress, smsTimestamp)
+            "IBBL" -> parseFallback(messageBody, "IBBL", senderAddress, smsTimestamp)
             else -> parseFallback(messageBody, "MFS", senderAddress, smsTimestamp)
         }
     }
@@ -159,6 +161,8 @@ object MfsSmsParser {
             sender.contains("nagad") || body.contains("nagad") -> "NAGAD"
             sender.contains("rocket") || sender.contains("16216") || body.contains("rocket") || body.contains("dbbl") -> "ROCKET"
             sender.contains("upay") || body.contains("upay") -> "UPAY"
+            sender.contains("tap") || body.contains("tap") -> "TAP"
+            sender.contains("ibbl") || body.contains("ibbl") || body.contains("islami bank") -> "IBBL"
             else -> "UNKNOWN"
         }
     }

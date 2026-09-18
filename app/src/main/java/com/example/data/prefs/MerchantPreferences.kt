@@ -24,7 +24,11 @@ class MerchantPreferences private constructor(context: Context) {
             prefs.edit().putString(KEY_DEVICE_KEY, deviceKey).apply()
         }
 
-        val sendersRaw = prefs.getString(KEY_WHITELISTED_SENDERS, "") ?: ""
+        val sendersRaw = if (prefs.contains(KEY_WHITELISTED_SENDERS)) {
+            prefs.getString(KEY_WHITELISTED_SENDERS, "") ?: ""
+        } else {
+            DEFAULT_SENDERS.joinToString(",")
+        }
         val sendersList = if (sendersRaw.isBlank()) emptyList() else sendersRaw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
 
         return MerchantSettings(
@@ -61,8 +65,67 @@ class MerchantPreferences private constructor(context: Context) {
     fun getAccountName(): String = prefs.getString(KEY_ACCOUNT_NAME, "") ?: ""
     fun getAccountEmail(): String = prefs.getString(KEY_ACCOUNT_EMAIL, "") ?: ""
     fun getWhitelistedSenders(): List<String> {
-        val raw = prefs.getString(KEY_WHITELISTED_SENDERS, "") ?: ""
+        val raw = if (prefs.contains(KEY_WHITELISTED_SENDERS)) {
+            prefs.getString(KEY_WHITELISTED_SENDERS, "") ?: ""
+        } else {
+            DEFAULT_SENDERS.joinToString(",")
+        }
         return if (raw.isBlank()) emptyList() else raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    }
+
+    fun setWhitelistedSenders(senders: List<String>) {
+        prefs.edit().putString(KEY_WHITELISTED_SENDERS, senders.joinToString(",")).apply()
+        _settingsFlow.value = loadSettings()
+    }
+
+    fun isSenderEnabled(senderId: String): Boolean {
+        val senders = getWhitelistedSenders()
+        val matchingConfig = SUPPORTED_MFS_SENDERS.firstOrNull { it.id.equals(senderId, ignoreCase = true) }
+        return if (matchingConfig != null) {
+            senders.any { s ->
+                s.equals(matchingConfig.id, ignoreCase = true) ||
+                s.equals(matchingConfig.primaryAlias, ignoreCase = true) ||
+                matchingConfig.allAliases.any { it.equals(s, ignoreCase = true) }
+            }
+        } else {
+            senders.any { it.equals(senderId, ignoreCase = true) }
+        }
+    }
+
+    fun toggleSender(senderId: String, enable: Boolean) {
+        val current = getWhitelistedSenders().toMutableList()
+        val matchingConfig = SUPPORTED_MFS_SENDERS.firstOrNull { it.id.equals(senderId, ignoreCase = true) }
+        val keysToRemove = matchingConfig?.let { listOf(it.id, it.primaryAlias) + it.allAliases } ?: listOf(senderId)
+
+        current.removeAll { key -> keysToRemove.any { it.equals(key, ignoreCase = true) } }
+        if (enable) {
+            val keyToAdd = matchingConfig?.primaryAlias ?: senderId
+            current.add(keyToAdd)
+        }
+        setWhitelistedSenders(current)
+    }
+
+    fun isSenderAllowed(originatingAddress: String?): Boolean {
+        if (originatingAddress.isNullOrBlank()) return false
+        val addr = originatingAddress.lowercase().trim()
+        val activeSenders = getWhitelistedSenders()
+        if (activeSenders.isEmpty()) return false
+
+        for (config in SUPPORTED_MFS_SENDERS) {
+            if (isSenderEnabled(config.id)) {
+                if (config.allAliases.any { alias -> addr.contains(alias.lowercase()) }) {
+                    return true
+                }
+            }
+        }
+
+        // Also check any custom senders in whitelist
+        for (sender in activeSenders) {
+            if (addr.contains(sender.lowercase())) {
+                return true
+            }
+        }
+        return false
     }
     fun getDeviceName(): String = prefs.getString(KEY_DEVICE_NAME, getDefaultDeviceName()) ?: getDefaultDeviceName()
     fun getDeviceModel(): String = android.os.Build.MODEL ?: "Android"
@@ -255,6 +318,54 @@ class MerchantPreferences private constructor(context: Context) {
     }
 }
 
+data class MfsSenderConfig(
+    val id: String,
+    val displayName: String,
+    val primaryAlias: String,
+    val allAliases: List<String>
+)
+
+val SUPPORTED_MFS_SENDERS: List<MfsSenderConfig> = listOf(
+    MfsSenderConfig(
+        id = "bkash",
+        displayName = "bKash",
+        primaryAlias = "bkash",
+        allAliases = listOf("bkash", "bKash")
+    ),
+    MfsSenderConfig(
+        id = "nagad",
+        displayName = "Nagad",
+        primaryAlias = "nagad",
+        allAliases = listOf("nagad", "NAGAD")
+    ),
+    MfsSenderConfig(
+        id = "rocket",
+        displayName = "Rocket",
+        primaryAlias = "16216",
+        allAliases = listOf("16216", "rocket", "DBBL", "dbbl")
+    ),
+    MfsSenderConfig(
+        id = "upay",
+        displayName = "Upay",
+        primaryAlias = "upay",
+        allAliases = listOf("upay", "Upay")
+    ),
+    MfsSenderConfig(
+        id = "tap",
+        displayName = "TAP",
+        primaryAlias = "tap",
+        allAliases = listOf("tap", "TAP")
+    ),
+    MfsSenderConfig(
+        id = "ibbl",
+        displayName = "Islami Bank",
+        primaryAlias = "ibbl",
+        allAliases = listOf("ibbl", "IBBL", "islami bank")
+    )
+)
+
+val DEFAULT_SENDERS: List<String> = listOf("bkash", "nagad", "16216", "upay", "tap", "ibbl")
+
 data class MerchantSettings(
     val serverBaseUrl: String = MerchantPreferences.DEFAULT_BASE_URL,
     val apiKey: String = "",
@@ -263,7 +374,7 @@ data class MerchantSettings(
     val sessionToken: String = "",
     val accountName: String = "",
     val accountEmail: String = "",
-    val whitelistedSenders: List<String> = emptyList(),
+    val whitelistedSenders: List<String> = DEFAULT_SENDERS,
     val deviceName: String = "",
     val deviceModel: String = "",
     val androidLevel: String = "",

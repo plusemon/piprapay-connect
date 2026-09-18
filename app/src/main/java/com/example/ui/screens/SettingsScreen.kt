@@ -52,6 +52,8 @@ import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -68,6 +70,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -93,15 +96,19 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.BuildConfig
+import com.example.data.prefs.SUPPORTED_MFS_SENDERS
 import com.example.service.PipraPayService
 import com.example.ui.components.OemOptimizationModal
 import com.example.ui.components.PipraPayIcon
 import com.example.ui.theme.AccentEmerald
+import com.example.ui.theme.AccentRose
 import com.example.ui.theme.BorderZinc800
 import com.example.ui.theme.BorderZinc700
 import com.example.ui.theme.CanvasBlack
 import com.example.ui.theme.ContainerDark
 import com.example.ui.theme.EmeraldPrimary
+import com.example.ui.theme.GhostEmeraldBg
+import com.example.ui.theme.GhostEmeraldBorder
 import com.example.ui.theme.GhostRoseBg
 import com.example.ui.theme.GhostRoseBorder
 import com.example.ui.theme.PipraTheme
@@ -130,6 +137,8 @@ fun SettingsScreen(
     val connectionState by viewModel.connectionTestState.collectAsStateWithLifecycle()
     val settingsSaveState by viewModel.settingsSaveState.collectAsStateWithLifecycle()
     val isSaving = settingsSaveState is SettingsSaveState.Loading
+    val stats by viewModel.stats.collectAsStateWithLifecycle()
+    val accountInfo by viewModel.accountInfo.collectAsStateWithLifecycle()
     val colors = PipraTheme.colors
 
     var serverUrl by remember(settings.serverBaseUrl) { mutableStateOf(settings.serverBaseUrl) }
@@ -137,6 +146,9 @@ fun SettingsScreen(
     var deviceKey by remember(settings.deviceKey) { mutableStateOf(settings.deviceKey) }
     var isApiKeyVisible by remember { mutableStateOf(false) }
     var showOemModal by remember { mutableStateOf(false) }
+    var showDisconnectDialog by remember { mutableStateOf(false) }
+    var showClearLogsDialog by remember { mutableStateOf(false) }
+    var isSyncingSenders by remember { mutableStateOf(false) }
 
     // Check system permissions dynamically
     var hasSmsReceive by remember {
@@ -179,6 +191,175 @@ fun SettingsScreen(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Merchant Profile Header Card (Primary Account Identifier Card)
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("merchant_profile_card"),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = colors.container),
+                border = BorderStroke(1.dp, colors.border),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            // Merchant Avatar placeholder with initials or merchant icon
+                            val initials = remember(settings.accountName, accountInfo?.fullname) {
+                                val name = (accountInfo?.fullname ?: settings.accountName).trim()
+                                if (name.isNotBlank()) {
+                                    val parts = name.split(" ").filter { it.isNotBlank() }
+                                    if (parts.size >= 2) {
+                                        "${parts[0].first()}${parts[1].first()}".uppercase()
+                                    } else {
+                                        name.take(2).uppercase()
+                                    }
+                                } else "PP"
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(CircleShape)
+                                    .background(if (colors.isDark) Color(0xFF27272A) else Color(0xFFF1F5F9)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = initials,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (colors.isDark) Color.White else Color(0xFF0F172A)
+                                )
+                            }
+
+                            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                val displayName = (accountInfo?.fullname ?: settings.accountName).ifBlank { "Merchant Node" }
+                                val displayEmailOrHost = (accountInfo?.email ?: settings.accountEmail).ifBlank {
+                                    settings.serverBaseUrl.removePrefix("https://").removePrefix("http://").trimEnd('/')
+                                }
+
+                                Text(
+                                    text = displayName,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colors.textPrimary,
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = displayEmailOrHost,
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = colors.textMuted,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+
+                        // Refresh companion account data
+                        IconButton(
+                            onClick = {
+                                viewModel.refreshCompanionData()
+                                Toast.makeText(context, "Refreshing merchant profile...", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = "Refresh Profile",
+                                tint = colors.textMuted,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(color = colors.border, thickness = 1.dp)
+
+                    // Badges row: Active Host badge & Stats chips
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Active Host Badge
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = GhostEmeraldBg,
+                            border = BorderStroke(1.dp, GhostEmeraldBorder)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(AccentEmerald)
+                                )
+                                Text(
+                                    text = "Active Host",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.3.sp,
+                                    color = AccentEmerald
+                                )
+                            }
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Quick stats chip (Total Synced)
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = colors.surfaceCard,
+                                border = BorderStroke(1.dp, colors.border)
+                            ) {
+                                Text(
+                                    text = "${stats.syncedCount} Synced",
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Medium,
+                                    color = colors.textSecondary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+
+                            // Device Key Chip
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = colors.surfaceCard,
+                                border = BorderStroke(1.dp, colors.border)
+                            ) {
+                                Text(
+                                    text = settings.deviceKey.takeLast(8),
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Medium,
+                                    color = colors.textMuted,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // 0. Theme & Appearance Section (Preferences DataStore)
         item {
             SettingsSectionHeader(title = "APPEARANCE & DISPLAY")
@@ -761,6 +942,171 @@ fun SettingsScreen(
             }
         }
 
+        // Dedicated "SMS SENDER ROUTING" Section
+        item {
+            SettingsSectionHeader(title = "SMS SENDER ROUTING")
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("sms_sender_routing_card"),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = colors.container),
+                border = BorderStroke(1.dp, colors.border),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Real-time Telephony Filter",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.textSubtle,
+                        letterSpacing = 0.5.sp
+                    )
+
+                    SUPPORTED_MFS_SENDERS.forEachIndexed { index, config ->
+                        val isEnabled = viewModel.isSenderEnabled(config.id)
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                // Active status indicator dot (Emerald dot for enabled, Muted for disabled)
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isEnabled) AccentEmerald else colors.textMuted.copy(alpha = 0.4f))
+                                )
+
+                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = config.displayName,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (isEnabled) colors.textPrimary else colors.textMuted
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = colors.surfaceCard,
+                                            border = BorderStroke(1.dp, colors.border)
+                                        ) {
+                                            Text(
+                                                text = config.allAliases.joinToString(", "),
+                                                fontSize = 10.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontWeight = FontWeight.Medium,
+                                                color = colors.textMuted,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Text(
+                                        text = if (isEnabled) "Active: routes & forwards SMS packets" else "Disabled: discarded before regex parsing",
+                                        fontSize = 11.sp,
+                                        color = colors.textMuted
+                                    )
+                                }
+                            }
+
+                            Switch(
+                                checked = isEnabled,
+                                onCheckedChange = { enabled ->
+                                    viewModel.toggleSender(config.id, enabled)
+                                    Toast.makeText(
+                                        context,
+                                        "${config.displayName} ${if (enabled) "enabled" else "disabled"}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                modifier = Modifier.testTag("sender_toggle_${config.id}"),
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = AccentEmerald,
+                                    uncheckedThumbColor = colors.textMuted,
+                                    uncheckedTrackColor = colors.border
+                                )
+                            )
+                        }
+
+                        if (index < SUPPORTED_MFS_SENDERS.lastIndex) {
+                            HorizontalDivider(color = colors.border, thickness = 1.dp)
+                        }
+                    }
+
+                    HorizontalDivider(color = colors.border, thickness = 1.dp)
+
+                    // Action Button at bottom of card: "Sync Senders from Panel"
+                    OutlinedButton(
+                        onClick = {
+                            isSyncingSenders = true
+                            viewModel.syncSendersFromPanel(
+                                onSuccess = { count ->
+                                    isSyncingSenders = false
+                                    Toast.makeText(context, "Synced $count senders from panel", Toast.LENGTH_SHORT).show()
+                                },
+                                onFailure = { err ->
+                                    isSyncingSenders = false
+                                    Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        },
+                        enabled = !isSyncingSenders,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp)
+                            .testTag("sync_senders_button"),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = colors.surfaceCard,
+                            contentColor = colors.textPrimary
+                        ),
+                        border = BorderStroke(1.dp, colors.border)
+                    ) {
+                        if (isSyncingSenders) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                strokeWidth = 2.dp,
+                                color = AccentEmerald
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Syncing Senders...", fontSize = 12.sp, color = colors.textMuted)
+                        } else {
+                            Icon(
+                                Icons.Default.Sync,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = colors.textPrimary
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                "Sync Senders from Panel",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.textPrimary
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         // Alerts & Audio Feedback Section
         item {
             SettingsSectionHeader(title = "ALERTS & AUDIO FEEDBACK")
@@ -973,7 +1319,7 @@ fun SettingsScreen(
             }
         }
 
-        // 4. Panel Connection & Reset Card
+        // 4. Panel Session Management Card
         item {
             SettingsSectionHeader(title = "PANEL SESSION")
 
@@ -981,13 +1327,16 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("onboarding_management_card"),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = colors.container),
                 border = BorderStroke(1.dp, colors.border),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    // Re-run setup row
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Row 1: Setup Wizard (Re-run onboarding)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -997,11 +1346,11 @@ fun SettingsScreen(
                             Text(
                                 text = "Setup Wizard",
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = FontWeight.SemiBold,
                                 color = colors.textPrimary
                             )
                             Text(
-                                text = "Re-open initial configuration steps",
+                                text = "Re-open initial pairing and configuration steps",
                                 fontSize = 11.sp,
                                 color = colors.textMuted
                             )
@@ -1016,23 +1365,59 @@ fun SettingsScreen(
                             modifier = Modifier
                                 .height(32.dp)
                                 .testTag("rerun_onboarding_button"),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = colors.surfaceCard,
                                 contentColor = colors.textPrimary
                             ),
                             border = BorderStroke(1.dp, colors.border)
                         ) {
-                            Text("Restart", fontSize = 11.sp, color = colors.textPrimary)
+                            Text("Restart", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary)
                         }
                     }
 
-                    HorizontalDivider(
-                        color = colors.border,
-                        modifier = Modifier.padding(vertical = 10.dp)
-                    )
+                    HorizontalDivider(color = colors.border, thickness = 1.dp)
 
-                    // Disconnect / Switch Panel row
+                    // Row 2: Clear Local SMS Logs
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Clear Local SMS Logs",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.textPrimary
+                            )
+                            Text(
+                                text = "Wipe local transaction history, keep panel session",
+                                fontSize = 11.sp,
+                                color = colors.textMuted
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = { showClearLogsDialog = true },
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .height(32.dp)
+                                .testTag("clear_logs_button"),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = colors.surfaceCard,
+                                contentColor = AccentRose
+                            ),
+                            border = BorderStroke(1.dp, AccentRose.copy(alpha = 0.4f))
+                        ) {
+                            Text("Clear Logs", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = AccentRose)
+                        }
+                    }
+
+                    HorizontalDivider(color = colors.border, thickness = 1.dp)
+
+                    // Row 3: Switch Merchant Panel / Disconnect
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -1042,34 +1427,30 @@ fun SettingsScreen(
                             Text(
                                 text = "Switch Merchant Panel",
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = FontWeight.SemiBold,
                                 color = colors.textPrimary
                             )
                             Text(
-                                text = "Disconnect and link a new account",
+                                text = "Disconnect node and purge credentials",
                                 fontSize = 11.sp,
                                 color = colors.textMuted
                             )
                         }
 
                         OutlinedButton(
-                            onClick = {
-                                viewModel.updateSettings("https://api.piprapay.com/", "", viewModel.generateNewDeviceKey())
-                                viewModel.resetOnboarding()
-                                Toast.makeText(context, "Disconnected panel", Toast.LENGTH_SHORT).show()
-                            },
+                            onClick = { showDisconnectDialog = true },
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier
                                 .height(32.dp)
                                 .testTag("switch_panel_button"),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = colors.surfaceCard,
-                                contentColor = StatusFailed
+                                contentColor = AccentRose
                             ),
-                            border = BorderStroke(1.dp, StatusFailed.copy(alpha = 0.4f))
+                            border = BorderStroke(1.dp, AccentRose.copy(alpha = 0.4f))
                         ) {
-                            Text("Disconnect", fontSize = 11.sp)
+                            Text("Disconnect", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = AccentRose)
                         }
                     }
                 }
@@ -1518,6 +1899,90 @@ fun SettingsScreen(
 
     if (showOemModal) {
         OemOptimizationModal(onDismiss = { showOemModal = false })
+    }
+
+    if (showDisconnectDialog) {
+        AlertDialog(
+            onDismissRequest = { showDisconnectDialog = false },
+            title = {
+                Text(
+                    text = "Disconnect Merchant Panel?",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = colors.textPrimary
+                )
+            },
+            text = {
+                Text(
+                    text = "This will purge your API key, device credentials, and session token, and immediately stop the background SMS listener service.",
+                    fontSize = 13.sp,
+                    color = colors.textMuted
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDisconnectDialog = false
+                        viewModel.disconnectMerchantSession {
+                            Toast.makeText(context, "Merchant panel disconnected", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRose),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Disconnect", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDisconnectDialog = false }) {
+                    Text("Cancel", color = colors.textPrimary, fontSize = 12.sp)
+                }
+            },
+            containerColor = colors.container,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    if (showClearLogsDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearLogsDialog = false },
+            title = {
+                Text(
+                    text = "Clear Local SMS Logs?",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = colors.textPrimary
+                )
+            },
+            text = {
+                Text(
+                    text = "This will wipe all locally stored transaction records from the database. Your merchant connection, API keys, and device routing settings will remain intact.",
+                    fontSize = 13.sp,
+                    color = colors.textMuted
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showClearLogsDialog = false
+                        viewModel.clearLocalSmsLogs {
+                            Toast.makeText(context, "Local transaction logs wiped", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRose),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Clear Logs", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearLogsDialog = false }) {
+                    Text("Cancel", color = colors.textPrimary, fontSize = 12.sp)
+                }
+            },
+            containerColor = colors.container,
+            shape = RoundedCornerShape(16.dp)
+        )
     }
 }
 
