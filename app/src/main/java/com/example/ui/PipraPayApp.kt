@@ -174,7 +174,7 @@ fun PipraPayApp(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = CanvasBlack
+                        containerColor = MaterialTheme.colorScheme.background
                     )
                 )
             }
@@ -185,8 +185,8 @@ fun PipraPayApp(
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("bottom_nav_bar"),
-                    color = CanvasBlack.copy(alpha = 0.92f),
-                    border = BorderStroke(1.dp, BorderZinc800.copy(alpha = 0.85f))
+                    color = MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.85f))
                 ) {
                     Row(
                         modifier = Modifier
@@ -224,7 +224,7 @@ fun PipraPayApp(
                                         .width(24.dp)
                                         .height(2.dp)
                                         .clip(RoundedCornerShape(1.dp))
-                                        .background(if (isSelected) TextWhite else Color.Transparent)
+                                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
                                 )
 
                                 Column(
@@ -234,14 +234,14 @@ fun PipraPayApp(
                                     Icon(
                                         imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
                                         contentDescription = destination.title,
-                                        tint = if (isSelected) TextWhite else TextZinc500,
+                                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Text(
                                         text = destination.title,
                                         fontSize = 11.sp,
                                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                        color = if (isSelected) TextWhite else TextZinc500
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
 

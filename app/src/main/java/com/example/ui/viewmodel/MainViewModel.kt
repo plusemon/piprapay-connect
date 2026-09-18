@@ -7,6 +7,7 @@ import com.example.data.api.HandshakeVerificationResponse
 import com.example.data.model.TransactionEntity
 import com.example.data.prefs.MerchantPreferences
 import com.example.data.prefs.MerchantSettings
+import com.example.data.prefs.ThemePreferences
 import com.example.data.repository.ConnectionTestResult
 import com.example.data.repository.TransactionRepository
 import com.example.parser.MfsSmsParser
@@ -33,8 +34,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = TransactionRepository(application)
     private val prefs = MerchantPreferences.getInstance(application)
+    private val themePreferences = ThemePreferences.getInstance(application)
 
     val settings: StateFlow<MerchantSettings> = repository.settingsFlow
+
+    val isDarkMode: StateFlow<Boolean> = themePreferences.isDarkModeFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
 
     // Tracks latest verified wallet balance per provider (matching PipraPay pp_balance_verification)
     val latestBalances: StateFlow<Map<String, Double>> = repository.allTransactions.map { list ->
@@ -474,6 +483,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setAudioToneEnabled(enabled: Boolean) {
         prefs.setAudioToneEnabled(enabled)
+    }
+
+    fun setDarkMode(enabled: Boolean) {
+        viewModelScope.launch {
+            themePreferences.setDarkMode(enabled)
+        }
+    }
+
+    fun toggleDarkMode() {
+        viewModelScope.launch {
+            themePreferences.setDarkMode(!isDarkMode.value)
+        }
     }
 
     fun testAlertFeedback() {

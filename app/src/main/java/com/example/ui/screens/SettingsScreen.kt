@@ -33,9 +33,11 @@ import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Power
@@ -102,6 +104,7 @@ import com.example.ui.theme.ContainerDark
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.GhostRoseBg
 import com.example.ui.theme.GhostRoseBorder
+import com.example.ui.theme.PipraTheme
 import com.example.ui.theme.StatusFailed
 import com.example.ui.theme.StatusPending
 import com.example.ui.theme.StatusSynced
@@ -122,6 +125,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
     val isBatteryOptimized by viewModel.isBatteryOptimizationIgnored.collectAsStateWithLifecycle()
     val connectionState by viewModel.connectionTestState.collectAsStateWithLifecycle()
     val settingsSaveState by viewModel.settingsSaveState.collectAsStateWithLifecycle()
@@ -169,11 +173,107 @@ fun SettingsScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CanvasBlack)
+            .background(MaterialTheme.colorScheme.background)
             .testTag("settings_screen"),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // 0. Theme & Appearance Section (Preferences DataStore)
+        item {
+            SettingsSectionHeader(title = "APPEARANCE & DISPLAY")
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("appearance_card"),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (isDarkMode) Color(0xFF6366F1).copy(alpha = 0.15f)
+                                        else Color(0xFFF59E0B).copy(alpha = 0.15f)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                                    contentDescription = "Theme Icon",
+                                    tint = if (isDarkMode) Color(0xFF818CF8) else Color(0xFFD97706),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = "Dark Mode",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = if (isDarkMode) Color(0xFF27272A) else Color(0xFFE2E8F0)
+                                    ) {
+                                        Text(
+                                            text = if (isDarkMode) "DARK" else "LIGHT",
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isDarkMode) Color(0xFFA1A1AA) else Color(0xFF475569)
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = if (isDarkMode)
+                                        "High-contrast dark canvas enabled across all screens"
+                                    else
+                                        "Clean high-readability light canvas active",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Switch(
+                            checked = isDarkMode,
+                            onCheckedChange = { viewModel.setDarkMode(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = AccentEmerald,
+                                uncheckedThumbColor = Color.White,
+                                uncheckedTrackColor = if (isDarkMode) Color(0xFF3F3F46) else Color(0xFFCBD5E1)
+                            ),
+                            modifier = Modifier.testTag("dark_mode_toggle")
+                        )
+                    }
+                }
+            }
+        }
+
         // 1. PipraPay API & Server Configuration Section
         item {
             SettingsSectionHeader(title = "ENDPOINT CONFIGURATION")

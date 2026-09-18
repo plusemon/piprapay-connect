@@ -12,15 +12,28 @@ val ContainerDark = Color(0xFF121215)     // Cards & primary containers (#121215
 val SurfaceCard = Color(0xFF18181B)       // Elevated surfaces & wallet cards (zinc-900: #18181b)
 val SurfaceCardMuted = Color(0xFF151518)  // Secondary surface
 
+// Light Mode Tokens
+val CanvasWhite = Color(0xFFF8FAFC)       // Crisp light slate background (#f8fafc)
+val ContainerLight = Color(0xFFFFFFFF)    // Pure white cards & containers (#ffffff)
+val SurfaceCardLight = Color(0xFFF1F5F9)  // Elevated light surfaces (slate-100: #f1f5f9)
+val SurfaceCardMutedLight = Color(0xFFE2E8F0) // Secondary light surface (#e2e8f0)
+
 // Crisp 1px Borders
 val BorderZinc800 = Color(0xFF27272A)     // 1px crisp border (zinc-800: #27272a)
 val BorderZinc700 = Color(0xFF3F3F46)     // Focused / interactive border (zinc-700: #3f3f46)
+val BorderLight = Color(0xFFE2E8F0)       // 1px crisp light border (#e2e8f0)
+val BorderLightInteractive = Color(0xFFCBD5E1) // Interactive light border (#cbd5e1)
 
 // Typography
 val TextWhite = Color(0xFFFAFAFA)         // High-contrast pure white (#fafafa)
 val TextZinc300 = Color(0xFFD4D4D8)       // Neutral light gray (#d4d4d8)
 val TextZinc400 = Color(0xFFA1A1AA)       // Cool gray (#a1a1aa)
 val TextZinc500 = Color(0xFF71717A)       // Muted cool zinc (#71717a)
+
+val TextBlack = Color(0xFF09090B)         // High-contrast dark text (#09090b)
+val TextSlate700 = Color(0xFF334155)      // Slate dark secondary text (#334155)
+val TextSlate500 = Color(0xFF64748B)      // Slate muted text (#64748b)
+val TextSlate400 = Color(0xFF94A3B8)      // Slate subtle text (#94a3b8)
 
 // Restrained Micro-Accents & Status (Small pulse dots or ghost badges 10% tint)
 val AccentEmerald = Color(0xFF10B981)     // Online / Active: Emerald (#10b981)

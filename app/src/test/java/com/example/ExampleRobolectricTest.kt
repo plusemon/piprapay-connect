@@ -10,10 +10,16 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
+import com.example.data.prefs.ThemePreferences
 import com.example.ui.screens.OnboardingScreen
+import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.MainViewModel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -132,5 +138,40 @@ class ExampleRobolectricTest {
         assertEquals(1, parsed.length())
         assertEquals("9ABC123XYZ", parsed.getJSONObject(0).getString("id"))
         assertEquals("BKASH", parsed.getJSONObject(0).getString("sender"))
+    }
+
+    @Test
+    fun `theme preferences persists and emits dark mode state via datastore`() = runBlocking {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        val themePrefs = ThemePreferences.getInstance(app)
+
+        // Set to true and verify
+        themePrefs.setDarkMode(true)
+        assertTrue(themePrefs.isDarkModeFlow.first())
+
+        // Set to false and verify
+        themePrefs.setDarkMode(false)
+        assertFalse(themePrefs.isDarkModeFlow.first())
+
+        // Reset to true
+        themePrefs.setDarkMode(true)
+        assertTrue(themePrefs.isDarkModeFlow.first())
+    }
+
+    @Test
+    fun `settings screen displays dark mode toggle and updates viewmodel`() {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        val viewModel = MainViewModel(app)
+
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                SettingsScreen(viewModel = viewModel)
+            }
+        }
+
+        // Verify dark mode toggle switch is displayed on screen
+        composeTestRule.onNodeWithTag("dark_mode_toggle").assertIsEnabled()
+        composeTestRule.onNodeWithTag("dark_mode_toggle").performClick()
+        composeTestRule.waitForIdle()
     }
 }

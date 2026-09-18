@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -163,7 +164,7 @@ fun PipraPayLogoLockup(
                     fontWeight = FontWeight.Bold,
                     fontSize = titleFontSize.sp,
                     letterSpacing = (-0.5).sp,
-                    color = TextWhite
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = "Connect",
@@ -179,7 +180,7 @@ fun PipraPayLogoLockup(
                     text = subtitle,
                     fontSize = subtitleFontSize.sp,
                     fontWeight = FontWeight.Medium,
-                    color = TextZinc400
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

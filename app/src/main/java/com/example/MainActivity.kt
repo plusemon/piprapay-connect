@@ -41,7 +41,8 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            ThemeProvider {
+            val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
+            ThemeProvider(darkTheme = isDarkMode) {
                 PipraPayApp(viewModel = viewModel)
             }
         }
