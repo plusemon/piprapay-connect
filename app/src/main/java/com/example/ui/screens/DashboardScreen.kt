@@ -453,7 +453,9 @@ fun DashboardScreen(
                                     letterSpacing = 0.8.sp
                                 )
 
-                                SUPPORTED_MFS_SENDERS.forEach { config ->
+                                val gateways = if (settings.gatewayGroups.isNotEmpty()) settings.gatewayGroups else SUPPORTED_MFS_SENDERS
+
+                                gateways.forEach { config ->
                                     val isEnabled = viewModel.isSenderEnabled(config.id)
                                     Surface(
                                         shape = RoundedCornerShape(6.dp),

@@ -523,19 +523,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun syncSendersFromPanel(
-        onSuccess: (count: Int) -> Unit = {},
+        onSuccess: (com.example.data.prefs.SyncSendersResult) -> Unit = {},
         onFailure: (String) -> Unit = {}
     ) {
         viewModelScope.launch {
             try {
                 val senders = repository.refreshWhitelistedSenders()
-                if (senders.isNotEmpty()) {
-                    onSuccess(senders.size)
-                } else {
-                    val defaults = com.example.data.prefs.DEFAULT_SENDERS
-                    prefs.setWhitelistedSenders(defaults)
-                    onSuccess(defaults.size)
+                val effectiveSenders = if (senders.isNotEmpty()) senders else com.example.data.prefs.DEFAULT_SENDERS
+                if (senders.isEmpty()) {
+                    prefs.setWhitelistedSenders(effectiveSenders)
                 }
+                val result = prefs.calculateSyncResult(effectiveSenders)
+                onSuccess(result)
             } catch (e: Exception) {
                 onFailure(e.message ?: "Failed to sync senders from panel")
             }

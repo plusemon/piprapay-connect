@@ -967,7 +967,9 @@ fun SettingsScreen(
                         letterSpacing = 0.5.sp
                     )
 
-                    SUPPORTED_MFS_SENDERS.forEachIndexed { index, config ->
+                    val gateways = if (settings.gatewayGroups.isNotEmpty()) settings.gatewayGroups else SUPPORTED_MFS_SENDERS
+
+                    gateways.forEachIndexed { index, config ->
                         val isEnabled = viewModel.isSenderEnabled(config.id)
 
                         Row(
@@ -1045,7 +1047,7 @@ fun SettingsScreen(
                             )
                         }
 
-                        if (index < SUPPORTED_MFS_SENDERS.lastIndex) {
+                        if (index < gateways.lastIndex) {
                             HorizontalDivider(color = colors.border, thickness = 1.dp)
                         }
                     }
@@ -1057,9 +1059,9 @@ fun SettingsScreen(
                         onClick = {
                             isSyncingSenders = true
                             viewModel.syncSendersFromPanel(
-                                onSuccess = { count ->
+                                onSuccess = { result ->
                                     isSyncingSenders = false
-                                    Toast.makeText(context, "Synced $count senders from panel", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
                                 },
                                 onFailure = { err ->
                                     isSyncingSenders = false
