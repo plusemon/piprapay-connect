@@ -128,6 +128,7 @@ fun DashboardScreen(
     val isBatteryOptimized by viewModel.isBatteryOptimizationIgnored.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val transactions by viewModel.filteredTransactions.collectAsStateWithLifecycle()
+    val recentTransactions by viewModel.recentTransactions.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val providerFilter by viewModel.selectedProviderFilter.collectAsStateWithLifecycle()
     val statusFilter by viewModel.selectedStatusFilter.collectAsStateWithLifecycle()
@@ -872,21 +873,28 @@ fun DashboardScreen(
             }
         }
 
-        // Section Title: Recent Transactions
+        // Section Title: Live Transaction Activity Feed (Feature 3)
         item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 4.dp),
+                    .padding(top = 4.dp)
+                    .testTag("live_activity_feed_header"),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(if (isServiceRunning) AccentEmerald else TextZinc500)
+                    )
                     Text(
-                        text = "Transactions",
+                        text = "Live Activity Feed",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextWhite

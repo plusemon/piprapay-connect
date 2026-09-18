@@ -30,6 +30,7 @@ class TransactionRepository(private val context: Context) {
     private val prefs = MerchantPreferences.getInstance(context)
 
     val allTransactions: Flow<List<TransactionEntity>> = dao.getAllTransactionsFlow()
+    val recentTransactions: Flow<List<TransactionEntity>> = dao.getRecentTransactionsFlow(10)
     val pendingCount: Flow<Int> = dao.getPendingCountFlow()
     val totalCount: Flow<Int> = dao.getTransactionCountFlow()
     val settingsFlow: StateFlow<MerchantSettings> = prefs.settingsFlow

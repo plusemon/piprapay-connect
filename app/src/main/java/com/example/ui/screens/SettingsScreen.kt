@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Power
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
@@ -61,6 +62,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -88,6 +91,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.BuildConfig
 import com.example.service.PipraPayService
+import com.example.ui.components.OemOptimizationModal
 import com.example.ui.components.PipraPayIcon
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.StatusFailed
@@ -111,6 +115,7 @@ fun SettingsScreen(
     var apiKey by remember(settings.apiKey) { mutableStateOf(settings.apiKey) }
     var deviceKey by remember(settings.deviceKey) { mutableStateOf(settings.deviceKey) }
     var isApiKeyVisible by remember { mutableStateOf(false) }
+    var showOemModal by remember { mutableStateOf(false) }
 
     // Check system permissions dynamically
     var hasSmsReceive by remember {
@@ -392,95 +397,268 @@ fun SettingsScreen(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (isBatteryOptimized) StatusSynced.copy(alpha = 0.12f)
-                                else StatusPending.copy(alpha = 0.12f)
-                            ),
-                        contentAlignment = Alignment.Center
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            if (isBatteryOptimized) Icons.Default.BatteryChargingFull else Icons.Default.Power,
-                            contentDescription = null,
-                            tint = if (isBatteryOptimized) StatusSynced else StatusPending,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Battery Optimization",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = if (isBatteryOptimized) "Exempted • Continuous sync active" else "Restricted • OEM sleep may kill sync",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    if (isBatteryOptimized) {
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = StatusSynced.copy(alpha = 0.12f),
-                            border = BorderStroke(1.dp, StatusSynced.copy(alpha = 0.25f)),
-                            modifier = Modifier.testTag("open_battery_settings_button")
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isBatteryOptimized) StatusSynced.copy(alpha = 0.12f)
+                                    else StatusPending.copy(alpha = 0.12f)
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .clickable {
-                                        try {
-                                            context.startActivity(PipraPayService.getBatteryOptimizationIntent(context))
-                                        } catch (_: Exception) { }
-                                    }
-                                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            Icon(
+                                if (isBatteryOptimized) Icons.Default.BatteryChargingFull else Icons.Default.Power,
+                                contentDescription = null,
+                                tint = if (isBatteryOptimized) StatusSynced else StatusPending,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Battery Optimization",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (isBatteryOptimized) "Exempted • Continuous sync active" else "Restricted • OEM sleep may kill sync",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        if (isBatteryOptimized) {
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = StatusSynced.copy(alpha = 0.12f),
+                                border = BorderStroke(1.dp, StatusSynced.copy(alpha = 0.25f)),
+                                modifier = Modifier.testTag("open_battery_settings_button")
                             ) {
-                                Icon(
-                                    Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = StatusSynced,
-                                    modifier = Modifier.size(13.dp)
+                                Row(
+                                    modifier = Modifier
+                                        .clickable {
+                                            try {
+                                                context.startActivity(PipraPayService.getBatteryOptimizationIntent(context))
+                                            } catch (_: Exception) { }
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = StatusSynced,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Text(
+                                        text = "Exempt",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = StatusSynced
+                                    )
+                                }
+                            }
+                        } else {
+                            Button(
+                                onClick = {
+                                    try {
+                                        context.startActivity(PipraPayService.getBatteryOptimizationIntent(context))
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Settings error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = StatusPending),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                modifier = Modifier
+                                    .height(34.dp)
+                                    .testTag("open_battery_settings_button")
+                            ) {
+                                Text("Exempt", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f),
+                        modifier = Modifier.padding(vertical = 10.dp)
+                    )
+
+                    // OEM Workaround Guide row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "OEM Workaround Guide",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Xiaomi/MIUI, Samsung, Oppo & Vivo 24/7 background persistence",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = { showOemModal = true },
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .height(32.dp)
+                                .testTag("open_oem_modal_button"),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+                        ) {
+                            Text("Guide", fontSize = 11.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Alerts & Audio Feedback Section (Feature 6)
+        item {
+            SettingsSectionHeader(title = "ALERTS & AUDIO FEEDBACK")
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("alerts_feedback_card"),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    // Haptic Feedback Toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                Icons.Default.Smartphone,
+                                contentDescription = null,
+                                tint = if (settings.hapticEnabled) EmeraldPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Column {
+                                Text(
+                                    text = "Haptic Pulse",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Exempt",
+                                    text = "Sharp tactile vibration on incoming SMS capture",
                                     fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = StatusSynced
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
-                    } else {
-                        Button(
-                            onClick = {
-                                try {
-                                    context.startActivity(PipraPayService.getBatteryOptimizationIntent(context))
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, "Settings error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = StatusPending),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                            modifier = Modifier
-                                .height(34.dp)
-                                .testTag("open_battery_settings_button")
+
+                        Switch(
+                            checked = settings.hapticEnabled,
+                            onCheckedChange = { viewModel.setHapticEnabled(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = EmeraldPrimary,
+                                uncheckedThumbColor = Color(0xFF71717A),
+                                uncheckedTrackColor = Color(0xFF27272A)
+                            ),
+                            modifier = Modifier.testTag("haptic_toggle")
+                        )
+                    }
+
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f),
+                        modifier = Modifier.padding(vertical = 10.dp)
+                    )
+
+                    // Audio Tone Toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Text("Exempt", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Icon(
+                                Icons.Default.Notifications,
+                                contentDescription = null,
+                                tint = if (settings.audioToneEnabled) EmeraldPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Column {
+                                Text(
+                                    text = "Transaction POS Chime",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Crisp dual-tone sound when payment is parsed",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
+
+                        Switch(
+                            checked = settings.audioToneEnabled,
+                            onCheckedChange = { viewModel.setAudioToneEnabled(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = EmeraldPrimary,
+                                uncheckedThumbColor = Color(0xFF71717A),
+                                uncheckedTrackColor = Color(0xFF27272A)
+                            ),
+                            modifier = Modifier.testTag("audio_tone_toggle")
+                        )
+                    }
+
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f),
+                        modifier = Modifier.padding(vertical = 10.dp)
+                    )
+
+                    // Test Alert Button
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.testAlertFeedback()
+                            Toast.makeText(context, "Testing Alert Chime & Haptic...", Toast.LENGTH_SHORT).show()
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(36.dp)
+                            .testTag("test_alert_button"),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Test Chime & Haptic Pulse", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -716,6 +894,10 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+
+    if (showOemModal) {
+        OemOptimizationModal(onDismiss = { showOemModal = false })
     }
 }
 

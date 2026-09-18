@@ -224,17 +224,29 @@ private fun SystemReadinessStep(
         // Step indicator badge
         Surface(
             shape = RoundedCornerShape(20.dp),
-            color = BrandIndigo.copy(alpha = 0.10f),
+            color = com.example.ui.theme.SurfaceCard,
+            border = androidx.compose.foundation.BorderStroke(1.dp, com.example.ui.theme.BorderZinc800),
             modifier = Modifier.testTag("onboarding_step_badge")
         ) {
-            Text(
-                text = "STEP 1 OF 3 • GETTING READY",
+            Row(
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = BrandIndigo,
-                letterSpacing = 1.sp
-            )
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(StatusSynced)
+                )
+                Text(
+                    text = "STEP 1 OF 3 • GETTING READY",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = com.example.ui.theme.TextZinc300,
+                    letterSpacing = 1.sp
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -258,7 +270,7 @@ private fun SystemReadinessStep(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Preparing your phone as an automated 24/7 MFS Gateway Node for bKash, Nagad, Rocket & Upay.",
+            text = "Preparing your phone as an automated 24/7 MFS Payment Gateway Node for bKash, Nagad, Rocket & Upay.",
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -323,21 +335,24 @@ private fun SystemReadinessStep(
         Spacer(modifier = Modifier.weight(1f, fill = false))
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Continue Button
+        // Continue Button (solid crisp white)
         Button(
             onClick = onContinue,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
                 .testTag("continue_to_permissions_button"),
-            colors = ButtonDefaults.buttonColors(containerColor = BrandIndigo),
-            shape = RoundedCornerShape(26.dp)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White,
+                contentColor = Color.Black
+            ),
+            shape = RoundedCornerShape(12.dp)
         ) {
             Text(
                 text = "Continue to Permissions",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = Color.Black
             )
         }
 
@@ -612,12 +627,12 @@ private fun PermissionsSetupStep(
                 .height(52.dp)
                 .testTag("proceed_to_login_button"),
             colors = ButtonDefaults.buttonColors(
-                containerColor = BrandIndigo,
-                contentColor = Color.White,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                containerColor = Color.White,
+                contentColor = Color.Black,
+                disabledContainerColor = Color(0xFF27272A),
+                disabledContentColor = Color(0xFF71717A)
             ),
-            shape = RoundedCornerShape(26.dp)
+            shape = RoundedCornerShape(12.dp)
         ) {
             Text(
                 text = "Continue to Panel Login",

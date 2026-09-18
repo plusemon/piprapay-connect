@@ -16,6 +16,7 @@ import com.example.data.db.AppDatabase
 import com.example.data.model.TransactionEntity
 import com.example.parser.MfsSmsParser
 import com.example.sync.SyncWorker
+import com.example.util.AlertManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -63,6 +64,9 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
 
             if (parsed != null) {
                 Log.d(TAG, "MFS transaction recognized: ${parsed.provider} TrxID=${parsed.trxId} Amount=${parsed.amount} Balance=${parsed.balance}")
+
+                // Play POS audio chime and haptic feedback pulse on capture
+                AlertManager.playInflowAlert(context)
 
                 val pendingResult = goAsync()
                 receiverScope.launch {

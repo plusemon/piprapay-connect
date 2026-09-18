@@ -10,6 +10,7 @@ import com.example.data.repository.ConnectionTestResult
 import com.example.data.repository.TransactionRepository
 import com.example.parser.MfsSmsParser
 import com.example.service.PipraPayService
+import com.example.util.AlertManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -96,6 +97,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     val rawTransactions = repository.allTransactions
+    val recentTransactions: StateFlow<List<TransactionEntity>> = repository.recentTransactions.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     // Filtered transactions for UI list
     val filteredTransactions: StateFlow<List<TransactionEntity>> = combine(
@@ -320,6 +326,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun setHapticEnabled(enabled: Boolean) {
+        prefs.setHapticEnabled(enabled)
+    }
+
+    fun setAudioToneEnabled(enabled: Boolean) {
+        prefs.setAudioToneEnabled(enabled)
+    }
+
+    fun testAlertFeedback() {
+        AlertManager.triggerHapticPulse(getApplication())
+        AlertManager.playPosChime(getApplication())
+    }
+
     fun resetOnboarding() {
         viewModelScope.launch {
             repository.resetOnboarding()
@@ -332,6 +351,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun simulateIncomingSms(senderAddress: String, body: String): Boolean {
         val parsed = MfsSmsParser.parse(senderAddress, body) ?: return false
+        AlertManager.playInflowAlert(getApplication())
         viewModelScope.launch {
             repository.insertParsedTransaction(parsed)
         }

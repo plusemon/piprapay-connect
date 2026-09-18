@@ -26,6 +26,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY timestamp DESC")
     fun getAllTransactionsFlow(): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT :limit")
+    fun getRecentTransactionsFlow(limit: Int = 10): Flow<List<TransactionEntity>>
+
     @Query("SELECT * FROM transactions WHERE trxId = :trxId LIMIT 1")
     suspend fun getTransactionById(trxId: String): TransactionEntity?
 

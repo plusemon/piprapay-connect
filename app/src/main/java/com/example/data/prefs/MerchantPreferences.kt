@@ -43,6 +43,8 @@ class MerchantPreferences private constructor(context: Context) {
             serviceEnabled = prefs.getBoolean(KEY_SERVICE_ENABLED, true),
             lastSyncTimestamp = prefs.getLong(KEY_LAST_SYNC_TIME, 0L),
             autoSyncEnabled = prefs.getBoolean(KEY_AUTO_SYNC, true),
+            hapticEnabled = prefs.getBoolean(KEY_HAPTIC_ENABLED, true),
+            audioToneEnabled = prefs.getBoolean(KEY_AUDIO_TONE_ENABLED, true),
             onboardingCompleted = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
         )
     }
@@ -166,6 +168,24 @@ class MerchantPreferences private constructor(context: Context) {
         _settingsFlow.value = loadSettings()
     }
 
+    fun isHapticEnabled(): Boolean {
+        return prefs.getBoolean(KEY_HAPTIC_ENABLED, true)
+    }
+
+    fun setHapticEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_HAPTIC_ENABLED, enabled).apply()
+        _settingsFlow.value = loadSettings()
+    }
+
+    fun isAudioToneEnabled(): Boolean {
+        return prefs.getBoolean(KEY_AUDIO_TONE_ENABLED, true)
+    }
+
+    fun setAudioToneEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_AUDIO_TONE_ENABLED, enabled).apply()
+        _settingsFlow.value = loadSettings()
+    }
+
     fun generateNewDeviceKey(): String {
         val newKey = "DEV-" + UUID.randomUUID().toString().take(8).uppercase()
         prefs.edit().putString(KEY_DEVICE_KEY, newKey).apply()
@@ -187,6 +207,8 @@ class MerchantPreferences private constructor(context: Context) {
         private const val KEY_SERVICE_ENABLED = "key_service_enabled"
         private const val KEY_LAST_SYNC_TIME = "key_last_sync_time"
         private const val KEY_AUTO_SYNC = "key_auto_sync"
+        private const val KEY_HAPTIC_ENABLED = "key_haptic_enabled"
+        private const val KEY_AUDIO_TONE_ENABLED = "key_audio_tone_enabled"
         private const val KEY_ONBOARDING_COMPLETED = "key_onboarding_completed"
 
         const val DEFAULT_BASE_URL = "https://pay.emon.bd/"
@@ -237,5 +259,7 @@ data class MerchantSettings(
     val serviceEnabled: Boolean = true,
     val lastSyncTimestamp: Long = 0L,
     val autoSyncEnabled: Boolean = true,
+    val hapticEnabled: Boolean = true,
+    val audioToneEnabled: Boolean = true,
     val onboardingCompleted: Boolean = false
 )
