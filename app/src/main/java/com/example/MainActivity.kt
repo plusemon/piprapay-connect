@@ -10,10 +10,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.prefs.MerchantPreferences
 import com.example.service.PipraPayService
 import com.example.ui.PipraPayApp
-import com.example.ui.theme.MyApplicationTheme
+import com.example.ui.theme.ThemeProvider
 import com.example.ui.viewmodel.MainViewModel
 
 class MainActivity : ComponentActivity() {
@@ -39,7 +41,8 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            MyApplicationTheme {
+            val settings by viewModel.settings.collectAsStateWithLifecycle()
+            ThemeProvider(darkTheme = settings.darkModeEnabled) {
                 PipraPayApp(viewModel = viewModel)
             }
         }

@@ -45,6 +45,7 @@ class MerchantPreferences private constructor(context: Context) {
             autoSyncEnabled = prefs.getBoolean(KEY_AUTO_SYNC, true),
             hapticEnabled = prefs.getBoolean(KEY_HAPTIC_ENABLED, true),
             audioToneEnabled = prefs.getBoolean(KEY_AUDIO_TONE_ENABLED, true),
+            darkModeEnabled = prefs.getBoolean(KEY_DARK_MODE_ENABLED, true),
             onboardingCompleted = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
         )
     }
@@ -186,6 +187,15 @@ class MerchantPreferences private constructor(context: Context) {
         _settingsFlow.value = loadSettings()
     }
 
+    fun isDarkModeEnabled(): Boolean {
+        return prefs.getBoolean(KEY_DARK_MODE_ENABLED, true)
+    }
+
+    fun setDarkModeEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_DARK_MODE_ENABLED, enabled).apply()
+        _settingsFlow.value = loadSettings()
+    }
+
     fun generateNewDeviceKey(): String {
         val newKey = "DEV-" + UUID.randomUUID().toString().take(8).uppercase()
         prefs.edit().putString(KEY_DEVICE_KEY, newKey).apply()
@@ -209,6 +219,7 @@ class MerchantPreferences private constructor(context: Context) {
         private const val KEY_AUTO_SYNC = "key_auto_sync"
         private const val KEY_HAPTIC_ENABLED = "key_haptic_enabled"
         private const val KEY_AUDIO_TONE_ENABLED = "key_audio_tone_enabled"
+        private const val KEY_DARK_MODE_ENABLED = "key_dark_mode_enabled"
         private const val KEY_ONBOARDING_COMPLETED = "key_onboarding_completed"
 
         const val DEFAULT_BASE_URL = "https://pay.emon.bd/"
@@ -261,5 +272,6 @@ data class MerchantSettings(
     val autoSyncEnabled: Boolean = true,
     val hapticEnabled: Boolean = true,
     val audioToneEnabled: Boolean = true,
+    val darkModeEnabled: Boolean = true,
     val onboardingCompleted: Boolean = false
 )

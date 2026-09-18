@@ -334,6 +334,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.setAudioToneEnabled(enabled)
     }
 
+    fun setDarkModeEnabled(enabled: Boolean) {
+        prefs.setDarkModeEnabled(enabled)
+    }
+
     fun testAlertFeedback() {
         AlertManager.triggerHapticPulse(getApplication())
         AlertManager.playPosChime(getApplication())

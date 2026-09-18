@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Sync
@@ -524,6 +525,67 @@ fun SettingsScreen(
                         ) {
                             Text("Guide", fontSize = 11.sp)
                         }
+                    }
+                }
+            }
+        }
+
+        // System-Wide Dark Mode & Appearance Section
+        item {
+            SettingsSectionHeader(title = "APPEARANCE & THEME")
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("appearance_theme_card"),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = null,
+                                tint = if (settings.darkModeEnabled) EmeraldPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Column {
+                                Text(
+                                    text = "Enforce #121215 Dark Theme",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "System-wide pitch obsidian canvas and container styling",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Switch(
+                            checked = settings.darkModeEnabled,
+                            onCheckedChange = { viewModel.setDarkModeEnabled(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = EmeraldPrimary,
+                                uncheckedThumbColor = Color(0xFF71717A),
+                                uncheckedTrackColor = Color(0xFF27272A)
+                            ),
+                            modifier = Modifier.testTag("dark_mode_toggle")
+                        )
                     }
                 }
             }
