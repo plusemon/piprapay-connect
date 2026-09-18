@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.AccentEmerald
+import com.example.ui.theme.PipraTheme
 import com.example.ui.theme.BorderZinc800
 import com.example.ui.theme.CanvasBlack
 import com.example.ui.theme.TextWhite
@@ -46,11 +47,13 @@ fun PipraPayIcon(
     shapeCornerRadius: Dp = (size.value * 0.22f).dp,
     showBorder: Boolean = true
 ) {
+    val colors = PipraTheme.colors
+    val iconStemAndLoopColor = if (colors.isDark) Color(0xFFFAFAFA) else Color(0xFF09090B)
     Surface(
         modifier = modifier.size(size),
         shape = RoundedCornerShape(shapeCornerRadius),
-        color = Color(0xFF09090B),
-        border = if (showBorder) BorderStroke(1.dp, BorderZinc800.copy(alpha = 0.8f)) else null
+        color = colors.container,
+        border = if (showBorder) BorderStroke(1.dp, colors.border) else null
     ) {
         Box(
             modifier = Modifier
@@ -62,17 +65,17 @@ fun PipraPayIcon(
                 val w = this.size.width
                 val h = this.size.height
 
-                // 1. White Stem of "P"
+                // 1. Stem of "P"
                 val stemWidth = w * 0.22f
                 val stemCorner = stemWidth / 2f
                 drawRoundRect(
-                    color = Color(0xFFFAFAFA),
+                    color = iconStemAndLoopColor,
                     topLeft = Offset(0f, 0f),
                     size = Size(stemWidth, h),
                     cornerRadius = CornerRadius(stemCorner, stemCorner)
                 )
 
-                // 2. White Loop of "P"
+                // 2. Loop of "P"
                 val loopTop = 0f
                 val loopHeight = h * 0.60f
                 val loopThickness = stemWidth * 0.85f
@@ -111,7 +114,7 @@ fun PipraPayIcon(
                     lineTo(stemWidth * 0.5f, loopTop + loopThickness)
                     close()
                 }
-                drawPath(outerPath, color = Color(0xFFFAFAFA), style = Fill)
+                drawPath(outerPath, color = iconStemAndLoopColor, style = Fill)
 
                 // 3. Emerald Connect Node at loop apex/apex terminal
                 val nodeRadius = w * 0.14f

@@ -201,8 +201,8 @@ fun DashboardScreen(
                 // Minimal subtle status ghost badge
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = if (isServiceRunning) GhostEmeraldBg else Color(0x1871717A),
-                    border = BorderStroke(1.dp, if (isServiceRunning) GhostEmeraldBorder else BorderZinc800)
+                    color = if (isServiceRunning) GhostEmeraldBg else colors.surfaceCard,
+                    border = BorderStroke(1.dp, if (isServiceRunning) GhostEmeraldBorder else colors.border)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -213,14 +213,14 @@ fun DashboardScreen(
                             modifier = Modifier
                                 .size(6.dp)
                                 .clip(CircleShape)
-                                .background(if (isServiceRunning) AccentEmerald else TextZinc500)
+                                .background(if (isServiceRunning) AccentEmerald else colors.textMuted)
                         )
                         Text(
                             text = if (isServiceRunning) "GATEWAY ACTIVE" else "PAUSED",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp,
-                            color = if (isServiceRunning) AccentEmerald else TextZinc500
+                            color = if (isServiceRunning) AccentEmerald else colors.textMuted
                         )
                     }
                 }
@@ -234,8 +234,8 @@ fun DashboardScreen(
                     .fillMaxWidth()
                     .testTag("live_status_card"),
                 shape = RoundedCornerShape(12.dp),
-                color = ContainerDark,
-                border = BorderStroke(1.dp, BorderZinc800)
+                color = colors.container,
+                border = BorderStroke(1.dp, colors.border)
             ) {
                 Row(
                     modifier = Modifier
@@ -267,7 +267,7 @@ fun DashboardScreen(
                                 modifier = Modifier
                                     .size(7.dp)
                                     .clip(CircleShape)
-                                    .background(if (isServiceRunning) AccentEmerald else TextZinc500)
+                                    .background(if (isServiceRunning) AccentEmerald else colors.textMuted)
                             )
                         }
 
@@ -276,12 +276,12 @@ fun DashboardScreen(
                                 text = if (isServiceRunning) "Foreground Service Running" else "Foreground Service Paused",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = if (isServiceRunning) TextWhite else TextZinc500
+                                color = if (isServiceRunning) colors.textPrimary else colors.textMuted
                             )
                             Text(
                                 text = if (isServiceRunning) "Capturing incoming MFS SMS packets" else "SMS background capture inactive",
                                 fontSize = 11.sp,
-                                color = TextZinc500
+                                color = colors.textMuted
                             )
                         }
                     }
@@ -294,9 +294,9 @@ fun DashboardScreen(
                             checkedThumbColor = Color.White,
                             checkedTrackColor = AccentEmerald,
                             checkedBorderColor = AccentEmerald,
-                            uncheckedThumbColor = TextZinc500,
-                            uncheckedTrackColor = BorderZinc800,
-                            uncheckedBorderColor = BorderZinc800
+                            uncheckedThumbColor = colors.textMuted,
+                            uncheckedTrackColor = colors.border,
+                            uncheckedBorderColor = colors.border
                         )
                     )
                 }
@@ -312,8 +312,8 @@ fun DashboardScreen(
                         .fillMaxWidth()
                         .testTag("companion_session_card"),
                     shape = RoundedCornerShape(12.dp),
-                    color = ContainerDark,
-                    border = BorderStroke(1.dp, BorderZinc800)
+                    color = colors.container,
+                    border = BorderStroke(1.dp, colors.border)
                 ) {
                     Column(
                         modifier = Modifier.padding(14.dp),
@@ -330,7 +330,7 @@ fun DashboardScreen(
                                     text = "DEVICE KEY",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = TextZinc500,
+                                    color = colors.textSubtle,
                                     letterSpacing = 1.sp
                                 )
                                 Spacer(modifier = Modifier.height(3.dp))
@@ -343,7 +343,7 @@ fun DashboardScreen(
                                         fontWeight = FontWeight.Medium,
                                         fontSize = 12.sp,
                                         fontFamily = FontFamily.Monospace,
-                                        color = TextWhite,
+                                        color = colors.textPrimary,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.widthIn(max = 140.dp)
@@ -360,7 +360,7 @@ fun DashboardScreen(
                                             Icons.Default.ContentCopy,
                                             contentDescription = "Copy Device Key",
                                             modifier = Modifier.size(12.dp),
-                                            tint = TextZinc400
+                                            tint = colors.textMuted
                                         )
                                     }
                                 }
@@ -375,7 +375,7 @@ fun DashboardScreen(
                                     text = "TARGET SERVER",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = TextZinc500,
+                                    color = colors.textSubtle,
                                     letterSpacing = 1.sp
                                 )
                                 Spacer(modifier = Modifier.height(3.dp))
@@ -393,15 +393,15 @@ fun DashboardScreen(
                                         fontFamily = FontFamily.Monospace,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        color = TextWhite,
+                                        color = colors.textPrimary,
                                         modifier = Modifier.widthIn(max = 110.dp)
                                     )
 
                                     // Inline Latency / Ping chip
                                     Surface(
                                         shape = RoundedCornerShape(6.dp),
-                                        color = SurfaceCard,
-                                        border = BorderStroke(1.dp, BorderZinc800),
+                                        color = colors.surfaceCard,
+                                        border = BorderStroke(1.dp, colors.border),
                                         modifier = Modifier.clickable {
                                             viewModel.pingServerHealth()
                                             Toast.makeText(context, "Checking latency...", Toast.LENGTH_SHORT).show()
@@ -447,21 +447,21 @@ fun DashboardScreen(
                                     text = "FILTER:",
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = TextZinc500,
+                                    color = colors.textSubtle,
                                     letterSpacing = 0.8.sp
                                 )
                                 senders.forEach { sender ->
                                     Surface(
                                         shape = RoundedCornerShape(6.dp),
-                                        color = SurfaceCard,
-                                        border = BorderStroke(1.dp, BorderZinc800)
+                                        color = colors.surfaceCard,
+                                        border = BorderStroke(1.dp, colors.border)
                                     ) {
                                         Text(
                                             text = sender,
                                             fontSize = 10.sp,
                                             fontFamily = FontFamily.Monospace,
                                             fontWeight = FontWeight.Medium,
-                                            color = TextZinc300,
+                                            color = colors.textSecondary,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                         )
                                     }
@@ -478,7 +478,7 @@ fun DashboardScreen(
                                 Icon(
                                     Icons.Default.Refresh,
                                     contentDescription = "Refresh Telemetry",
-                                    tint = TextZinc400,
+                                    tint = colors.textMuted,
                                     modifier = Modifier.size(14.dp)
                                 )
                             }
@@ -548,8 +548,8 @@ fun DashboardScreen(
                     .fillMaxWidth()
                     .testTag("stats_summary_card"),
                 shape = RoundedCornerShape(12.dp),
-                color = ContainerDark,
-                border = BorderStroke(1.dp, BorderZinc800)
+                color = colors.container,
+                border = BorderStroke(1.dp, colors.border)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -566,7 +566,7 @@ fun DashboardScreen(
                                 text = "TOTAL PROCESSED INFLOW",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextZinc500,
+                                color = colors.textSubtle,
                                 letterSpacing = 1.sp
                             )
                             Text(
@@ -575,7 +575,7 @@ fun DashboardScreen(
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily.Monospace,
                                 letterSpacing = (-0.8).sp,
-                                color = TextWhite
+                                color = colors.textPrimary
                             )
                         }
 
@@ -595,7 +595,7 @@ fun DashboardScreen(
                         }
                     }
 
-                    HorizontalDivider(color = BorderZinc800, thickness = 1.dp)
+                    HorizontalDivider(color = colors.border, thickness = 1.dp)
 
                     // Sleek Segmented Counter Strip
                     Row(
@@ -607,37 +607,37 @@ fun DashboardScreen(
                         SegmentedCounterItem(
                             label = "Total",
                             count = stats.totalCount.toString(),
-                            countColor = TextWhite,
+                            countColor = colors.textPrimary,
                             modifier = Modifier.weight(1f)
                         )
 
-                        Box(modifier = Modifier.width(1.dp).height(24.dp).background(BorderZinc800))
+                        Box(modifier = Modifier.width(1.dp).height(24.dp).background(colors.border))
 
                         // Synced
                         SegmentedCounterItem(
                             label = "Synced",
                             count = stats.syncedCount.toString(),
-                            countColor = TextWhite,
+                            countColor = colors.textPrimary,
                             modifier = Modifier.weight(1f)
                         )
 
-                        Box(modifier = Modifier.width(1.dp).height(24.dp).background(BorderZinc800))
+                        Box(modifier = Modifier.width(1.dp).height(24.dp).background(colors.border))
 
                         // Pending (Amber only if > 0)
                         SegmentedCounterItem(
                             label = "Pending",
                             count = stats.pendingCount.toString(),
-                            countColor = if (stats.pendingCount > 0) AccentAmber else TextWhite,
+                            countColor = if (stats.pendingCount > 0) AccentAmber else colors.textPrimary,
                             modifier = Modifier.weight(1f)
                         )
 
-                        Box(modifier = Modifier.width(1.dp).height(24.dp).background(BorderZinc800))
+                        Box(modifier = Modifier.width(1.dp).height(24.dp).background(colors.border))
 
                         // Failed (Rose only if > 0)
                         SegmentedCounterItem(
                             label = "Failed",
                             count = stats.failedCount.toString(),
-                            countColor = if (stats.failedCount > 0) AccentRose else TextWhite,
+                            countColor = if (stats.failedCount > 0) AccentRose else colors.textPrimary,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -656,7 +656,7 @@ fun DashboardScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Primary Solid Clean White Action Button
+                // Primary Action Button
                 Button(
                     onClick = { viewModel.triggerManualSync() },
                     enabled = !isSyncing,
@@ -666,17 +666,17 @@ fun DashboardScreen(
                         .testTag("manual_sync_button"),
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = TextWhite,
-                        contentColor = CanvasBlack,
-                        disabledContainerColor = SurfaceCard,
-                        disabledContentColor = TextZinc500
+                        containerColor = if (colors.isDark) Color.White else Color(0xFF09090B),
+                        contentColor = if (colors.isDark) Color.Black else Color.White,
+                        disabledContainerColor = colors.surfaceCard,
+                        disabledContentColor = colors.textMuted
                     ),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Sync,
                         contentDescription = "Sync",
-                        tint = if (!isSyncing) CanvasBlack else TextZinc500,
+                        tint = if (!isSyncing) (if (colors.isDark) Color.Black else Color.White) else colors.textMuted,
                         modifier = Modifier
                             .size(16.dp)
                             .rotate(if (isSyncing) syncRotateAngle else 0f)
@@ -685,7 +685,8 @@ fun DashboardScreen(
                     Text(
                         text = if (isSyncing) "Syncing..." else "Sync Queue",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
+                        fontSize = 13.sp,
+                        color = if (!isSyncing) (if (colors.isDark) Color.Black else Color.White) else colors.textMuted
                     )
                 }
 
@@ -697,23 +698,24 @@ fun DashboardScreen(
                         .height(44.dp)
                         .testTag("simulate_sms_button"),
                     shape = RoundedCornerShape(10.dp),
-                    border = BorderStroke(1.dp, BorderZinc700),
+                    border = BorderStroke(1.dp, colors.borderInteractive),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Color.Transparent,
-                        contentColor = TextZinc300
+                        contentColor = colors.textSecondary
                     )
                 ) {
                     Icon(
                         Icons.Default.Sms,
                         contentDescription = "Simulate SMS",
                         modifier = Modifier.size(16.dp),
-                        tint = TextZinc400
+                        tint = colors.textMuted
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Simulate SMS",
                         fontWeight = FontWeight.Medium,
-                        fontSize = 13.sp
+                        fontSize = 13.sp,
+                        color = colors.textPrimary
                     )
                 }
             }
@@ -722,7 +724,7 @@ fun DashboardScreen(
         // 7. Search Toolbar & Minimal Filter Chips
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                // Modern Dark Search Field
+                // Modern Search Field
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.setSearchQuery(it) },
@@ -733,14 +735,14 @@ fun DashboardScreen(
                         Text(
                             text = "Search TrxID, sender, or amount...",
                             fontSize = 13.sp,
-                            color = TextZinc500
+                            color = colors.textSubtle
                         )
                     },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Search",
-                            tint = TextZinc500,
+                            tint = colors.textSubtle,
                             modifier = Modifier.size(18.dp)
                         )
                     },
@@ -751,7 +753,7 @@ fun DashboardScreen(
                                     imageVector = Icons.Default.Clear,
                                     contentDescription = "Clear search",
                                     modifier = Modifier.size(16.dp),
-                                    tint = TextZinc400
+                                    tint = colors.textMuted
                                 )
                             }
                         }
@@ -759,13 +761,13 @@ fun DashboardScreen(
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BorderZinc700,
-                        unfocusedBorderColor = BorderZinc800,
-                        focusedContainerColor = ContainerDark,
-                        unfocusedContainerColor = ContainerDark,
-                        focusedTextColor = TextWhite,
-                        unfocusedTextColor = TextWhite,
-                        cursorColor = TextWhite
+                        focusedBorderColor = colors.borderInteractive,
+                        unfocusedBorderColor = colors.border,
+                        focusedContainerColor = colors.container,
+                        unfocusedContainerColor = colors.container,
+                        focusedTextColor = colors.textPrimary,
+                        unfocusedTextColor = colors.textPrimary,
+                        cursorColor = colors.textPrimary
                     )
                 )
 
@@ -789,10 +791,10 @@ fun DashboardScreen(
                         val isSelected = providerFilter == key
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = if (isSelected) BorderZinc800 else ContainerDark,
+                            color = if (isSelected) colors.surfaceCard else colors.container,
                             border = BorderStroke(
                                 1.dp,
-                                if (isSelected) BorderZinc700 else BorderZinc800
+                                if (isSelected) colors.borderInteractive else colors.border
                             ),
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
@@ -808,14 +810,14 @@ fun DashboardScreen(
                                         modifier = Modifier
                                             .size(5.dp)
                                             .clip(CircleShape)
-                                            .background(TextWhite)
+                                            .background(colors.textPrimary)
                                     )
                                 }
                                 Text(
                                     text = displayName,
                                     fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (isSelected) TextWhite else TextZinc500
+                                    color = if (isSelected) colors.textPrimary else colors.textSubtle
                                 )
                             }
                         }
@@ -834,10 +836,10 @@ fun DashboardScreen(
                         val isSelected = statusFilter == status
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = if (isSelected) BorderZinc800 else ContainerDark,
+                            color = if (isSelected) colors.surfaceCard else colors.container,
                             border = BorderStroke(
                                 1.dp,
-                                if (isSelected) BorderZinc700 else BorderZinc800
+                                if (isSelected) colors.borderInteractive else colors.border
                             ),
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
@@ -853,7 +855,7 @@ fun DashboardScreen(
                                         "SYNCED" -> AccentEmerald
                                         "PENDING" -> AccentAmber
                                         "FAILED" -> AccentRose
-                                        else -> TextZinc500
+                                        else -> colors.textSubtle
                                     }
                                     Box(
                                         modifier = Modifier
@@ -866,7 +868,7 @@ fun DashboardScreen(
                                     text = if (status == "ALL") "All Status" else status,
                                     fontSize = 11.sp,
                                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (isSelected) TextWhite else TextZinc500
+                                    color = if (isSelected) colors.textPrimary else colors.textSubtle
                                 )
                             }
                         }
@@ -893,25 +895,25 @@ fun DashboardScreen(
                         modifier = Modifier
                             .size(7.dp)
                             .clip(CircleShape)
-                            .background(if (isServiceRunning) AccentEmerald else TextZinc500)
+                            .background(if (isServiceRunning) AccentEmerald else colors.textSubtle)
                     )
                     Text(
                         text = "Live Activity Feed",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextWhite
+                        color = colors.textPrimary
                     )
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = SurfaceCard,
-                        border = BorderStroke(1.dp, BorderZinc800)
+                        color = colors.surfaceCard,
+                        border = BorderStroke(1.dp, colors.border)
                     ) {
                         Text(
                             text = transactions.size.toString(),
                             fontSize = 11.sp,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold,
-                            color = TextZinc400,
+                            color = colors.textMuted,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
@@ -940,9 +942,9 @@ fun DashboardScreen(
                         .fillMaxWidth()
                         .padding(vertical = 12.dp)
                         .testTag("empty_transactions_card"),
-                    color = ContainerDark,
+                    color = colors.container,
                     shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, BorderZinc800)
+                    border = BorderStroke(1.dp, colors.border)
                 ) {
                     Column(
                         modifier = Modifier
@@ -955,14 +957,14 @@ fun DashboardScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .clip(CircleShape)
-                                .background(SurfaceCard),
+                                .background(colors.surfaceCard),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.HourglassTop,
                                 contentDescription = "Listening",
                                 modifier = Modifier.size(22.dp),
-                                tint = TextZinc400
+                                tint = colors.textMuted
                             )
                         }
 
@@ -970,7 +972,7 @@ fun DashboardScreen(
                             text = "Listening for incoming transactions...",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
-                            color = TextWhite
+                            color = colors.textPrimary
                         )
 
                         Text(
@@ -980,7 +982,7 @@ fun DashboardScreen(
                                 "Incoming bKash, Nagad, Rocket, and Upay SMS packets will capture and sync in real-time."
                             },
                             fontSize = 12.sp,
-                            color = TextZinc500,
+                            color = colors.textSubtle,
                             textAlign = TextAlign.Center
                         )
 
@@ -988,10 +990,10 @@ fun DashboardScreen(
                             onClick = { showSmsSimulatorDialog = true },
                             modifier = Modifier.padding(top = 4.dp),
                             shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(1.dp, BorderZinc700),
+                            border = BorderStroke(1.dp, colors.borderInteractive),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = SurfaceCard,
-                                contentColor = TextZinc300
+                                containerColor = colors.surfaceCard,
+                                contentColor = colors.textSecondary
                             )
                         ) {
                             Icon(
@@ -1103,12 +1105,13 @@ fun HighDetailTransactionCard(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = PipraTheme.colors
     val context = LocalContext.current
     val (statusBg, statusBorder, statusText) = when (transaction.syncStatus) {
         "SYNCED" -> Triple(GhostEmeraldBg, GhostEmeraldBorder, AccentEmerald)
         "PENDING" -> Triple(GhostAmberBg, GhostAmberBorder, AccentAmber)
         "FAILED" -> Triple(GhostRoseBg, GhostRoseBorder, AccentRose)
-        else -> Triple(SurfaceCard, BorderZinc800, TextZinc500)
+        else -> Triple(colors.surfaceCard, colors.border, colors.textSubtle)
     }
 
     Surface(
@@ -1117,8 +1120,8 @@ fun HighDetailTransactionCard(
             .clickable { onClick() }
             .testTag("transaction_card_${transaction.trxId}"),
         shape = RoundedCornerShape(12.dp),
-        color = ContainerDark,
-        border = BorderStroke(1.dp, BorderZinc800)
+        color = colors.container,
+        border = BorderStroke(1.dp, colors.border)
     ) {
         Row(
             modifier = Modifier
@@ -1130,8 +1133,8 @@ fun HighDetailTransactionCard(
             // Left: Clean neutral provider badge
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = SurfaceCard,
-                border = BorderStroke(1.dp, BorderZinc800)
+                color = colors.surfaceCard,
+                border = BorderStroke(1.dp, colors.border)
             ) {
                 Box(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
@@ -1141,7 +1144,7 @@ fun HighDetailTransactionCard(
                         text = transaction.provider.uppercase(),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextWhite,
+                        color = colors.textPrimary,
                         letterSpacing = 0.5.sp
                     )
                 }
@@ -1166,7 +1169,7 @@ fun HighDetailTransactionCard(
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace,
-                        color = TextWhite,
+                        color = colors.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -1174,7 +1177,7 @@ fun HighDetailTransactionCard(
                         imageVector = Icons.Default.ContentCopy,
                         contentDescription = "Copy TrxID",
                         modifier = Modifier.size(11.dp),
-                        tint = TextZinc400
+                        tint = colors.textMuted
                     )
                 }
 
@@ -1185,19 +1188,19 @@ fun HighDetailTransactionCard(
                     Text(
                         text = "From: ${transaction.senderNumber}",
                         fontSize = 11.sp,
-                        color = TextZinc400
+                        color = colors.textMuted
                     )
                     Surface(
                         shape = RoundedCornerShape(4.dp),
-                        color = SurfaceCard,
-                        border = BorderStroke(1.dp, BorderZinc800)
+                        color = colors.surfaceCard,
+                        border = BorderStroke(1.dp, colors.border)
                     ) {
                         Text(
                             text = "SIM ${transaction.simSlot}",
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Medium,
-                            color = TextZinc400
+                            color = colors.textMuted
                         )
                     }
                 }
@@ -1205,7 +1208,7 @@ fun HighDetailTransactionCard(
                 Text(
                     text = formatRelativeTime(transaction.timestamp),
                     fontSize = 10.sp,
-                    color = TextZinc500
+                    color = colors.textSubtle
                 )
             }
 
@@ -1220,7 +1223,7 @@ fun HighDetailTransactionCard(
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,
                     letterSpacing = (-0.3).sp,
-                    color = TextWhite
+                    color = colors.textPrimary
                 )
 
                 if (transaction.balance != null) {
@@ -1229,7 +1232,7 @@ fun HighDetailTransactionCard(
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
                         fontFamily = FontFamily.Monospace,
-                        color = TextZinc500
+                        color = colors.textSubtle
                     )
                 }
 
@@ -1324,6 +1327,7 @@ fun TransactionDetailSheet(
     onResync: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val colors = PipraTheme.colors
     val sheetState = rememberModalBottomSheetState()
     val dateFormatter = remember { SimpleDateFormat("EEEE, MMMM dd, yyyy • hh:mm:ss a", Locale.getDefault()) }
     val (statusBg, statusBorder, statusText) = when (transaction.syncStatus) {
@@ -1335,7 +1339,7 @@ fun TransactionDetailSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = ContainerDark
+        containerColor = colors.container
     ) {
         Column(
             modifier = Modifier
@@ -1353,7 +1357,7 @@ fun TransactionDetailSheet(
                     text = "Transaction Details",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextWhite
+                    color = colors.textPrimary
                 )
                 Surface(
                     shape = RoundedCornerShape(6.dp),
@@ -1370,7 +1374,7 @@ fun TransactionDetailSheet(
                 }
             }
 
-            HorizontalDivider(color = BorderZinc800)
+            HorizontalDivider(color = colors.border)
 
             DetailRow("Provider", transaction.provider)
             DetailRow("Sender Key", transaction.senderKey)
@@ -1393,14 +1397,14 @@ fun TransactionDetailSheet(
                 text = "Raw SMS Message",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextZinc500,
+                color = colors.textSubtle,
                 letterSpacing = 0.5.sp
             )
 
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = CanvasBlack,
-                border = BorderStroke(1.dp, BorderZinc800),
+                color = colors.canvasBg,
+                border = BorderStroke(1.dp, colors.border),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
@@ -1408,7 +1412,7 @@ fun TransactionDetailSheet(
                     modifier = Modifier.padding(12.dp),
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
-                    color = TextZinc300
+                    color = colors.textSecondary
                 )
             }
 
@@ -1422,7 +1426,7 @@ fun TransactionDetailSheet(
                     onClick = onDelete,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, BorderZinc700),
+                    border = BorderStroke(1.dp, colors.borderInteractive),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentRose)
                 ) {
                     Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -1434,9 +1438,17 @@ fun TransactionDetailSheet(
                     onClick = onResync,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TextWhite, contentColor = CanvasBlack)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (colors.isDark) Color.White else Color(0xFF09090B),
+                        contentColor = if (colors.isDark) Color.Black else Color.White
+                    )
                 ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp), tint = CanvasBlack)
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = if (colors.isDark) Color.Black else Color.White
+                    )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("Sync Now", fontWeight = FontWeight.Bold)
                 }
@@ -1452,6 +1464,7 @@ private fun DetailRow(
     isError: Boolean = false,
     isMonospace: Boolean = false
 ) {
+    val colors = PipraTheme.colors
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1460,7 +1473,7 @@ private fun DetailRow(
         Text(
             text = label,
             fontSize = 12.sp,
-            color = TextZinc500,
+            color = colors.textSubtle,
             modifier = Modifier.weight(1f)
         )
         Text(
@@ -1468,7 +1481,7 @@ private fun DetailRow(
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             fontFamily = if (isMonospace) FontFamily.Monospace else FontFamily.Default,
-            color = if (isError) AccentRose else TextWhite,
+            color = if (isError) AccentRose else colors.textPrimary,
             modifier = Modifier.weight(1.5f),
             textAlign = TextAlign.End
         )
@@ -1480,6 +1493,7 @@ fun SmsSimulatorDialog(
     onDismiss: () -> Unit,
     onInject: (sender: String, body: String) -> Unit
 ) {
+    val colors = PipraTheme.colors
     val samples = listOf(
         Pair(
             "bKash",
@@ -1508,9 +1522,9 @@ fun SmsSimulatorDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = ContainerDark,
-        titleContentColor = TextWhite,
-        textContentColor = TextZinc300,
+        containerColor = colors.container,
+        titleContentColor = colors.textPrimary,
+        textContentColor = colors.textSecondary,
         title = {
             Text("Simulate MFS Incoming SMS", fontWeight = FontWeight.Bold, fontSize = 16.sp)
         },
@@ -1524,7 +1538,7 @@ fun SmsSimulatorDialog(
                 Text(
                     text = "Pick a sample Bangladeshi MFS SMS or type your own to test parsing, Room storage, and WorkManager sync:",
                     fontSize = 12.sp,
-                    color = TextZinc400
+                    color = colors.textMuted
                 )
 
                 // Quick sample buttons in neutral dark pills
@@ -1538,8 +1552,8 @@ fun SmsSimulatorDialog(
                         val isSelected = customBody == body
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = if (isSelected) BorderZinc800 else SurfaceCard,
-                            border = BorderStroke(1.dp, if (isSelected) BorderZinc700 else BorderZinc800),
+                            color = if (isSelected) colors.surfaceCard else colors.container,
+                            border = BorderStroke(1.dp, if (isSelected) colors.borderInteractive else colors.border),
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable {
@@ -1551,7 +1565,7 @@ fun SmsSimulatorDialog(
                                 text = sender,
                                 fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) TextWhite else TextZinc400,
+                                color = if (isSelected) colors.textPrimary else colors.textMuted,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
@@ -1561,14 +1575,14 @@ fun SmsSimulatorDialog(
                 OutlinedTextField(
                     value = customSender,
                     onValueChange = { customSender = it },
-                    label = { Text("Sender Header", color = TextZinc500) },
+                    label = { Text("Sender Header", color = colors.textSubtle) },
                     singleLine = true,
                     shape = RoundedCornerShape(8.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BorderZinc700,
-                        unfocusedBorderColor = BorderZinc800,
-                        focusedTextColor = TextWhite,
-                        unfocusedTextColor = TextWhite
+                        focusedBorderColor = colors.borderInteractive,
+                        unfocusedBorderColor = colors.border,
+                        focusedTextColor = colors.textPrimary,
+                        unfocusedTextColor = colors.textPrimary
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -1576,13 +1590,13 @@ fun SmsSimulatorDialog(
                 OutlinedTextField(
                     value = customBody,
                     onValueChange = { customBody = it },
-                    label = { Text("SMS Body", color = TextZinc500) },
+                    label = { Text("SMS Body", color = colors.textSubtle) },
                     shape = RoundedCornerShape(8.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BorderZinc700,
-                        unfocusedBorderColor = BorderZinc800,
-                        focusedTextColor = TextWhite,
-                        unfocusedTextColor = TextWhite
+                        focusedBorderColor = colors.borderInteractive,
+                        unfocusedBorderColor = colors.border,
+                        focusedTextColor = colors.textPrimary,
+                        unfocusedTextColor = colors.textPrimary
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1594,14 +1608,17 @@ fun SmsSimulatorDialog(
             Button(
                 onClick = { onInject(customSender, customBody) },
                 shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = TextWhite, contentColor = CanvasBlack)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (colors.isDark) Color.White else Color(0xFF09090B),
+                    contentColor = if (colors.isDark) Color.Black else Color.White
+                )
             ) {
                 Text("Process SMS", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = TextZinc400)
+                Text("Cancel", color = colors.textMuted)
             }
         }
     )
@@ -1609,8 +1626,8 @@ fun SmsSimulatorDialog(
 
 /**
  * Standardized MFS Wallet Grid:
- * - Matching neutral dark surfaces (#18181b with border-zinc-800)
- * - Wallet names cleanly in bold white
+ * - Matching neutral surfaces
+ * - Wallet names cleanly in bold text Primary
  * - Status tags ("Waiting for SMS") displayed as neutral pill badges with small muted indicators
  */
 @Composable
@@ -1618,13 +1635,14 @@ fun VerifiedBalancesCard(
     balances: Map<String, Double>,
     modifier: Modifier = Modifier
 ) {
+    val colors = PipraTheme.colors
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .testTag("verified_balances_card"),
         shape = RoundedCornerShape(12.dp),
-        color = ContainerDark,
-        border = BorderStroke(1.dp, BorderZinc800)
+        color = colors.container,
+        border = BorderStroke(1.dp, colors.border)
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
@@ -1643,14 +1661,14 @@ fun VerifiedBalancesCard(
                         modifier = Modifier
                             .size(5.dp)
                             .clip(CircleShape)
-                            .background(TextZinc500)
+                            .background(colors.textSubtle)
                     )
                     Text(
                         text = "MFS WALLETS",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
-                        color = TextZinc500
+                        color = colors.textSubtle
                     )
                 }
 
@@ -1658,7 +1676,7 @@ fun VerifiedBalancesCard(
                     text = "SMS Verified",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
-                    color = TextZinc500
+                    color = colors.textSubtle
                 )
             }
 
@@ -1678,8 +1696,8 @@ fun VerifiedBalancesCard(
                 providers.forEach { (name, balance) ->
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = SurfaceCard,
-                        border = BorderStroke(1.dp, BorderZinc800),
+                        color = colors.surfaceCard,
+                        border = BorderStroke(1.dp, colors.border),
                         modifier = Modifier.widthIn(min = 108.dp)
                     ) {
                         Column(
@@ -1690,7 +1708,7 @@ fun VerifiedBalancesCard(
                                 text = name,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextWhite
+                                color = colors.textPrimary
                             )
                             if (balance != null) {
                                 Text(
@@ -1698,13 +1716,13 @@ fun VerifiedBalancesCard(
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.Monospace,
-                                    color = TextWhite
+                                    color = colors.textPrimary
                                 )
                             } else {
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
-                                    color = ContainerDark,
-                                    border = BorderStroke(1.dp, BorderZinc800)
+                                    color = colors.container,
+                                    border = BorderStroke(1.dp, colors.border)
                                 ) {
                                     Row(
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -1721,7 +1739,7 @@ fun VerifiedBalancesCard(
                                             text = "Listening",
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Medium,
-                                            color = TextZinc400
+                                            color = colors.textMuted
                                         )
                                     }
                                 }

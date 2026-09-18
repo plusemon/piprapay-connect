@@ -225,14 +225,14 @@ fun OemOptimizationModal(
                     onClick = onDismiss,
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = TextWhite,
-                        contentColor = CanvasBlack
+                        containerColor = if (colors.isDark) Color.White else Color(0xFF09090B),
+                        contentColor = if (colors.isDark) Color.Black else Color.White
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = CanvasBlack)
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (colors.isDark) Color.Black else Color.White)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("I've Configured These Settings", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("I've Configured These Settings", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (colors.isDark) Color.Black else Color.White)
                 }
             }
         }

@@ -217,11 +217,12 @@ private fun SystemReadinessStep(
     onContinue: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val colors = PipraTheme.colors
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(CanvasBlack)
+            .background(colors.canvasBg)
             .verticalScroll(scrollState)
             .padding(horizontal = 24.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -231,8 +232,8 @@ private fun SystemReadinessStep(
         // Step indicator badge
         Surface(
             shape = RoundedCornerShape(20.dp),
-            color = SurfaceCard,
-            border = androidx.compose.foundation.BorderStroke(1.dp, BorderZinc800),
+            color = colors.surfaceCard,
+            border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
             modifier = Modifier.testTag("onboarding_step_badge")
         ) {
             Row(
@@ -250,7 +251,7 @@ private fun SystemReadinessStep(
                     text = "STEP 1 OF 3 • GETTING READY",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextZinc300,
+                    color = colors.textMuted,
                     letterSpacing = 1.sp
                 )
             }
@@ -270,7 +271,7 @@ private fun SystemReadinessStep(
             text = "Welcome to PipraPay Connect",
             fontSize = 26.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = TextWhite,
+            color = colors.textPrimary,
             textAlign = TextAlign.Center
         )
 
@@ -279,7 +280,7 @@ private fun SystemReadinessStep(
         Text(
             text = "Preparing your phone as an automated 24/7 MFS Payment Gateway Node for bKash, Nagad, Rocket & Upay.",
             fontSize = 14.sp,
-            color = TextZinc400,
+            color = colors.textMuted,
             textAlign = TextAlign.Center,
             lineHeight = 20.sp,
             modifier = Modifier.padding(horizontal = 8.dp)
@@ -293,8 +294,8 @@ private fun SystemReadinessStep(
                 .fillMaxWidth()
                 .testTag("readiness_checklist_card"),
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = ContainerDark),
-            border = androidx.compose.foundation.BorderStroke(1.dp, BorderZinc800),
+            colors = CardDefaults.cardColors(containerColor = colors.container),
+            border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(
@@ -305,7 +306,7 @@ private fun SystemReadinessStep(
                     text = "System Diagnostics & Setup",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = TextWhite
+                    color = colors.textPrimary
                 )
 
                 DiagnosticItem(
@@ -314,7 +315,7 @@ private fun SystemReadinessStep(
                     subtitle = "Hardware receiver ready for real-time MFS parsing"
                 )
 
-                HorizontalDivider(color = BorderZinc800)
+                HorizontalDivider(color = colors.border)
 
                 DiagnosticItem(
                     icon = Icons.Default.Security,
@@ -322,7 +323,7 @@ private fun SystemReadinessStep(
                     subtitle = "Hardware-backed secure preferences active"
                 )
 
-                HorizontalDivider(color = BorderZinc800)
+                HorizontalDivider(color = colors.border)
 
                 DiagnosticItem(
                     icon = Icons.Default.Speed,
@@ -330,7 +331,7 @@ private fun SystemReadinessStep(
                     subtitle = "bKash (16247), Nagad (16167), Rocket, Upay loaded"
                 )
 
-                HorizontalDivider(color = BorderZinc800)
+                HorizontalDivider(color = colors.border)
 
                 DiagnosticItem(
                     icon = Icons.Default.Storage,
@@ -343,7 +344,7 @@ private fun SystemReadinessStep(
         Spacer(modifier = Modifier.weight(1f, fill = false))
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Continue Button (solid crisp white)
+        // Continue Button
         Button(
             onClick = onContinue,
             modifier = Modifier
@@ -351,8 +352,8 @@ private fun SystemReadinessStep(
                 .height(52.dp)
                 .testTag("continue_to_permissions_button"),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White,
-                contentColor = Color.Black
+                containerColor = if (colors.isDark) Color.White else Color(0xFF09090B),
+                contentColor = if (colors.isDark) Color.Black else Color.White
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -360,7 +361,7 @@ private fun SystemReadinessStep(
                 text = "Continue to Permissions",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = if (colors.isDark) Color.Black else Color.White
             )
         }
 
@@ -374,6 +375,7 @@ private fun DiagnosticItem(
     title: String,
     subtitle: String
 ) {
+    val colors = PipraTheme.colors
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -399,12 +401,12 @@ private fun DiagnosticItem(
                 text = title,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = colors.textPrimary
             )
             Text(
                 text = subtitle,
                 fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = colors.textMuted
             )
         }
 
@@ -437,6 +439,7 @@ private fun PermissionsSetupStep(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val isBatteryOptimized by viewModel.isBatteryOptimizationIgnored.collectAsStateWithLifecycle()
+    val colors = PipraTheme.colors
 
     fun checkNotificationGranted(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -497,6 +500,7 @@ private fun PermissionsSetupStep(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(colors.canvasBg)
             .verticalScroll(scrollState)
             .padding(horizontal = 24.dp, vertical = 16.dp)
             .testTag("permissions_setup_screen"),
@@ -513,16 +517,16 @@ private fun PermissionsSetupStep(
                     .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .clickable { onBack() }
-                    .border(1.dp, BorderZinc800, RoundedCornerShape(12.dp))
+                    .border(1.dp, colors.border, RoundedCornerShape(12.dp))
                     .testTag("permissions_back_button"),
-                color = SurfaceCard,
+                color = colors.surfaceCard,
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = TextWhite,
+                        tint = colors.textPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -530,15 +534,15 @@ private fun PermissionsSetupStep(
 
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = SurfaceCard,
-                border = androidx.compose.foundation.BorderStroke(1.dp, BorderZinc800)
+                color = colors.surfaceCard,
+                border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)
             ) {
                 Text(
                     text = "STEP 2 OF 3",
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextZinc300
+                    color = colors.textMuted
                 )
             }
         }
@@ -549,7 +553,7 @@ private fun PermissionsSetupStep(
             text = "Required Permissions",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = TextWhite
+            color = colors.textPrimary
         )
 
         Spacer(modifier = Modifier.height(6.dp))
@@ -557,7 +561,7 @@ private fun PermissionsSetupStep(
         Text(
             text = "To monitor incoming customer payments and forward them to your merchant panel seamlessly, PipraPay needs access to SMS alerts and background services.",
             fontSize = 13.sp,
-            color = TextZinc400,
+            color = colors.textMuted,
             lineHeight = 19.sp
         )
 
@@ -636,10 +640,10 @@ private fun PermissionsSetupStep(
                 .height(52.dp)
                 .testTag("proceed_to_login_button"),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White,
-                contentColor = Color.Black,
-                disabledContainerColor = BorderZinc800,
-                disabledContentColor = TextZinc400
+                containerColor = if (colors.isDark) Color.White else Color(0xFF09090B),
+                contentColor = if (colors.isDark) Color.Black else Color.White,
+                disabledContainerColor = colors.border,
+                disabledContentColor = colors.textMuted
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -647,7 +651,7 @@ private fun PermissionsSetupStep(
                 text = "Continue to Panel Login",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (allRequiredGranted) Color.Black else TextZinc400
+                color = if (allRequiredGranted) (if (colors.isDark) Color.Black else Color.White) else colors.textMuted
             )
         }
 
@@ -656,7 +660,7 @@ private fun PermissionsSetupStep(
             Text(
                 text = "Please grant all required permissions above to continue.",
                 fontSize = 12.sp,
-                color = TextZinc400,
+                color = colors.textMuted,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -675,13 +679,14 @@ private fun PermissionItemCard(
     isExemption: Boolean = false,
     onActionClick: () -> Unit
 ) {
+    val colors = PipraTheme.colors
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("permission_item_$tag"),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = ContainerDark),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderZinc800),
+        colors = CardDefaults.cardColors(containerColor = colors.container),
+        border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -697,7 +702,7 @@ private fun PermissionItemCard(
                     text = title,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
-                    color = TextWhite
+                    color = colors.textPrimary
                 )
 
                 Surface(
@@ -729,7 +734,7 @@ private fun PermissionItemCard(
             Text(
                 text = description,
                 fontSize = 12.sp,
-                color = TextZinc400,
+                color = colors.textMuted,
                 lineHeight = 16.sp
             )
 
@@ -748,7 +753,7 @@ private fun PermissionItemCard(
                         text = if (isExemption) "Request Battery Exemption" else "Grant Permission",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isExemption) Color.White else CanvasBlack
+                        color = if (isExemption) Color.White else (if (colors.isDark) CanvasBlack else Color.White)
                     )
                 }
             }

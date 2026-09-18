@@ -100,6 +100,7 @@ import com.example.ui.theme.GhostEmeraldBg
 import com.example.ui.theme.GhostEmeraldBorder
 import com.example.ui.theme.GhostRoseBg
 import com.example.ui.theme.GhostRoseBorder
+import com.example.ui.theme.PipraTheme
 import com.example.ui.theme.StatusFailed
 import com.example.ui.theme.StatusSynced
 import com.example.ui.theme.TextWhite
@@ -195,6 +196,7 @@ fun QrScannerScreen(
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val colors = PipraTheme.colors
 
     val loginState by viewModel.loginState.collectAsStateWithLifecycle()
     val qrVerificationState by viewModel.qrVerificationState.collectAsStateWithLifecycle()
@@ -380,6 +382,7 @@ fun QrScannerScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
+            .background(colors.canvasBg)
             .testTag("qr_scanner_screen"),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -391,8 +394,8 @@ fun QrScannerScreen(
                     .fillMaxWidth()
                     .testTag("qr_viewfinder_card"),
                 shape = RoundedCornerShape(16.dp),
-                color = ContainerDark,
-                border = BorderStroke(1.dp, BorderZinc800)
+                color = colors.container,
+                border = BorderStroke(1.dp, colors.border)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
@@ -408,12 +411,12 @@ fun QrScannerScreen(
                             text = "Instant QR Pairing",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextWhite
+                            color = colors.textPrimary
                         )
                         Text(
                             text = "Point camera at the Connect QR code on your PipraPay Merchant Dashboard.",
                             fontSize = 12.sp,
-                            color = TextZinc400,
+                            color = colors.textMuted,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
@@ -423,10 +426,10 @@ fun QrScannerScreen(
                         modifier = Modifier
                             .size(230.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(CanvasBlack)
+                            .background(colors.canvasBg)
                             .border(
                                 width = 2.dp,
-                                color = if (isScanningActive && hasCameraPermission) AccentEmerald else BorderZinc800,
+                                color = if (isScanningActive && hasCameraPermission) AccentEmerald else colors.border,
                                 shape = RoundedCornerShape(16.dp)
                             ),
                         contentAlignment = Alignment.Center
@@ -523,12 +526,12 @@ fun QrScannerScreen(
                                     text = "Camera Access Required",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = TextWhite
+                                    color = colors.textPrimary
                                 )
                                 Text(
                                     text = "Grant camera permission to automatically scan QR codes.",
                                     fontSize = 11.sp,
-                                    color = TextZinc400,
+                                    color = colors.textMuted,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
                                 Button(
@@ -540,12 +543,12 @@ fun QrScannerScreen(
                                         .height(38.dp)
                                         .testTag("grant_camera_permission_button"),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color.White,
-                                        contentColor = Color.Black
+                                        containerColor = if (colors.isDark) Color.White else Color(0xFF09090B),
+                                        contentColor = if (colors.isDark) Color.Black else Color.White
                                     ),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Text("Grant Permission", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                                    Text("Grant Permission", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = if (colors.isDark) Color.Black else Color.White)
                                 }
                             }
                         } else if (isVerifying) {
@@ -564,13 +567,13 @@ fun QrScannerScreen(
                                     text = "Authenticating with gateway...",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = TextWhite,
+                                    color = colors.textPrimary,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
                                 Text(
                                     text = "Performing strict handshake verification",
                                     fontSize = 11.sp,
-                                    color = TextZinc400,
+                                    color = colors.textMuted,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
                             }
@@ -590,7 +593,7 @@ fun QrScannerScreen(
                                     text = "QR Code Detected",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = TextWhite
+                                    color = colors.textPrimary
                                 )
                             }
                         }
@@ -612,16 +615,16 @@ fun QrScannerScreen(
                                 .height(46.dp)
                                 .testTag("scan_code_button"),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White,
-                                contentColor = Color.Black,
-                                disabledContainerColor = Color(0xFF27272A),
-                                disabledContentColor = Color(0xFF71717A)
+                                containerColor = if (colors.isDark) Color.White else Color(0xFF09090B),
+                                contentColor = if (colors.isDark) Color.Black else Color.White,
+                                disabledContainerColor = colors.border,
+                                disabledContentColor = colors.textMuted
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             if (isVerifying) {
                                 CircularProgressIndicator(
-                                    color = Color.White,
+                                    color = if (colors.isDark) Color.Black else Color.White,
                                     modifier = Modifier.size(16.dp),
                                     strokeWidth = 2.dp
                                 )
@@ -630,12 +633,12 @@ fun QrScannerScreen(
                                     text = "Authenticating...",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
+                                    color = if (colors.isDark) Color.Black else Color.White
                                 )
                             } else {
-                                Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Black)
+                                Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (colors.isDark) Color.Black else Color.White)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Scan Code", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                                Text("Scan Code", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = if (colors.isDark) Color.Black else Color.White)
                             }
                         }
 
@@ -655,11 +658,11 @@ fun QrScannerScreen(
                                     .height(46.dp)
                                     .testTag("rescan_button"),
                                 shape = RoundedCornerShape(12.dp),
-                                border = BorderStroke(1.dp, BorderZinc800)
+                                border = BorderStroke(1.dp, colors.border)
                             ) {
-                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(15.dp), tint = TextWhite)
+                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(15.dp), tint = colors.textPrimary)
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Rescan", fontSize = 12.sp, color = TextWhite)
+                                Text("Rescan", fontSize = 12.sp, color = colors.textPrimary)
                             }
                         }
                     }
@@ -675,13 +678,13 @@ fun QrScannerScreen(
                         },
                         modifier = Modifier.testTag("enter_details_manually_button")
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp), tint = TextZinc400)
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp), tint = colors.textMuted)
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Enter Details Manually",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = TextZinc400
+                            color = colors.textMuted
                         )
                     }
                 }
@@ -696,7 +699,7 @@ fun QrScannerScreen(
                         .fillMaxWidth()
                         .testTag("parsed_config_preview_card"),
                     shape = RoundedCornerShape(16.dp),
-                    color = ContainerDark,
+                    color = colors.container,
                     border = BorderStroke(1.dp, GhostEmeraldBorder)
                 ) {
                     Column(
@@ -724,37 +727,37 @@ fun QrScannerScreen(
                             Text(
                                 text = "Gateway Credentials Verified",
                                 fontWeight = FontWeight.SemiBold,
-                                color = TextWhite,
+                                color = colors.textPrimary,
                                 fontSize = 13.sp
                             )
                         }
 
-                        HorizontalDivider(color = BorderZinc800)
+                        HorizontalDivider(color = colors.border)
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Gateway Server:", fontSize = 12.sp, color = TextZinc500)
-                            Text(server, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = TextWhite, fontFamily = FontFamily.Monospace)
+                            Text("Gateway Server:", fontSize = 12.sp, color = colors.textMuted)
+                            Text(server, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary, fontFamily = FontFamily.Monospace)
                         }
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Merchant Key:", fontSize = 12.sp, color = TextZinc500)
+                            Text("Merchant Key:", fontSize = 12.sp, color = colors.textMuted)
                             Text(
                                 if (parsedApiKey.isNullOrBlank()) "Configured" else "${parsedApiKey!!.take(4)}••••••••",
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Medium,
-                                color = TextWhite
+                                color = colors.textPrimary
                             )
                         }
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Device Key:", fontSize = 12.sp, color = TextZinc500)
+                            Text("Device Key:", fontSize = 12.sp, color = colors.textMuted)
                             Text(
                                 parsedDeviceKey ?: "Default",
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Medium,
-                                color = TextWhite
+                                color = colors.textPrimary
                             )
                         }
                     }
@@ -808,12 +811,12 @@ fun QrScannerScreen(
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.White,
-                                    contentColor = Color.Black
+                                    containerColor = if (colors.isDark) Color.White else Color(0xFF09090B),
+                                    contentColor = if (colors.isDark) Color.Black else Color.White
                                 ),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
-                                Text("Open App Settings", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                                Text("Open App Settings", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = if (colors.isDark) Color.Black else Color.White)
                             }
                         }
                     }
@@ -830,13 +833,13 @@ fun QrScannerScreen(
 
         AlertDialog(
             onDismissRequest = { showManualEntryDialog = false },
-            containerColor = ContainerDark,
+            containerColor = colors.container,
             title = {
                 Text(
                     text = "Manual Configuration",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextWhite
+                    color = colors.textPrimary
                 )
             },
             text = {
@@ -844,37 +847,43 @@ fun QrScannerScreen(
                     OutlinedTextField(
                         value = manualUrl,
                         onValueChange = { manualUrl = it },
-                        label = { Text("Server URL", fontSize = 12.sp) },
+                        label = { Text("Server URL", fontSize = 12.sp, color = colors.textMuted) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = BorderZinc800,
-                            focusedBorderColor = Color.White
+                            unfocusedBorderColor = colors.border,
+                            focusedBorderColor = colors.textPrimary,
+                            unfocusedTextColor = colors.textPrimary,
+                            focusedTextColor = colors.textPrimary
                         )
                     )
                     OutlinedTextField(
                         value = manualKey,
                         onValueChange = { manualKey = it },
-                        label = { Text("Merchant Key / OTP", fontSize = 12.sp) },
+                        label = { Text("Merchant Key / OTP", fontSize = 12.sp, color = colors.textMuted) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = BorderZinc800,
-                            focusedBorderColor = Color.White
+                            unfocusedBorderColor = colors.border,
+                            focusedBorderColor = colors.textPrimary,
+                            unfocusedTextColor = colors.textPrimary,
+                            focusedTextColor = colors.textPrimary
                         )
                     )
                     OutlinedTextField(
                         value = manualDevice,
                         onValueChange = { manualDevice = it },
-                        label = { Text("Device Key (POS ID)", fontSize = 12.sp) },
+                        label = { Text("Device Key (POS ID)", fontSize = 12.sp, color = colors.textMuted) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = BorderZinc800,
-                            focusedBorderColor = Color.White
+                            unfocusedBorderColor = colors.border,
+                            focusedBorderColor = colors.textPrimary,
+                            unfocusedTextColor = colors.textPrimary,
+                            focusedTextColor = colors.textPrimary
                         )
                     )
                 }
@@ -887,17 +896,17 @@ fun QrScannerScreen(
                         executeAutoConnect(formattedUrl, manualKey, manualDevice)
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Black
+                        containerColor = if (colors.isDark) Color.White else Color(0xFF09090B),
+                        contentColor = if (colors.isDark) Color.Black else Color.White
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Connect", fontWeight = FontWeight.SemiBold, color = Color.Black)
+                    Text("Connect", fontWeight = FontWeight.SemiBold, color = if (colors.isDark) Color.Black else Color.White)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showManualEntryDialog = false }) {
-                    Text("Cancel", color = TextZinc400)
+                    Text("Cancel", color = colors.textMuted)
                 }
             }
         )

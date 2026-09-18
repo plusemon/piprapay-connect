@@ -130,6 +130,7 @@ fun SettingsScreen(
     val connectionState by viewModel.connectionTestState.collectAsStateWithLifecycle()
     val settingsSaveState by viewModel.settingsSaveState.collectAsStateWithLifecycle()
     val isSaving = settingsSaveState is SettingsSaveState.Loading
+    val colors = PipraTheme.colors
 
     var serverUrl by remember(settings.serverBaseUrl) { mutableStateOf(settings.serverBaseUrl) }
     var apiKey by remember(settings.apiKey) { mutableStateOf(settings.apiKey) }
@@ -173,7 +174,7 @@ fun SettingsScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colors.canvasBg)
             .testTag("settings_screen"),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -187,8 +188,8 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .testTag("appearance_card"),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                colors = CardDefaults.cardColors(containerColor = colors.container),
+                border = BorderStroke(1.dp, colors.border),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(
@@ -232,18 +233,18 @@ fun SettingsScreen(
                                         text = "Dark Mode",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        color = colors.textPrimary
                                     )
                                     Surface(
                                         shape = RoundedCornerShape(4.dp),
-                                        color = if (isDarkMode) Color(0xFF27272A) else Color(0xFFE2E8F0)
+                                        color = colors.surfaceCard
                                     ) {
                                         Text(
                                             text = if (isDarkMode) "DARK" else "LIGHT",
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isDarkMode) Color(0xFFA1A1AA) else Color(0xFF475569)
+                                            color = colors.textMuted
                                         )
                                     }
                                 }
@@ -253,7 +254,7 @@ fun SettingsScreen(
                                     else
                                         "Clean high-readability light canvas active",
                                     fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = colors.textMuted
                                 )
                             }
                         }
@@ -264,8 +265,8 @@ fun SettingsScreen(
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = AccentEmerald,
-                                uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = if (isDarkMode) Color(0xFF3F3F46) else Color(0xFFCBD5E1)
+                                uncheckedThumbColor = colors.textMuted,
+                                uncheckedTrackColor = colors.border
                             ),
                             modifier = Modifier.testTag("dark_mode_toggle")
                         )
@@ -283,8 +284,8 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .testTag("server_config_card"),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = ContainerDark),
-                border = BorderStroke(1.dp, BorderZinc800),
+                colors = CardDefaults.cardColors(containerColor = colors.container),
+                border = BorderStroke(1.dp, colors.border),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(
@@ -305,27 +306,27 @@ fun SettingsScreen(
                             Icon(
                                 Icons.Default.Dns,
                                 contentDescription = null,
-                                tint = TextZinc400,
+                                tint = colors.textMuted,
                                 modifier = Modifier.size(18.dp)
                             )
                         },
                         singleLine = true,
-                        textStyle = TextStyle(fontSize = 13.sp, color = TextWhite),
+                        textStyle = TextStyle(fontSize = 13.sp, color = colors.textPrimary),
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("server_url_input"),
                         shape = RoundedCornerShape(10.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = SurfaceCard,
-                            unfocusedContainerColor = SurfaceCard,
+                            focusedContainerColor = colors.surfaceCard,
+                            unfocusedContainerColor = colors.surfaceCard,
                             focusedBorderColor = AccentEmerald,
-                            unfocusedBorderColor = BorderZinc800,
-                            focusedTextColor = TextWhite,
-                            unfocusedTextColor = TextWhite,
-                            focusedLabelColor = TextZinc400,
-                            unfocusedLabelColor = TextZinc400,
-                            focusedPlaceholderColor = TextZinc500,
-                            unfocusedPlaceholderColor = TextZinc500
+                            unfocusedBorderColor = colors.border,
+                            focusedTextColor = colors.textPrimary,
+                            unfocusedTextColor = colors.textPrimary,
+                            focusedLabelColor = colors.textMuted,
+                            unfocusedLabelColor = colors.textMuted,
+                            focusedPlaceholderColor = colors.textSubtle,
+                            unfocusedPlaceholderColor = colors.textSubtle
                         )
                     )
 
@@ -343,12 +344,12 @@ fun SettingsScreen(
                             Icon(
                                 Icons.Default.Key,
                                 contentDescription = null,
-                                tint = TextZinc400,
+                                tint = colors.textMuted,
                                 modifier = Modifier.size(18.dp)
                             )
                         },
                         singleLine = true,
-                        textStyle = TextStyle(fontSize = 13.sp, fontFamily = FontFamily.Monospace, color = TextWhite),
+                        textStyle = TextStyle(fontSize = 13.sp, fontFamily = FontFamily.Monospace, color = colors.textPrimary),
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("api_key_input"),
@@ -358,23 +359,23 @@ fun SettingsScreen(
                                 Icon(
                                     if (isApiKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                     contentDescription = "Toggle API Key visibility",
-                                    tint = TextZinc400,
+                                    tint = colors.textMuted,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
                         },
                         shape = RoundedCornerShape(10.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = SurfaceCard,
-                            unfocusedContainerColor = SurfaceCard,
+                            focusedContainerColor = colors.surfaceCard,
+                            unfocusedContainerColor = colors.surfaceCard,
                             focusedBorderColor = AccentEmerald,
-                            unfocusedBorderColor = BorderZinc800,
-                            focusedTextColor = TextWhite,
-                            unfocusedTextColor = TextWhite,
-                            focusedLabelColor = TextZinc400,
-                            unfocusedLabelColor = TextZinc400,
-                            focusedPlaceholderColor = TextZinc500,
-                            unfocusedPlaceholderColor = TextZinc500
+                            unfocusedBorderColor = colors.border,
+                            focusedTextColor = colors.textPrimary,
+                            unfocusedTextColor = colors.textPrimary,
+                            focusedLabelColor = colors.textMuted,
+                            unfocusedLabelColor = colors.textMuted,
+                            focusedPlaceholderColor = colors.textSubtle,
+                            unfocusedPlaceholderColor = colors.textSubtle
                         )
                     )
 
@@ -391,12 +392,12 @@ fun SettingsScreen(
                             Icon(
                                 Icons.Default.Smartphone,
                                 contentDescription = null,
-                                tint = TextZinc400,
+                                tint = colors.textMuted,
                                 modifier = Modifier.size(18.dp)
                             )
                         },
                         singleLine = true,
-                        textStyle = TextStyle(fontSize = 13.sp, fontFamily = FontFamily.Monospace, color = TextWhite),
+                        textStyle = TextStyle(fontSize = 13.sp, fontFamily = FontFamily.Monospace, color = colors.textPrimary),
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("device_key_input"),
@@ -413,7 +414,7 @@ fun SettingsScreen(
                                     Icon(
                                         Icons.Default.ContentCopy,
                                         contentDescription = "Copy Device Key",
-                                        tint = TextZinc400,
+                                        tint = colors.textMuted,
                                         modifier = Modifier.size(16.dp)
                                     )
                                 }
@@ -437,16 +438,16 @@ fun SettingsScreen(
                         },
                         shape = RoundedCornerShape(10.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = SurfaceCard,
-                            unfocusedContainerColor = SurfaceCard,
+                            focusedContainerColor = colors.surfaceCard,
+                            unfocusedContainerColor = colors.surfaceCard,
                             focusedBorderColor = AccentEmerald,
-                            unfocusedBorderColor = BorderZinc800,
-                            focusedTextColor = TextWhite,
-                            unfocusedTextColor = TextWhite,
-                            focusedLabelColor = TextZinc400,
-                            unfocusedLabelColor = TextZinc400,
-                            focusedPlaceholderColor = TextZinc500,
-                            unfocusedPlaceholderColor = TextZinc500
+                            unfocusedBorderColor = colors.border,
+                            focusedTextColor = colors.textPrimary,
+                            unfocusedTextColor = colors.textPrimary,
+                            focusedLabelColor = colors.textMuted,
+                            unfocusedLabelColor = colors.textMuted,
+                            focusedPlaceholderColor = colors.textSubtle,
+                            unfocusedPlaceholderColor = colors.textSubtle
                         )
                     )
 
@@ -509,10 +510,10 @@ fun SettingsScreen(
                                 .testTag("save_settings_button"),
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White,
-                                contentColor = Color.Black,
-                                disabledContainerColor = BorderZinc800,
-                                disabledContentColor = TextZinc400
+                                containerColor = if (colors.isDark) Color.White else Color(0xFF09090B),
+                                contentColor = if (colors.isDark) Color.Black else Color.White,
+                                disabledContainerColor = colors.border,
+                                disabledContentColor = colors.textMuted
                             )
                         ) {
                             if (isSaving) {
@@ -526,12 +527,22 @@ fun SettingsScreen(
                                     text = "Verifying...",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = TextZinc400
+                                    color = colors.textMuted
                                 )
                             } else {
-                                Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Black)
+                                Icon(
+                                    Icons.Default.Save,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = if (colors.isDark) Color.Black else Color.White
+                                )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Save", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                                Text(
+                                    "Save",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (colors.isDark) Color.Black else Color.White
+                                )
                             }
                         }
 
@@ -546,10 +557,10 @@ fun SettingsScreen(
                                 .testTag("test_connection_button"),
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = SurfaceCard,
-                                contentColor = TextWhite
+                                containerColor = colors.surfaceCard,
+                                contentColor = colors.textPrimary
                             ),
-                            border = BorderStroke(1.dp, BorderZinc800)
+                            border = BorderStroke(1.dp, colors.border)
                         ) {
                             if (connectionState is ConnectionTestState.Testing) {
                                 CircularProgressIndicator(
@@ -558,11 +569,11 @@ fun SettingsScreen(
                                     color = AccentEmerald
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Testing...", fontSize = 12.sp, color = TextZinc400)
+                                Text("Testing...", fontSize = 12.sp, color = colors.textMuted)
                             } else {
-                                Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(15.dp), tint = TextWhite)
+                                Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(15.dp), tint = colors.textPrimary)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Ping Test", fontSize = 12.sp, color = TextWhite)
+                                Text("Ping Test", fontSize = 12.sp, color = colors.textPrimary)
                             }
                         }
                     }
@@ -610,8 +621,8 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .testTag("battery_optimization_card"),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = ContainerDark),
-                border = BorderStroke(1.dp, BorderZinc800),
+                colors = CardDefaults.cardColors(containerColor = colors.container),
+                border = BorderStroke(1.dp, colors.border),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -643,12 +654,12 @@ fun SettingsScreen(
                                 text = "Battery Optimization",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = TextWhite
+                                color = colors.textPrimary
                             )
                             Text(
                                 text = if (isBatteryOptimized) "Exempted • Continuous sync active" else "Restricted • OEM sleep may kill sync",
                                 fontSize = 11.sp,
-                                color = TextZinc400
+                                color = colors.textMuted
                             )
                         }
 
@@ -706,7 +717,7 @@ fun SettingsScreen(
                     }
 
                     HorizontalDivider(
-                        color = BorderZinc800,
+                        color = colors.border,
                         modifier = Modifier.padding(vertical = 10.dp)
                     )
 
@@ -721,12 +732,12 @@ fun SettingsScreen(
                                 text = "OEM Workaround Guide",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = TextWhite
+                                color = colors.textPrimary
                             )
                             Text(
                                 text = "Xiaomi/MIUI, Samsung, Oppo & Vivo 24/7 background persistence",
                                 fontSize = 11.sp,
-                                color = TextZinc400
+                                color = colors.textMuted
                             )
                         }
 
@@ -738,12 +749,12 @@ fun SettingsScreen(
                                 .testTag("open_oem_modal_button"),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = SurfaceCard,
-                                contentColor = TextWhite
+                                containerColor = colors.surfaceCard,
+                                contentColor = colors.textPrimary
                             ),
-                            border = BorderStroke(1.dp, BorderZinc800)
+                            border = BorderStroke(1.dp, colors.border)
                         ) {
-                            Text("Guide", fontSize = 11.sp, color = TextWhite)
+                            Text("Guide", fontSize = 11.sp, color = colors.textPrimary)
                         }
                     }
                 }
@@ -759,8 +770,8 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .testTag("alerts_feedback_card"),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = ContainerDark),
-                border = BorderStroke(1.dp, BorderZinc800),
+                colors = CardDefaults.cardColors(containerColor = colors.container),
+                border = BorderStroke(1.dp, colors.border),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -778,7 +789,7 @@ fun SettingsScreen(
                             Icon(
                                 Icons.Default.Smartphone,
                                 contentDescription = null,
-                                tint = if (settings.hapticEnabled) AccentEmerald else TextZinc400,
+                                tint = if (settings.hapticEnabled) AccentEmerald else colors.textMuted,
                                 modifier = Modifier.size(20.dp)
                             )
                             Column {
@@ -786,12 +797,12 @@ fun SettingsScreen(
                                     text = "Haptic Pulse",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = TextWhite
+                                    color = colors.textPrimary
                                 )
                                 Text(
                                     text = "Sharp tactile vibration on incoming SMS capture",
                                     fontSize = 11.sp,
-                                    color = TextZinc400
+                                    color = colors.textMuted
                                 )
                             }
                         }
@@ -802,15 +813,15 @@ fun SettingsScreen(
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = AccentEmerald,
-                                uncheckedThumbColor = TextZinc400,
-                                uncheckedTrackColor = BorderZinc800
+                                uncheckedThumbColor = colors.textMuted,
+                                uncheckedTrackColor = colors.border
                             ),
                             modifier = Modifier.testTag("haptic_toggle")
                         )
                     }
 
                     HorizontalDivider(
-                        color = BorderZinc800,
+                        color = colors.border,
                         modifier = Modifier.padding(vertical = 10.dp)
                     )
 
@@ -828,7 +839,7 @@ fun SettingsScreen(
                             Icon(
                                 Icons.Default.Notifications,
                                 contentDescription = null,
-                                tint = if (settings.audioToneEnabled) AccentEmerald else TextZinc400,
+                                tint = if (settings.audioToneEnabled) AccentEmerald else colors.textMuted,
                                 modifier = Modifier.size(20.dp)
                             )
                             Column {
@@ -836,12 +847,12 @@ fun SettingsScreen(
                                     text = "Transaction POS Chime",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = TextWhite
+                                    color = colors.textPrimary
                                 )
                                 Text(
                                     text = "Crisp dual-tone sound when payment is parsed",
                                     fontSize = 11.sp,
-                                    color = TextZinc400
+                                    color = colors.textMuted
                                 )
                             }
                         }
@@ -852,15 +863,15 @@ fun SettingsScreen(
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = AccentEmerald,
-                                uncheckedThumbColor = TextZinc400,
-                                uncheckedTrackColor = BorderZinc800
+                                uncheckedThumbColor = colors.textMuted,
+                                uncheckedTrackColor = colors.border
                             ),
                             modifier = Modifier.testTag("audio_tone_toggle")
                         )
                     }
 
                     HorizontalDivider(
-                        color = BorderZinc800,
+                        color = colors.border,
                         modifier = Modifier.padding(vertical = 10.dp)
                     )
 
@@ -876,14 +887,14 @@ fun SettingsScreen(
                             .height(36.dp)
                             .testTag("test_alert_button"),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = SurfaceCard,
-                            contentColor = TextWhite
+                            containerColor = colors.surfaceCard,
+                            contentColor = colors.textPrimary
                         ),
-                        border = BorderStroke(1.dp, BorderZinc800)
+                        border = BorderStroke(1.dp, colors.border)
                     ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(14.dp), tint = TextWhite)
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(14.dp), tint = colors.textPrimary)
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Test Chime & Haptic Pulse", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextWhite)
+                        Text("Test Chime & Haptic Pulse", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
                     }
                 }
             }
@@ -898,8 +909,8 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .testTag("permissions_checklist_card"),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = ContainerDark),
-                border = BorderStroke(1.dp, BorderZinc800),
+                colors = CardDefaults.cardColors(containerColor = colors.container),
+                border = BorderStroke(1.dp, colors.border),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -911,7 +922,7 @@ fun SettingsScreen(
                     )
 
                     HorizontalDivider(
-                        color = BorderZinc800,
+                        color = colors.border,
                         modifier = Modifier.padding(vertical = 10.dp)
                     )
 
@@ -923,7 +934,7 @@ fun SettingsScreen(
                     )
 
                     HorizontalDivider(
-                        color = BorderZinc800,
+                        color = colors.border,
                         modifier = Modifier.padding(vertical = 10.dp)
                     )
 
@@ -955,7 +966,7 @@ fun SettingsScreen(
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = AccentEmerald)
                         ) {
-                            Text("Grant Missing Permissions", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = CanvasBlack)
+                            Text("Grant Missing Permissions", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = if (colors.isDark) CanvasBlack else Color.White)
                         }
                     }
                 }
@@ -971,8 +982,8 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .testTag("onboarding_management_card"),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = ContainerDark),
-                border = BorderStroke(1.dp, BorderZinc800),
+                colors = CardDefaults.cardColors(containerColor = colors.container),
+                border = BorderStroke(1.dp, colors.border),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -987,12 +998,12 @@ fun SettingsScreen(
                                 text = "Setup Wizard",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = TextWhite
+                                color = colors.textPrimary
                             )
                             Text(
                                 text = "Re-open initial configuration steps",
                                 fontSize = 11.sp,
-                                color = TextZinc400
+                                color = colors.textMuted
                             )
                         }
 
@@ -1007,17 +1018,17 @@ fun SettingsScreen(
                                 .testTag("rerun_onboarding_button"),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = SurfaceCard,
-                                contentColor = TextWhite
+                                containerColor = colors.surfaceCard,
+                                contentColor = colors.textPrimary
                             ),
-                            border = BorderStroke(1.dp, BorderZinc800)
+                            border = BorderStroke(1.dp, colors.border)
                         ) {
-                            Text("Restart", fontSize = 11.sp, color = TextWhite)
+                            Text("Restart", fontSize = 11.sp, color = colors.textPrimary)
                         }
                     }
 
                     HorizontalDivider(
-                        color = BorderZinc800,
+                        color = colors.border,
                         modifier = Modifier.padding(vertical = 10.dp)
                     )
 
@@ -1032,12 +1043,12 @@ fun SettingsScreen(
                                 text = "Switch Merchant Panel",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = TextWhite
+                                color = colors.textPrimary
                             )
                             Text(
                                 text = "Disconnect and link a new account",
                                 fontSize = 11.sp,
-                                color = TextZinc400
+                                color = colors.textMuted
                             )
                         }
 
@@ -1053,7 +1064,7 @@ fun SettingsScreen(
                                 .testTag("switch_panel_button"),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = SurfaceCard,
+                                containerColor = colors.surfaceCard,
                                 contentColor = StatusFailed
                             ),
                             border = BorderStroke(1.dp, StatusFailed.copy(alpha = 0.4f))
@@ -1073,9 +1084,9 @@ fun SettingsScreen(
                     .testTag("app_version_card"),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = ContainerDark
+                    containerColor = colors.container
                 ),
-                border = BorderStroke(1.dp, BorderZinc800),
+                border = BorderStroke(1.dp, colors.border),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Row(
@@ -1095,20 +1106,20 @@ fun SettingsScreen(
                                 text = "PipraPay Connect",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = TextWhite
+                                color = colors.textPrimary
                             )
                             Text(
                                 text = "Automated MFS Gateway Node",
                                 fontSize = 10.sp,
-                                color = TextZinc400
+                                color = colors.textMuted
                             )
                         }
                     }
 
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = SurfaceCard,
-                        border = BorderStroke(1.dp, BorderZinc800)
+                        color = colors.surfaceCard,
+                        border = BorderStroke(1.dp, colors.border)
                     ) {
                         Text(
                             text = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
@@ -1116,7 +1127,7 @@ fun SettingsScreen(
                             fontSize = 11.sp,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Medium,
-                            color = TextZinc400
+                            color = colors.textMuted
                         )
                     }
                 }
@@ -1133,12 +1144,13 @@ fun SettingsScreen(
 
 @Composable
 private fun SettingsSectionHeader(title: String) {
+    val colors = PipraTheme.colors
     Text(
         text = title,
         fontSize = 11.sp,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 0.8.sp,
-        color = TextZinc400,
+        color = colors.textMuted,
         modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
     )
 }
@@ -1150,6 +1162,7 @@ private fun MinimalPermissionRow(
     subtitle: String,
     isGranted: Boolean
 ) {
+    val colors = PipraTheme.colors
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -1158,7 +1171,7 @@ private fun MinimalPermissionRow(
         Icon(
             icon,
             contentDescription = null,
-            tint = if (isGranted) AccentEmerald else TextZinc500,
+            tint = if (isGranted) AccentEmerald else colors.textSubtle,
             modifier = Modifier.size(18.dp)
         )
 
@@ -1167,12 +1180,12 @@ private fun MinimalPermissionRow(
                 text = title,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
-                color = TextWhite
+                color = colors.textPrimary
             )
             Text(
                 text = subtitle,
                 fontSize = 11.sp,
-                color = TextZinc400
+                color = colors.textMuted
             )
         }
 
