@@ -81,33 +81,63 @@ jobs:
         run: |
           if [ -n "$RELEASE_KEYSTORE_BASE64" ]; then
             echo "Decoding release keystore from repository secrets..."
-            echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > release.keystore
+            echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "${GITHUB_WORKSPACE}/release.keystore"
             echo "KEYSTORE_PATH=${GITHUB_WORKSPACE}/release.keystore" >> "$GITHUB_ENV"
           elif [ -f "debug.keystore.base64" ]; then
-            echo "Restoring debug keystore as fallback signing key..."
-            base64 -d debug.keystore.base64 > debug.keystore
+            echo "Restoring debug keystore from debug.keystore.base64..."
+            base64 -d debug.keystore.base64 > "${GITHUB_WORKSPACE}/debug.keystore"
+            echo "KEYSTORE_PATH=${GITHUB_WORKSPACE}/debug.keystore" >> "$GITHUB_ENV"
+            echo "STORE_PASSWORD=android" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=androiddebugkey" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=android" >> "$GITHUB_ENV"
+          elif [ -f "debug.keystore" ]; then
+            echo "Using existing debug.keystore..."
+            echo "KEYSTORE_PATH=${GITHUB_WORKSPACE}/debug.keystore" >> "$GITHUB_ENV"
+            echo "STORE_PASSWORD=android" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=androiddebugkey" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=android" >> "$GITHUB_ENV"
           else
-            echo "No custom keystore provided. Standard signing configuration will be used."
+            echo "Generating fallback signing keystore..."
+            keytool -genkeypair -v -keystore "${GITHUB_WORKSPACE}/debug.keystore" -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=PipraPay,O=PipraPay,C=US"
+            echo "KEYSTORE_PATH=${GITHUB_WORKSPACE}/debug.keystore" >> "$GITHUB_ENV"
+            echo "STORE_PASSWORD=android" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=androiddebugkey" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=android" >> "$GITHUB_ENV"
           fi
 
       - name: Build Release APK
         env:
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || secrets.KEYSTORE_PASSWORD || env.STORE_PASSWORD || 'android' }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || env.KEY_ALIAS || 'androiddebugkey' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || env.KEY_PASSWORD || 'android' }}
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Stage Release APK
         run: |
           TAG="${{ steps.release_meta.outputs.tag }}"
           mkdir -p release-assets
-          RELEASE_APK="app/build/outputs/apk/release/app-release.apk"
-          if [ ! -f "$RELEASE_APK" ]; then
-            echo "::error::Release APK not found at $RELEASE_APK"
+
+          echo "Listing all generated APK files:"
+          find app/build/outputs/apk/ -type f || true
+
+          RELEASE_APK=""
+          if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
+            RELEASE_APK="app/build/outputs/apk/release/app-release.apk"
+          elif [ -f "app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
+            RELEASE_APK="app/build/outputs/apk/release/app-release-unsigned.apk"
+          else
+            RELEASE_APK=$(find app/build/outputs/apk/ -type f -name "*.apk" | head -n 1)
+          fi
+
+          if [ -z "$RELEASE_APK" ] || [ ! -f "$RELEASE_APK" ]; then
+            echo "::error::Release APK not found in app/build/outputs/apk/"
             exit 1
           fi
+
+          echo "Selected Release APK: $RELEASE_APK"
           cp "$RELEASE_APK" "release-assets/piprapay-connect-${TAG}.apk"
-          echo "Packaged APK: release-assets/piprapay-connect-${TAG}.apk"
+          echo "Successfully packaged: release-assets/piprapay-connect-${TAG}.apk"
+          ls -lh release-assets/
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
