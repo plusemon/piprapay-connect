@@ -174,4 +174,14 @@ class ExampleRobolectricTest {
         composeTestRule.onNodeWithTag("dark_mode_toggle").performClick()
         composeTestRule.waitForIdle()
     }
+
+    @Test
+    fun `verify update version comparison logic`() {
+        val app = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val updateManager = com.example.util.UpdateManager(app)
+        assertTrue(updateManager.isNewerVersion("1.0.0", "v1.1.0"))
+        assertTrue(updateManager.isNewerVersion("1.0", "1.0.1"))
+        assertFalse(updateManager.isNewerVersion("1.1.0", "v1.1.0"))
+        assertFalse(updateManager.isNewerVersion("1.2.0", "1.1.5"))
+    }
 }
