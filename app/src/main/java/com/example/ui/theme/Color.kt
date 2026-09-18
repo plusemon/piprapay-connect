@@ -60,9 +60,9 @@ val NavyDarkBg = CanvasBlack
 val NavyDarkSurface = ContainerDark
 val NavyDarkSurfaceVariant = SurfaceCard
 
-val LightCanvasBg = CanvasBlack
-val LightSurface = ContainerDark
-val LightSurfaceVariant = SurfaceCard
+val LightCanvasBg = CanvasWhite
+val LightSurface = ContainerLight
+val LightSurfaceVariant = SurfaceCardLight
 
 // MFS Provider References
 val BkashPink = Color(0xFFE2136E)
@@ -80,18 +80,18 @@ val SlateDark = CanvasBlack
 val SlateCard = ContainerDark
 val SlateStroke = BorderZinc800
 val SlateTextMuted = TextZinc500
-val SlateSurfaceLight = SurfaceCard
+val SlateSurfaceLight = SurfaceCardLight
 
 // Standard M3 neutrals
 val NeutralGrayText = TextZinc500
 val NeutralDarkText = TextWhite
-val NeutralLightText = TextWhite
+val NeutralLightText = TextBlack
 
 // Authentication brand accents
 val BrandIndigo = Color(0xFF5451F6)
 val BrandIndigoPressed = Color(0xFF433FE0)
-val BrandIndigoLight = SurfaceCard
-val BrandIndigoRing = BorderZinc800
-val InputBorderLight = BorderZinc800
-val InputBackgroundLight = ContainerDark
+val BrandIndigoLight = SurfaceCardLight
+val BrandIndigoRing = BorderLight
+val InputBorderLight = BorderLight
+val InputBackgroundLight = ContainerLight
 

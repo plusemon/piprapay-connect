@@ -66,6 +66,7 @@ import com.example.ui.theme.CanvasBlack
 import com.example.ui.theme.ContainerDark
 import com.example.ui.theme.GhostRoseBg
 import com.example.ui.theme.GhostRoseBorder
+import com.example.ui.theme.PipraTheme
 import com.example.ui.theme.StatusFailed
 import com.example.ui.theme.SurfaceCard
 import com.example.ui.theme.TextWhite
@@ -88,6 +89,7 @@ fun LoginScreen(
     val scrollState = rememberScrollState()
     val loginState by viewModel.loginState.collectAsStateWithLifecycle()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val colors = PipraTheme.colors
 
     val isLoading = loginState is LoginState.Loading
 
@@ -157,7 +159,7 @@ fun LoginScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(CanvasBlack)
+            .background(colors.canvasBg)
             .verticalScroll(scrollState)
             .padding(horizontal = 24.dp, vertical = 16.dp)
             .testTag("login_account_screen"),
@@ -170,16 +172,16 @@ fun LoginScreen(
                     .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .clickable(enabled = !isLoading) { onBack() }
-                    .border(1.dp, BorderZinc800, RoundedCornerShape(12.dp))
+                    .border(1.dp, colors.border, RoundedCornerShape(12.dp))
                     .testTag("login_back_button"),
-                color = SurfaceCard,
+                color = colors.surfaceCard,
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = TextWhite,
+                        tint = colors.textPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -194,7 +196,7 @@ fun LoginScreen(
             text = "Login your account",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = TextWhite,
+            color = colors.textPrimary,
             modifier = Modifier.testTag("login_screen_title")
         )
 
@@ -205,7 +207,7 @@ fun LoginScreen(
             text = "Welcome back, Sign in to your account",
             fontSize = 15.sp,
             fontWeight = FontWeight.Normal,
-            color = TextZinc400
+            color = colors.textMuted
         )
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -215,7 +217,7 @@ fun LoginScreen(
             text = "Payment Panel URL",
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
-            color = TextWhite
+            color = colors.textPrimary
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -231,7 +233,7 @@ fun LoginScreen(
             placeholder = {
                 Text(
                     text = "https://pay.emon.bd/",
-                    color = TextZinc500,
+                    color = colors.textSubtle,
                     fontSize = 14.sp
                 )
             },
@@ -240,22 +242,22 @@ fun LoginScreen(
                 { Text(text = urlError ?: "", color = Color(0xFFFB7185), fontSize = 12.sp) }
             } else null,
             singleLine = true,
-            textStyle = TextStyle(fontSize = 14.sp, color = TextWhite),
+            textStyle = TextStyle(fontSize = 14.sp, color = colors.textPrimary),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("payment_panel_url_input"),
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = SurfaceCard,
-                unfocusedContainerColor = SurfaceCard,
+                focusedContainerColor = colors.surfaceCard,
+                unfocusedContainerColor = colors.surfaceCard,
                 focusedBorderColor = AccentEmerald,
-                unfocusedBorderColor = BorderZinc800,
-                focusedTextColor = TextWhite,
-                unfocusedTextColor = TextWhite,
-                focusedLabelColor = TextZinc400,
-                unfocusedLabelColor = TextZinc400,
-                focusedPlaceholderColor = TextZinc500,
-                unfocusedPlaceholderColor = TextZinc500
+                unfocusedBorderColor = colors.border,
+                focusedTextColor = colors.textPrimary,
+                unfocusedTextColor = colors.textPrimary,
+                focusedLabelColor = colors.textMuted,
+                unfocusedLabelColor = colors.textMuted,
+                focusedPlaceholderColor = colors.textSubtle,
+                unfocusedPlaceholderColor = colors.textSubtle
             )
         )
 
@@ -266,7 +268,7 @@ fun LoginScreen(
             text = "One Time Password",
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
-            color = TextWhite
+            color = colors.textPrimary
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -282,7 +284,7 @@ fun LoginScreen(
             placeholder = {
                 Text(
                     text = "Enter OTP or secret token",
-                    color = TextZinc500,
+                    color = colors.textSubtle,
                     fontSize = 14.sp
                 )
             },
@@ -291,7 +293,7 @@ fun LoginScreen(
                 { Text(text = passwordError ?: "", color = Color(0xFFFB7185), fontSize = 12.sp) }
             } else null,
             singleLine = true,
-            textStyle = TextStyle(fontSize = 14.sp, color = TextWhite),
+            textStyle = TextStyle(fontSize = 14.sp, color = colors.textPrimary),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("one_time_password_input"),
@@ -304,22 +306,22 @@ fun LoginScreen(
                     Icon(
                         imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                         contentDescription = "Toggle password visibility",
-                        tint = TextZinc400
+                        tint = colors.textMuted
                     )
                 }
             },
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = SurfaceCard,
-                unfocusedContainerColor = SurfaceCard,
+                focusedContainerColor = colors.surfaceCard,
+                unfocusedContainerColor = colors.surfaceCard,
                 focusedBorderColor = AccentEmerald,
-                unfocusedBorderColor = BorderZinc800,
-                focusedTextColor = TextWhite,
-                unfocusedTextColor = TextWhite,
-                focusedLabelColor = TextZinc400,
-                unfocusedLabelColor = TextZinc400,
-                focusedPlaceholderColor = TextZinc500,
-                unfocusedPlaceholderColor = TextZinc500
+                unfocusedBorderColor = colors.border,
+                focusedTextColor = colors.textPrimary,
+                unfocusedTextColor = colors.textPrimary,
+                focusedLabelColor = colors.textMuted,
+                unfocusedLabelColor = colors.textMuted,
+                focusedPlaceholderColor = colors.textSubtle,
+                unfocusedPlaceholderColor = colors.textSubtle
             )
         )
 
@@ -358,7 +360,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Main "Login" Button (White background, black text. Loading: background #27272A, text #A1A1AA, emerald spinner)
+        // Main "Login" Button (White/Primary background)
         Button(
             onClick = {
                 validateAndExecuteLogin()
@@ -369,10 +371,10 @@ fun LoginScreen(
                 .height(52.dp)
                 .testTag("login_button"),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White,
-                contentColor = Color.Black,
-                disabledContainerColor = BorderZinc800,
-                disabledContentColor = TextZinc400
+                containerColor = if (colors.isDark) Color.White else Color(0xFF09090B),
+                contentColor = if (colors.isDark) Color.Black else Color.White,
+                disabledContainerColor = colors.border,
+                disabledContentColor = colors.textMuted
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -387,14 +389,14 @@ fun LoginScreen(
                     text = "Verifying handshake...",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextZinc400
+                    color = colors.textMuted
                 )
             } else {
                 Text(
                     text = "Login",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.Black
+                    color = if (colors.isDark) Color.Black else Color.White
                 )
             }
         }
@@ -408,18 +410,18 @@ fun LoginScreen(
         ) {
             HorizontalDivider(
                 modifier = Modifier.weight(1f),
-                color = BorderZinc800
+                color = colors.border
             )
             Text(
                 text = "OR",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
-                color = TextZinc500,
+                color = colors.textSubtle,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             HorizontalDivider(
                 modifier = Modifier.weight(1f),
-                color = BorderZinc800
+                color = colors.border
             )
         }
 
@@ -434,8 +436,8 @@ fun LoginScreen(
                 modifier = Modifier
                     .size(68.dp)
                     .clip(CircleShape)
-                    .background(SurfaceCard)
-                    .border(1.dp, BorderZinc800, CircleShape)
+                    .background(colors.surfaceCard)
+                    .border(1.dp, colors.border, CircleShape)
                     .clickable(enabled = !isLoading) {
                         onNavigateToQr?.invoke()
                     }
@@ -457,7 +459,7 @@ fun LoginScreen(
                 text = "Or log in with QR code",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Normal,
-                color = TextWhite,
+                color = colors.textPrimary,
                 modifier = Modifier
                     .clickable(enabled = !isLoading) {
                         onNavigateToQr?.invoke()

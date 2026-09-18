@@ -110,6 +110,8 @@ jobs:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || secrets.KEYSTORE_PASSWORD || env.STORE_PASSWORD || 'android' }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS || env.KEY_ALIAS || 'androiddebugkey' }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || env.KEY_PASSWORD || 'android' }}
+          TAG_NAME: ${{ steps.release_meta.outputs.tag }}
+          VERSION_NAME: ${{ steps.release_meta.outputs.tag }}
         run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Stage Release APK

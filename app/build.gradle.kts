@@ -14,8 +14,11 @@ android {
     applicationId = "com.piprapay.connect"
     minSdk = 24
     targetSdk = 36
-    versionCode = 2
-    versionName = "1.0.1"
+    val envVersion = System.getenv("VERSION_NAME")?.removePrefix("v")
+      ?: System.getenv("TAG_NAME")?.removePrefix("v")
+      ?: System.getenv("RELEASE_VERSION")?.removePrefix("v")
+    versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 6
+    versionName = if (!envVersion.isNullOrBlank()) envVersion else "1.0.6"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

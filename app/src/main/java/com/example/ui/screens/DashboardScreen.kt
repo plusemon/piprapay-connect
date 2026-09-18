@@ -105,6 +105,7 @@ import com.example.ui.theme.GhostEmeraldBg
 import com.example.ui.theme.GhostEmeraldBorder
 import com.example.ui.theme.GhostRoseBg
 import com.example.ui.theme.GhostRoseBorder
+import com.example.ui.theme.PipraTheme
 import com.example.ui.theme.SurfaceCard
 import com.example.ui.theme.TextWhite
 import com.example.ui.theme.TextZinc300
@@ -123,6 +124,7 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val colors = PipraTheme.colors
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
     val isBatteryOptimized by viewModel.isBatteryOptimizationIgnored.collectAsStateWithLifecycle()
@@ -174,7 +176,7 @@ fun DashboardScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CanvasBlack)
+            .background(colors.canvasBg)
             .testTag("dashboard_screen"),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)

@@ -54,6 +54,7 @@ import com.example.ui.theme.BorderZinc700
 import com.example.ui.theme.BorderZinc800
 import com.example.ui.theme.CanvasBlack
 import com.example.ui.theme.ContainerDark
+import com.example.ui.theme.PipraTheme
 import com.example.ui.theme.SurfaceCard
 import com.example.ui.theme.TextWhite
 import com.example.ui.theme.TextZinc300
@@ -72,6 +73,7 @@ fun OemOptimizationModal(
 ) {
     val context = LocalContext.current
     val guidance = remember { OemWorkaroundHelper.getGuidance() }
+    val colors = PipraTheme.colors
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -82,8 +84,8 @@ fun OemOptimizationModal(
                 .fillMaxWidth(0.94f)
                 .testTag("oem_workaround_modal"),
             shape = RoundedCornerShape(16.dp),
-            color = ContainerDark,
-            border = BorderStroke(1.dp, BorderZinc800)
+            color = colors.container,
+            border = BorderStroke(1.dp, colors.border)
         ) {
             Column(
                 modifier = Modifier
@@ -125,7 +127,7 @@ fun OemOptimizationModal(
                             text = "Unrestricted Background Running Required",
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextWhite,
+                            color = colors.textPrimary,
                             lineHeight = 22.sp
                         )
                     }
@@ -137,7 +139,7 @@ fun OemOptimizationModal(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
-                            tint = TextZinc400,
+                            tint = colors.textMuted,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -146,8 +148,8 @@ fun OemOptimizationModal(
                 // Detected Device Chip
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = SurfaceCard,
-                    border = BorderStroke(1.dp, BorderZinc800),
+                    color = colors.surfaceCard,
+                    border = BorderStroke(1.dp, colors.border),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -158,21 +160,21 @@ fun OemOptimizationModal(
                         Icon(
                             imageVector = Icons.Default.Smartphone,
                             contentDescription = null,
-                            tint = TextZinc300,
+                            tint = colors.textSecondary,
                             modifier = Modifier.size(16.dp)
                         )
                         Column {
                             Text(
                                 text = "Detected Architecture",
                                 fontSize = 10.sp,
-                                color = TextZinc500,
+                                color = colors.textSubtle,
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
                                 text = "${guidance.brand.displayName} (${guidance.brand.systemUiName})",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = TextWhite
+                                color = colors.textPrimary
                             )
                         }
                     }
@@ -181,11 +183,11 @@ fun OemOptimizationModal(
                 Text(
                     text = "Aggressive OEM battery killers can freeze incoming SMS listeners when the screen is locked. Complete these 3 quick steps to ensure 100% gateway uptime:",
                     fontSize = 12.sp,
-                    color = TextZinc400,
+                    color = colors.textMuted,
                     lineHeight = 17.sp
                 )
 
-                HorizontalDivider(color = BorderZinc800)
+                HorizontalDivider(color = colors.border)
 
                 // Step 1: Autostart
                 OemStepCard(
@@ -247,10 +249,11 @@ private fun OemStepCard(
     actionIcon: ImageVector,
     onAction: (() -> Unit)? = null
 ) {
+    val colors = PipraTheme.colors
     Surface(
         shape = RoundedCornerShape(10.dp),
-        color = SurfaceCard,
-        border = BorderStroke(1.dp, BorderZinc800),
+        color = colors.surfaceCard,
+        border = BorderStroke(1.dp, colors.border),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -263,15 +266,15 @@ private fun OemStepCard(
             ) {
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = ContainerDark,
-                    border = BorderStroke(1.dp, BorderZinc700)
+                    color = colors.container,
+                    border = BorderStroke(1.dp, colors.borderInteractive)
                 ) {
                     Text(
                         text = "STEP $stepNumber",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace,
-                        color = TextWhite,
+                        color = colors.textPrimary,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
@@ -280,14 +283,14 @@ private fun OemStepCard(
                     text = title,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextWhite
+                    color = colors.textPrimary
                 )
             }
 
             Text(
                 text = description,
                 fontSize = 11.sp,
-                color = TextZinc300,
+                color = colors.textSecondary,
                 lineHeight = 16.sp
             )
 
@@ -295,10 +298,10 @@ private fun OemStepCard(
                 OutlinedButton(
                     onClick = onAction,
                     shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, BorderZinc700),
+                    border = BorderStroke(1.dp, colors.borderInteractive),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = ContainerDark,
-                        contentColor = TextWhite
+                        containerColor = colors.container,
+                        contentColor = colors.textPrimary
                     ),
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                 ) {
@@ -306,7 +309,7 @@ private fun OemStepCard(
                         imageVector = actionIcon,
                         contentDescription = null,
                         modifier = Modifier.size(14.dp),
-                        tint = TextWhite
+                        tint = colors.textPrimary
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(actionLabel, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -315,14 +318,14 @@ private fun OemStepCard(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = null,
                         modifier = Modifier.size(12.dp),
-                        tint = TextZinc400
+                        tint = colors.textMuted
                     )
                 }
             } else if (tipBadge != null) {
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = ContainerDark,
-                    border = BorderStroke(1.dp, BorderZinc800),
+                    color = colors.container,
+                    border = BorderStroke(1.dp, colors.border),
                     modifier = Modifier.padding(top = 2.dp)
                 ) {
                     Row(

@@ -119,6 +119,7 @@ import com.example.ui.theme.TextWhite
 import com.example.ui.theme.TextZinc300
 import com.example.ui.theme.TextZinc400
 import com.example.ui.theme.TextZinc500
+import com.example.ui.theme.PipraTheme
 import com.example.ui.theme.StatusFailed
 import com.example.ui.theme.StatusPending
 import com.example.ui.theme.StatusSynced
@@ -141,6 +142,7 @@ fun OnboardingScreen(
     modifier: Modifier = Modifier
 ) {
     var currentStep by remember { mutableStateOf(OnboardingStep.SYSTEM_READINESS) }
+    val colors = PipraTheme.colors
 
     BackHandler(enabled = currentStep != OnboardingStep.SYSTEM_READINESS) {
         currentStep = when (currentStep) {
@@ -154,7 +156,7 @@ fun OnboardingScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(CanvasBlack)
+            .background(colors.canvasBg)
             .statusBarsPadding()
             .navigationBarsPadding()
             .testTag("onboarding_screen")

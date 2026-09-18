@@ -104,8 +104,7 @@ sealed class AppDestination(
 
 val navDestinations = listOf(
     AppDestination.Dashboard,
-    AppDestination.Settings,
-    AppDestination.QrSetup
+    AppDestination.Settings
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
