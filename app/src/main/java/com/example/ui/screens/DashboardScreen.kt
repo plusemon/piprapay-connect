@@ -91,6 +91,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.TransactionEntity
 import com.example.data.prefs.SUPPORTED_MFS_SENDERS
 import com.example.service.PipraPayService
+import com.example.ui.components.HeaderHealthDetailsDialog
+import com.example.ui.components.HeaderStatusDot
 import com.example.ui.components.PipraConfirmationDialog
 import com.example.ui.components.PipraPayLogoLockup
 import com.example.ui.theme.AccentAmber
@@ -141,10 +143,12 @@ fun DashboardScreen(
     val serverHealthOk by viewModel.serverHealthOk.collectAsStateWithLifecycle()
     val latestBalances by viewModel.latestBalances.collectAsStateWithLifecycle()
     val accountInfo by viewModel.accountInfo.collectAsStateWithLifecycle()
+    val syncHealth by viewModel.syncHealth.collectAsStateWithLifecycle()
 
     var selectedTransaction by remember { mutableStateOf<TransactionEntity?>(null) }
     var showSmsSimulatorDialog by remember { mutableStateOf(false) }
     var showClearFeedDialog by remember { mutableStateOf(false) }
+    var showHealthDetailsDialog by remember { mutableStateOf(false) }
     var transactionToDelete by remember { mutableStateOf<TransactionEntity?>(null) }
 
     // Pulsing animation for subtle live indicator
@@ -199,35 +203,15 @@ fun DashboardScreen(
                     iconSize = 34.dp,
                     titleFontSize = 20,
                     subtitle = "Automated MFS Gateway Node",
-                    subtitleFontSize = 11
+                    subtitleFontSize = 11,
+                    statusHealth = syncHealth
                 )
 
-                // Minimal subtle status ghost badge
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (isServiceRunning) GhostEmeraldBg else colors.surfaceCard,
-                    border = BorderStroke(1.dp, if (isServiceRunning) GhostEmeraldBorder else colors.border)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(if (isServiceRunning) AccentEmerald else colors.textMuted)
-                        )
-                        Text(
-                            text = if (isServiceRunning) "GATEWAY ACTIVE" else "PAUSED",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp,
-                            color = if (isServiceRunning) AccentEmerald else colors.textMuted
-                        )
-                    }
-                }
+                // Small persistent status dot (green/amber/red based on real-time server connectivity and sync health)
+                HeaderStatusDot(
+                    health = syncHealth,
+                    onClick = { showHealthDetailsDialog = true }
+                )
             }
         }
 
@@ -1063,6 +1047,17 @@ fun DashboardScreen(
                 }
             }
         }
+    }
+
+    // Header Health & Diagnostics Dialog
+    if (showHealthDetailsDialog) {
+        HeaderHealthDetailsDialog(
+            health = syncHealth,
+            serverUrl = settings.serverBaseUrl,
+            onDismiss = { showHealthDetailsDialog = false },
+            onPingServer = { viewModel.pingServerHealth() },
+            onTriggerSync = { viewModel.triggerManualSync() }
+        )
     }
 
     // Detail Bottom Sheet

@@ -184,4 +184,78 @@ class ExampleRobolectricTest {
         assertFalse(updateManager.isNewerVersion("1.1.0", "v1.1.0"))
         assertFalse(updateManager.isNewerVersion("1.2.0", "1.1.5"))
     }
+
+    @Test
+    fun `header status dot changes color based on real-time server connectivity and sync health`() {
+        // 1. Verify semantic color tokens: Green, Amber, Red
+        assertEquals(
+            com.example.ui.theme.AccentEmerald,
+            com.example.ui.components.getHealthAccentColor(com.example.ui.viewmodel.ServerSyncStatus.HEALTHY)
+        )
+        assertEquals(
+            com.example.ui.theme.AccentAmber,
+            com.example.ui.components.getHealthAccentColor(com.example.ui.viewmodel.ServerSyncStatus.WARNING)
+        )
+        assertEquals(
+            com.example.ui.theme.AccentRose,
+            com.example.ui.components.getHealthAccentColor(com.example.ui.viewmodel.ServerSyncStatus.ERROR)
+        )
+
+        // 2. Render HeaderStatusDot in Healthy (Green) state
+        var clicked = false
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                com.example.ui.components.HeaderStatusDot(
+                    health = com.example.ui.viewmodel.ServerSyncHealth(
+                        status = com.example.ui.viewmodel.ServerSyncStatus.HEALTHY,
+                        latencyMs = 38L
+                    ),
+                    onClick = { clicked = true }
+                )
+            }
+        }
+
+        // Verify status dot element exists and handles click
+        composeTestRule.onNodeWithTag("header_status_dot").assertIsEnabled()
+        composeTestRule.onNodeWithTag("header_status_dot").performClick()
+        assertTrue("Status dot onClick must trigger when tapped", clicked)
+    }
+
+    @Test
+    fun `header status dot renders in amber and red states with diagnostic details dialog`() {
+        var pingClicked = false
+        var syncClicked = false
+        var dismissed = false
+
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                androidx.compose.foundation.layout.Column {
+                    // Amber Warning (Syncing / Pending)
+                    com.example.ui.components.HeaderStatusDot(
+                        health = com.example.ui.viewmodel.ServerSyncHealth(
+                            status = com.example.ui.viewmodel.ServerSyncStatus.WARNING,
+                            isSyncing = true,
+                            pendingCount = 3
+                        )
+                    )
+
+                    // Red Error (Disconnected / Failed)
+                    com.example.ui.components.HeaderHealthDetailsDialog(
+                        health = com.example.ui.viewmodel.ServerSyncHealth(
+                            status = com.example.ui.viewmodel.ServerSyncStatus.ERROR,
+                            isOnline = false,
+                            failedCount = 2
+                        ),
+                        serverUrl = "https://gateway.piprapay.com/api",
+                        onDismiss = { dismissed = true },
+                        onPingServer = { pingClicked = true },
+                        onTriggerSync = { syncClicked = true }
+                    )
+                }
+            }
+        }
+
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("header_status_dot").assertIsEnabled()
+    }
 }

@@ -40,6 +40,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +59,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.ui.components.HeaderHealthDetailsDialog
+import com.example.ui.components.HeaderStatusDot
 import com.example.ui.components.PipraPayLogoLockup
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.LoginScreen
@@ -138,6 +143,8 @@ fun PipraPayApp(
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
+    val syncHealth by viewModel.syncHealth.collectAsStateWithLifecycle()
+    var showHealthDialog by remember { mutableStateOf(false) }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: (
         if (settings.onboardingCompleted) AppDestination.Dashboard.route else ROUTE_ONBOARDING
@@ -155,6 +162,16 @@ fun PipraPayApp(
         }
     }
 
+    if (showHealthDialog) {
+        HeaderHealthDetailsDialog(
+            health = syncHealth,
+            serverUrl = settings.serverBaseUrl,
+            onDismiss = { showHealthDialog = false },
+            onPingServer = { viewModel.pingServerHealth() },
+            onTriggerSync = { viewModel.triggerManualSync() }
+        )
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -164,35 +181,21 @@ fun PipraPayApp(
                         PipraPayLogoLockup(
                             iconSize = 28.dp,
                             titleFontSize = 16,
-                            subtitle = null
+                            subtitle = null,
+                            statusHealth = syncHealth
                         )
                     },
                     actions = {
-                        // Ghost status pill (10% tint)
-                        Surface(
+                        Row(
                             modifier = Modifier.padding(end = 12.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (isServiceRunning) GhostEmeraldBg else GhostRoseBg,
-                            border = BorderStroke(1.dp, if (isServiceRunning) GhostEmeraldBorder else GhostRoseBorder)
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isServiceRunning) AccentEmerald else AccentRose)
-                                )
-                                Text(
-                                    text = if (isServiceRunning) "ACTIVE" else "PAUSED",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isServiceRunning) AccentEmerald else AccentRose
-                                )
-                            }
+                            // Small persistent status dot (green/amber/red) based on real-time server connectivity & sync health
+                            HeaderStatusDot(
+                                health = syncHealth,
+                                onClick = { showHealthDialog = true }
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(

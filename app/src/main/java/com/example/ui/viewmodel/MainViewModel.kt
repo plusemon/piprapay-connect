@@ -1,6 +1,11 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,6 +21,7 @@ import com.example.data.repository.TransactionRepository
 import com.example.parser.MfsSmsParser
 import com.example.service.PipraPayService
 import com.example.util.AlertManager
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +29,27 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+
+enum class ServerSyncStatus {
+    HEALTHY,    // Green: Connected & all synced
+    WARNING,    // Amber: Syncing in progress or pending transactions
+    ERROR       // Red: Disconnected, unreachable server, or sync errors
+}
+
+data class ServerSyncHealth(
+    val status: ServerSyncStatus = ServerSyncStatus.HEALTHY,
+    val isOnline: Boolean = true,
+    val serverHealthOk: Boolean = true,
+    val latencyMs: Long? = 42L,
+    val isSyncing: Boolean = false,
+    val pendingCount: Int = 0,
+    val failedCount: Int = 0,
+    val syncedCount: Int = 0,
+    val lastPingTimestamp: Long = System.currentTimeMillis(),
+    val summaryText: String = "Server Connected"
+)
 
 data class DashboardStats(
     val totalCount: Int = 0,
@@ -103,16 +129,52 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _serverHealthOk = MutableStateFlow(true)
     val serverHealthOk: StateFlow<Boolean> = _serverHealthOk.asStateFlow()
 
+    private val connectivityManager = application.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+    private val _isNetworkAvailable = MutableStateFlow(isNetworkCurrentlyConnected())
+    val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable.asStateFlow()
+
+    private fun isNetworkCurrentlyConnected(): Boolean {
+        val cm = connectivityManager ?: return true
+        val activeNetwork = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(activeNetwork) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
     private val _accountInfo = MutableStateFlow<com.example.data.api.CompanionAccountInfo?>(null)
     val accountInfo: StateFlow<com.example.data.api.CompanionAccountInfo?> = _accountInfo.asStateFlow()
 
     init {
+        try {
+            val request = NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build()
+            connectivityManager?.registerNetworkCallback(request, object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    _isNetworkAvailable.value = true
+                    pingServerHealth()
+                }
+                override fun onLost(network: Network) {
+                    _isNetworkAvailable.value = isNetworkCurrentlyConnected()
+                }
+            })
+        } catch (_: Exception) {}
+
         pingServerHealth()
         viewModelScope.launch {
             if (prefs.getSessionToken().isNotBlank()) {
                 val info = repository.refreshAccountInfo()
                 _accountInfo.value = info
                 repository.refreshWhitelistedSenders()
+            }
+        }
+
+        // Periodic background health check (every 30 seconds)
+        viewModelScope.launch {
+            while (isActive) {
+                delay(30_000)
+                if (_isNetworkAvailable.value) {
+                    pingServerHealth()
+                }
             }
         }
     }
@@ -164,6 +226,62 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = DashboardStats()
+    )
+
+    // Real-time server connectivity & sync health state for header status dot
+    val syncHealth: StateFlow<ServerSyncHealth> = combine(
+        _isNetworkAvailable,
+        _serverHealthOk,
+        _serverLatency,
+        _isSyncing,
+        stats
+    ) { isOnline, serverOk, latency, syncing, currentStats ->
+        val pending = currentStats.pendingCount
+        val failed = currentStats.failedCount
+        val synced = currentStats.syncedCount
+
+        val status: ServerSyncStatus
+        val summary: String
+
+        if (!isOnline) {
+            status = ServerSyncStatus.ERROR
+            summary = "Device Offline"
+        } else if (!serverOk) {
+            status = ServerSyncStatus.ERROR
+            summary = "Server Unreachable"
+        } else if (failed > 0) {
+            status = ServerSyncStatus.ERROR
+            summary = "$failed Failed Syncs"
+        } else if (syncing) {
+            status = ServerSyncStatus.WARNING
+            summary = "Syncing..."
+        } else if (pending > 0) {
+            status = ServerSyncStatus.WARNING
+            summary = "$pending Pending Sync"
+        } else if (latency != null && latency > 500) {
+            status = ServerSyncStatus.WARNING
+            summary = "High Latency (${latency}ms)"
+        } else {
+            status = ServerSyncStatus.HEALTHY
+            summary = if (latency != null) "Connected (${latency}ms)" else "Connected"
+        }
+
+        ServerSyncHealth(
+            status = status,
+            isOnline = isOnline,
+            serverHealthOk = serverOk,
+            latencyMs = latency,
+            isSyncing = syncing,
+            pendingCount = pending,
+            failedCount = failed,
+            syncedCount = synced,
+            lastPingTimestamp = System.currentTimeMillis(),
+            summaryText = summary
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ServerSyncHealth()
     )
 
     fun refreshBatteryOptimizationStatus() {

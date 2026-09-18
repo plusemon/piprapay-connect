@@ -28,13 +28,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.AccentAmber
 import com.example.ui.theme.AccentEmerald
+import com.example.ui.theme.AccentRose
 import com.example.ui.theme.PipraTheme
 import com.example.ui.theme.BorderZinc800
 import com.example.ui.theme.CanvasBlack
 import com.example.ui.theme.TextWhite
 import com.example.ui.theme.TextZinc400
 import com.example.ui.theme.TextZinc500
+import com.example.ui.viewmodel.ServerSyncHealth
+import com.example.ui.viewmodel.ServerSyncStatus
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.testTag
 
 /**
  * Flat minimalist PipraPay Connect icon:
@@ -160,7 +166,8 @@ fun PipraPayLogoLockup(
     iconSize: Dp = 36.dp,
     titleFontSize: Int = 20,
     subtitle: String? = "Automated MFS Gateway Node",
-    subtitleFontSize: Int = 11
+    subtitleFontSize: Int = 11,
+    statusHealth: ServerSyncHealth? = null
 ) {
     Row(
         modifier = modifier,
@@ -188,6 +195,22 @@ fun PipraPayLogoLockup(
                     letterSpacing = (-0.5).sp,
                     color = AccentEmerald
                 )
+
+                if (statusHealth != null) {
+                    val dotColor = when (statusHealth.status) {
+                        ServerSyncStatus.HEALTHY -> AccentEmerald
+                        ServerSyncStatus.WARNING -> AccentAmber
+                        ServerSyncStatus.ERROR -> AccentRose
+                    }
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 2.dp)
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(dotColor)
+                            .testTag("header_title_status_dot")
+                    )
+                }
             }
 
             if (subtitle != null) {
