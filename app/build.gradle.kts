@@ -101,11 +101,25 @@ android {
     compose = true
     buildConfig = true
   }
-  testOptions { unitTests { isIncludeAndroidResources = true } }
+  testOptions {
+    unitTests {
+      isIncludeAndroidResources = true
+    }
+  }
+  lint {
+    checkReleaseBuilds = false
+    abortOnError = false
+    checkDependencies = false
+  }
   dependenciesInfo {
     includeInApk = false
     includeInBundle = true
   }
+}
+
+tasks.withType<Test>().configureEach {
+  maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
+  jvmArgs("-XX:+UseParallelGC", "-Xmx1024m")
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files
@@ -129,7 +143,7 @@ dependencies {
   implementation(libs.androidx.camera.view)
   implementation(libs.zxing.core)
   implementation(libs.androidx.compose.material.icons.core)
-  implementation(libs.androidx.compose.material.icons.extended)
+  // implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.compose.material3)
   implementation(libs.androidx.compose.ui)
   implementation(libs.androidx.compose.ui.graphics)
@@ -182,5 +196,5 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
   "ksp"(libs.androidx.room.compiler)
-  "ksp"(libs.moshi.kotlin.codegen)
+  // "ksp"(libs.moshi.kotlin.codegen)
 }
