@@ -1,6 +1,6 @@
-# PipraPay Companion — GitHub Release Guide
+# PipraPay Connect — GitHub Release Guide
 
-This document outlines how to publish a new release of **PipraPay Companion** to GitHub.
+This document outlines how to publish a new release of **PipraPay Connect** to GitHub.
 
 ---
 
@@ -8,7 +8,7 @@ This document outlines how to publish a new release of **PipraPay Companion** to
 
 - **Current Version:** `v1.0.1`
 - **Version Code:** `2`
-- **Application ID:** `com.piprapay.companion`
+- **Application ID:** `com.piprapay.connect`
 - **Target SDK:** Android 16 (API 36)
 - **Minimum SDK:** Android 7.0 (API 24)
 
@@ -30,7 +30,7 @@ You can publish a new release using any of the 3 methods below:
    - **Release version tag:** `v1.0.1` (or your desired version tag)
    - **Release highlights:** Enter release summary/changelog notes.
 6. Click **"Run workflow"**.
-7. GitHub Actions will build `piprapay-companion-v1.0.1.apk` and publish it under **Releases** automatically.
+7. GitHub Actions will build `piprapay-connect-v1.0.1.apk` and publish it under **Releases** automatically.
 
 ---
 
@@ -40,10 +40,10 @@ You can publish a new release using any of the 3 methods below:
 2. Click **Releases** (on the right sidebar of the repo homepage).
 3. Click **"Draft a new release"**.
 4. Click **"Choose a tag"**, type `v1.0.1`, and select **"Create new tag: v1.0.1 on publish"**.
-5. Set the Release title (e.g. `PipraPay Companion v1.0.1`).
+5. Set the Release title (e.g. `PipraPay Connect v1.0.1`).
 6. Click **"Generate release notes"** or type your changelog.
 7. Click **"Publish release"**.
-8. The GitHub Actions workflow will trigger immediately, build the companion APK, and attach `piprapay-companion-v1.0.1.apk` directly to the release assets.
+8. The GitHub Actions workflow will trigger immediately, build the connect APK, and attach `piprapay-connect-v1.0.1.apk` directly to the release assets.
 
 ---
 
@@ -57,7 +57,7 @@ git checkout main
 git pull origin main
 
 # Create an annotated tag for the new release
-git tag -a v1.0.1 -m "Release v1.0.1 - PipraPay Companion"
+git tag -a v1.0.1 -m "Release v1.0.1 - PipraPay Connect"
 
 # Push the tag to GitHub
 git push origin v1.0.1
@@ -72,7 +72,7 @@ The GitHub Actions workflow will automatically start, assemble the APK, generate
 1. **Checks out the repository** with full commit history for automatic changelog generation.
 2. **Sets up JDK 21** with Gradle dependency caching for fast build speeds.
 3. **Runs `./gradlew assembleDebug --stacktrace`** to build a standalone, installable APK.
-4. **Renames the artifact** to `piprapay-companion-<version>.apk`.
+4. **Renames the artifact** to `piprapay-connect-<version>.apk`.
 5. **Publishes the release** to GitHub Releases with downloadable APK assets and release notes.
 
 ---

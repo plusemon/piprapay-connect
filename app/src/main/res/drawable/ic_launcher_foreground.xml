@@ -1,35 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Safe zone 66dp centered at (54,54) -> range 21 to 87 -->
-    <group
-        android:pivotX="54"
-        android:pivotY="54">
-        <!-- Rounded Badge container in center -->
-        <path
-            android:fillColor="#00F59B"
-            android:pathData="M54,26 C69.46,26 82,38.54 82,54 C82,69.46 69.46,82 54,82 C38.54,82 26,69.46 26,54 C26,38.54 38.54,26 54,26 Z" />
-        <path
-            android:fillColor="#0A192F"
-            android:pathData="M54,30 C67.25,30 78,40.75 78,54 C78,67.25 67.25,78 54,78 C40.75,78 30,67.25 30,54 C30,40.75 40.75,30 54,30 Z" />
+    <!-- Centered within 66dp safe zone (21..87) -->
+    <!-- Minimalist Monochrome P Stem -->
+    <path
+        android:fillColor="#FAFAFA"
+        android:pathData="M34,28 C30.686,28 28,30.686 28,34 L28,74 C28,77.314 30.686,80 34,80 C37.314,80 40,77.314 40,74 L40,34 C40,30.686 37.314,28 34,28 Z" />
 
-        <!-- Sync Arrow 1 (Top right sweeping clockwise) -->
-        <path
-            android:fillColor="#10B981"
-            android:pathData="M66,42 L72,42 L72,36 L68.5,39.5 C64.8,35.8 59.7,34 54,34 C44.5,34 36.6,40.6 34.6,49.5 L38.6,50.4 C40.1,43.5 46.4,38.5 54,38.5 C58.4,38.5 62.4,40 65.5,42.5 L62,46 L66,46 Z" />
+    <!-- Minimalist Monochrome P Loop -->
+    <path
+        android:fillColor="#FAFAFA"
+        android:pathData="M38,28 L58,28 C66.837,28 74,35.163 74,44 C74,52.837 66.837,60 58,60 L38,60 L38,49 L58,49 C60.761,49 63,46.761 63,44 C63,41.239 60.761,39 58,39 L38,39 Z" />
 
-        <!-- Sync Arrow 2 (Bottom left sweeping clockwise) -->
-        <path
-            android:fillColor="#10B981"
-            android:pathData="M42,66 L36,66 L36,72 L39.5,68.5 C43.2,72.2 48.3,74 54,74 C63.5,74 71.4,67.4 73.4,58.5 L69.4,57.6 C67.9,64.5 61.6,69.5 54,69.5 C49.6,69.5 45.6,68 42.5,65.5 L46,62 L42,62 Z" />
+    <!-- Emerald Connect Node Outer Ring / Halo -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M74,36 C78.418,36 82,39.582 82,44 C82,48.418 78.418,52 74,52 C69.582,52 66,48.418 66,44 C66,39.582 69.582,36 74,36 Z" />
 
-        <!-- Stylized "P" / Currency transfer symbol in white -->
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M47,44 L55,44 C58.3,44 61,46.2 61,49 C61,51.8 58.3,54 55,54 L51,54 L51,64 L47,64 Z M51,48 L51,50.5 L54.5,50.5 C55.9,50.5 57,49.8 57,49 C57,48.2 55.9,47.5 54.5,47.5 L51,47.5 Z" />
-    </group>
+    <!-- Emerald Connect Node Inner Core -->
+    <path
+        android:fillColor="#6EE7B7"
+        android:pathData="M74,40.5 C75.933,40.5 77.5,42.067 77.5,44 C77.5,45.933 75.933,47.5 74,47.5 C72.067,47.5 70.5,45.933 70.5,44 C70.5,42.067 72.067,40.5 74,40.5 Z" />
 </vector>

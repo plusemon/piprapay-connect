@@ -1,8 +1,8 @@
 <div align="center">
 
-# ⚡ PipraPay Companion
+# ⚡ PipraPay Connect
 
-### **High-Performance MFS SMS Gateway & Backend Sync Agent for Android**
+### **Automated MFS Gateway Node & Backend Sync Engine for Android**
 
 [![Platform](https://img.shields.io/badge/Platform-Android_7.0+_(API_24--36)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
@@ -12,7 +12,7 @@
 [![Release](https://img.shields.io/badge/Release-v1.0.1-10B981?style=for-the-badge&logo=github)](https://github.com)
 
 <p align="center">
-  <b>PipraPay Companion</b> is an enterprise-grade Android gateway application that automatically listens for incoming <b>bKash</b>, <b>Nagad</b>, <b>Rocket</b>, and <b>Upay</b> Mobile Financial Service (MFS) SMS payment notifications, extracts verified transaction details in real time, and securely syncs them to the <b>PipraPay Merchant Backend Engine</b>.
+  <b>PipraPay Connect</b> is an enterprise-grade Android gateway node application that automatically listens for incoming <b>bKash</b>, <b>Nagad</b>, <b>Rocket</b>, and <b>Upay</b> Mobile Financial Service (MFS) SMS payment notifications, extracts verified transaction details in real time, and securely syncs them to the <b>PipraPay Merchant Backend Engine</b>.
 </p>
 
 [Key Features](#-key-features) •
@@ -31,7 +31,7 @@
 
 In Bangladesh, merchants receive customer payments via Mobile Financial Services (MFS) such as **bKash Merchant/Personal**, **Nagad**, **DBBL Rocket**, and **Upay**. Traditionally, verifying each transaction requires human staff to check SMS alerts on a physical phone.
 
-**PipraPay Companion** transforms any standard Android phone into an automated, non-stop transaction verification terminal:
+**PipraPay Connect** transforms any standard Android phone into an automated, non-stop transaction verification terminal:
 1. **Instant Capture**: Intercepts incoming payment SMS with priority 999 telephony broadcasts.
 2. **Precision Parsing**: Extracts Provider, Transaction ID (`TrxID`), Sender Phone Number, and BDT Amount (`৳`).
 3. **Anti-OTP Protection**: Strictly drops verification codes, PIN reset alerts, and sensitive user messages.

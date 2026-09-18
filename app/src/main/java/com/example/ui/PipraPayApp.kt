@@ -52,6 +52,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.ui.components.PipraPayLogoLockup
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.OnboardingScreen
@@ -138,23 +139,11 @@ fun PipraPayApp(
             if (isTopLevelDestination && currentRoute != AppDestination.Dashboard.route) {
                 TopAppBar(
                     title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "PipraPay",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 17.sp,
-                                color = TextWhite
-                            )
-                            Text(
-                                text = "Companion",
-                                fontWeight = FontWeight.Normal,
-                                fontSize = 13.sp,
-                                color = TextZinc500
-                            )
-                        }
+                        PipraPayLogoLockup(
+                            iconSize = 28.dp,
+                            titleFontSize = 16,
+                            subtitle = null
+                        )
                     },
                     actions = {
                         // Ghost status pill (10% tint)

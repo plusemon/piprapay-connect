@@ -96,7 +96,7 @@ open class PipraPayService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("PipraPay Companion Active")
+            .setContentTitle("PipraPay Connect Active")
             .setContentText("Listening for MFS SMS transactions ($deviceKey)")
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)

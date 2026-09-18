@@ -15,7 +15,7 @@ on:
       release_notes:
         description: 'Release highlights or description'
         required: false
-        default: 'Production release of PipraPay Companion Android app.'
+        default: 'Production release of PipraPay Connect Android app.'
       is_draft:
         description: 'Create as draft release'
         type: boolean
@@ -50,17 +50,17 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ github.event.inputs.tag_name }}"
-            NAME="PipraPay Companion ${TAG}"
+            NAME="PipraPay Connect ${TAG}"
             BODY="${{ github.event.inputs.release_notes }}"
             DRAFT="${{ github.event.inputs.is_draft }}"
           elif [ "${{ github.event_name }}" = "release" ]; then
             TAG="${{ github.event.release.tag_name }}"
-            NAME="${{ github.event.release.name || format('PipraPay Companion {0}', github.event.release.tag_name) }}"
+            NAME="${{ github.event.release.name || format('PipraPay Connect {0}', github.event.release.tag_name) }}"
             BODY="${{ github.event.release.body }}"
             DRAFT="false"
           else
             TAG="${{ github.ref_name }}"
-            NAME="PipraPay Companion ${TAG}"
+            NAME="PipraPay Connect ${TAG}"
             BODY="Release ${TAG}"
             DRAFT="false"
           fi
@@ -84,11 +84,11 @@ jobs:
           TAG="${{ steps.release_meta.outputs.tag }}"
           mkdir -p release-assets
           if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
-            cp app/build/outputs/apk/release/app-release.apk "release-assets/piprapay-companion-${TAG}.apk"
+            cp app/build/outputs/apk/release/app-release.apk "release-assets/piprapay-connect-${TAG}.apk"
           else
-            cp app/build/outputs/apk/debug/app-debug.apk "release-assets/piprapay-companion-${TAG}.apk"
+            cp app/build/outputs/apk/debug/app-debug.apk "release-assets/piprapay-connect-${TAG}.apk"
           fi
-          echo "Packaged APK: release-assets/piprapay-companion-${TAG}.apk"
+          echo "Packaged APK: release-assets/piprapay-connect-${TAG}.apk"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -99,6 +99,6 @@ jobs:
           generate_release_notes: true
           draft: ${{ steps.release_meta.outputs.draft == 'true' }}
           prerelease: false
-          files: release-assets/piprapay-companion-${{ steps.release_meta.outputs.tag }}.apk
+          files: release-assets/piprapay-connect-${{ steps.release_meta.outputs.tag }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

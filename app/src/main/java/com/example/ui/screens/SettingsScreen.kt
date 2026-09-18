@@ -88,6 +88,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.BuildConfig
 import com.example.service.PipraPayService
+import com.example.ui.components.PipraPayIcon
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.StatusFailed
 import com.example.ui.theme.StatusPending
@@ -676,18 +677,24 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
-                        Text(
-                            text = "PipraPay Companion",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Automated MFS sync engine",
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        PipraPayIcon(size = 28.dp)
+                        Column {
+                            Text(
+                                text = "PipraPay Connect",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Automated MFS Gateway Node",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
                     Surface(

@@ -14,7 +14,7 @@ android {
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.piprapay.companion"
+    applicationId = "com.piprapay.connect"
     minSdk = 24
     targetSdk = 36
     versionCode = 2

@@ -108,6 +108,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.service.PipraPayService
+import com.example.ui.components.PipraPayIcon
 import com.example.ui.theme.BrandIndigo
 import com.example.ui.theme.BrandIndigoLight
 import com.example.ui.theme.BrandIndigoRing
@@ -239,26 +240,15 @@ private fun SystemReadinessStep(
         Spacer(modifier = Modifier.height(20.dp))
 
         // Hero Logo & Title
-        Box(
-            modifier = Modifier
-                .size(76.dp)
-                .clip(RoundedCornerShape(22.dp))
-                .background(BrandIndigo)
-                .shadow(12.dp, RoundedCornerShape(22.dp), spotColor = BrandIndigo),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.ElectricBolt,
-                contentDescription = "PipraPay Logo",
-                tint = Color.White,
-                modifier = Modifier.size(42.dp)
-            )
-        }
+        PipraPayIcon(
+            size = 72.dp,
+            modifier = Modifier.testTag("onboarding_hero_logo")
+        )
 
         Spacer(modifier = Modifier.height(18.dp))
 
         Text(
-            text = "Welcome to PipraPay",
+            text = "Welcome to PipraPay Connect",
             fontSize = 26.sp,
             fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.onBackground,
@@ -268,7 +258,7 @@ private fun SystemReadinessStep(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Preparing your phone as an automated 24/7 MFS Payment Gateway Companion for bKash, Nagad, Rocket & Upay.",
+            text = "Preparing your phone as an automated 24/7 MFS Gateway Node for bKash, Nagad, Rocket & Upay.",
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

@@ -403,7 +403,7 @@ fun QrScannerScreen(
                             color = TextWhite
                         )
                         Text(
-                            text = "Point camera at the Companion QR code on your PipraPay Merchant Dashboard.",
+                            text = "Point camera at the Connect QR code on your PipraPay Merchant Dashboard.",
                             fontSize = 12.sp,
                             color = TextZinc400,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center

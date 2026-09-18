@@ -90,6 +90,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.TransactionEntity
 import com.example.service.PipraPayService
+import com.example.ui.components.PipraPayLogoLockup
 import com.example.ui.theme.AccentAmber
 import com.example.ui.theme.AccentEmerald
 import com.example.ui.theme.AccentRose
@@ -187,32 +188,12 @@ fun DashboardScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "PipraPay",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 21.sp,
-                            letterSpacing = (-0.5).sp,
-                            color = TextWhite
-                        )
-                        Text(
-                            text = "Companion",
-                            fontWeight = FontWeight.Normal,
-                            fontSize = 15.sp,
-                            color = TextZinc500
-                        )
-                    }
-                    Text(
-                        text = "MFS SMS Gateway Listener",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextZinc500
-                    )
-                }
+                PipraPayLogoLockup(
+                    iconSize = 34.dp,
+                    titleFontSize = 20,
+                    subtitle = "Automated MFS Gateway Node",
+                    subtitleFontSize = 11
+                )
 
                 // Minimal subtle status ghost badge
                 Surface(

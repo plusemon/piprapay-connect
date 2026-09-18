@@ -1,6 +1,6 @@
 {
-  "name": "PipraPay Companion",
-  "description": "Production-grade MFS SMS listener and backend sync companion for PipraPay",
+  "name": "PipraPay Connect",
+  "description": "Automated MFS Gateway Node and transaction synchronization engine for PipraPay",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

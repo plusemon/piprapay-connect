@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "PipraPay Companion"
+rootProject.name = "PipraPay Connect"
 
 include(":app")
