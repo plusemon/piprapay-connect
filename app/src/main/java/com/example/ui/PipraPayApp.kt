@@ -294,6 +294,9 @@ fun PipraPayApp(
                     },
                     onBack = {
                         navController.popBackStack()
+                    },
+                    onNavigateToQr = {
+                        navController.navigate(AppDestination.QrSetup.route)
                     }
                 )
             }
@@ -314,6 +317,9 @@ fun PipraPayApp(
                             popUpTo(AppDestination.Dashboard.route) { inclusive = true }
                             launchSingleTop = true
                         }
+                    },
+                    onNavigateToSettings = {
+                        navController.navigate(AppDestination.Settings.route)
                     }
                 )
             }

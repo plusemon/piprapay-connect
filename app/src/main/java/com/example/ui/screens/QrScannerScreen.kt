@@ -1,8 +1,24 @@
 package com.example.ui.screens
 
+import android.Manifest
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -33,22 +49,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -56,23 +67,32 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.theme.AccentEmerald
-import com.example.ui.theme.AccentRose
 import com.example.ui.theme.BorderZinc800
 import com.example.ui.theme.CanvasBlack
 import com.example.ui.theme.ContainerDark
@@ -80,32 +100,120 @@ import com.example.ui.theme.GhostEmeraldBg
 import com.example.ui.theme.GhostEmeraldBorder
 import com.example.ui.theme.StatusFailed
 import com.example.ui.theme.StatusSynced
-import com.example.ui.theme.SurfaceCard
 import com.example.ui.theme.TextWhite
 import com.example.ui.theme.TextZinc400
 import com.example.ui.theme.TextZinc500
+import com.example.ui.viewmodel.LoginState
 import com.example.ui.viewmodel.MainViewModel
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.BinaryBitmap
+import com.google.zxing.DecodeHintType
+import com.google.zxing.MultiFormatReader
+import com.google.zxing.PlanarYUVLuminanceSource
+import com.google.zxing.common.HybridBinarizer
+import java.nio.ByteBuffer
+import java.util.concurrent.Executors
+
+/**
+ * ZXing Image Analysis Analyzer for QR Code detection
+ */
+class QrCodeAnalyzer(
+    private val onQrCodeScanned: (String) -> Unit
+) : ImageAnalysis.Analyzer {
+
+    private val reader = MultiFormatReader().apply {
+        val hints = mapOf(
+            DecodeHintType.POSSIBLE_FORMATS to listOf(BarcodeFormat.QR_CODE),
+            DecodeHintType.TRY_HARDER to true
+        )
+        setHints(hints)
+    }
+
+    @Volatile
+    private var isScanning = true
+
+    override fun analyze(imageProxy: ImageProxy) {
+        if (!isScanning) {
+            imageProxy.close()
+            return
+        }
+
+        try {
+            val plane = imageProxy.planes[0]
+            val buffer: ByteBuffer = plane.buffer
+            val data = ByteArray(buffer.remaining())
+            buffer.get(data)
+
+            val width = imageProxy.width
+            val height = imageProxy.height
+
+            val source = PlanarYUVLuminanceSource(
+                data,
+                width,
+                height,
+                0,
+                0,
+                width,
+                height,
+                false
+            )
+
+            val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
+            val result = reader.decodeWithState(binaryBitmap)
+
+            if (result != null && result.text.isNotBlank()) {
+                isScanning = false
+                onQrCodeScanned(result.text)
+            }
+        } catch (_: Exception) {
+            // Frame did not contain a readable barcode
+        } finally {
+            reader.reset()
+            imageProxy.close()
+        }
+    }
+
+    fun pause() {
+        isScanning = false
+    }
+
+    fun resume() {
+        isScanning = true
+    }
+}
 
 @Composable
 fun QrScannerScreen(
     viewModel: MainViewModel,
     onConfigApplied: () -> Unit,
+    onNavigateToSettings: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val hapticFeedback = LocalHapticFeedback.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    var isScanning by remember { mutableStateOf(false) }
+    val loginState by viewModel.loginState.collectAsStateWithLifecycle()
+
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    var isScanningActive by remember { mutableStateOf(true) }
     var parsedServerUrl by remember { mutableStateOf<String?>(null) }
     var parsedApiKey by remember { mutableStateOf<String?>(null) }
     var parsedDeviceKey by remember { mutableStateOf<String?>(null) }
     var parseError by remember { mutableStateOf<String?>(null) }
+    var isConnecting by remember { mutableStateOf(false) }
     var showManualEntryDialog by remember { mutableStateOf(false) }
 
-    // Laser scan animation
-    val infiniteTransition = rememberInfiniteTransition(label = "scanner_laser")
+    // Scanner Laser Animation
+    val infiniteTransition = rememberInfiniteTransition(label = "scanner_laser_transition")
     val laserY by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 180f,
+        targetValue = 200f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1800, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
@@ -113,91 +221,152 @@ fun QrScannerScreen(
         label = "laser_y"
     )
 
-    fun parsePairingPayload(input: String) {
-        val trimmed = input.trim()
-        if (trimmed.isBlank()) {
-            parsedServerUrl = null
-            parsedApiKey = null
-            parsedDeviceKey = null
+    // Camera Permission Launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasCameraPermission = isGranted
+        if (isGranted) {
+            isScanningActive = true
             parseError = null
-            return
+        } else {
+            Toast.makeText(context, "Camera permission is required to scan QR code", Toast.LENGTH_SHORT).show()
         }
+    }
 
-        // Format 1: PipraPay Companion URL delimiter <url>----<otp>
+    // Refresh permission state on resume
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasCameraPermission = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.CAMERA
+                ) == PackageManager.PERMISSION_GRANTED
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    // Trigger subtle haptic vibration
+    fun triggerHapticFeedback() {
+        try {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                vibratorManager?.defaultVibrator?.vibrate(
+                    VibrationEffect.createOneShot(120, VibrationEffect.DEFAULT_AMPLITUDE)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                @Suppress("DEPRECATION")
+                vibrator?.vibrate(120)
+            }
+        } catch (_: Exception) { }
+    }
+
+    // Auto-Connect Pipeline
+    fun executeAutoConnect(serverUrl: String, apiKey: String, deviceKey: String) {
+        isConnecting = true
+        triggerHapticFeedback()
+
+        viewModel.loginToPanel(
+            panelUrl = serverUrl,
+            passwordOrToken = apiKey,
+            deviceKey = deviceKey,
+            otp = apiKey,
+            onSuccess = {
+                isConnecting = false
+                Toast.makeText(context, "Connected to PipraPay Gateway", Toast.LENGTH_LONG).show()
+                onConfigApplied()
+            }
+        )
+    }
+
+    // Parse URL & URI Scheme QR Payload
+    fun handleScannedPayload(payload: String) {
+        val trimmed = payload.trim()
+        if (trimmed.isBlank()) return
+
+        var server: String? = null
+        var key: String? = null
+        var device: String? = null
+
+        // 1. PipraPay companion URI delimiter format: <url>----<otp>
         if (trimmed.contains("----")) {
             val parts = trimmed.split("----")
             val rawUrl = parts[0].trim()
             val otp = parts.getOrNull(1)?.trim() ?: ""
             if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
-                val formattedUrl = if (rawUrl.endsWith("/")) rawUrl else "$rawUrl/"
-                parsedServerUrl = formattedUrl
-                parsedApiKey = otp
-                parsedDeviceKey = "POS-" + (1000..9999).random()
-                parseError = null
-                isScanning = false
-                return
+                server = if (rawUrl.endsWith("/")) rawUrl else "$rawUrl/"
+                key = otp
+                device = "POS-" + (1000..9999).random()
             }
         }
 
-        // Format 2: Standard URI query params, e.g. https://pay.emon.bd/pair?key=0702746925&device=DEV-1
-        try {
-            val uri = Uri.parse(trimmed)
-            val scheme = uri.scheme
-            if (scheme.equals("http", ignoreCase = true) || scheme.equals("https", ignoreCase = true)) {
-                val key = uri.getQueryParameter("key")
-                    ?: uri.getQueryParameter("apiKey")
-                    ?: uri.getQueryParameter("otp")
-                    ?: uri.getQueryParameter("token")
-                val device = uri.getQueryParameter("device")
-                    ?: uri.getQueryParameter("deviceKey")
-                    ?: uri.getQueryParameter("pos")
-                val serverParam = uri.getQueryParameter("server")
-                    ?: uri.getQueryParameter("url")
-                    ?: uri.getQueryParameter("serverUrl")
+        // 2. Encoded URI / URL format (piprapay://pair?server=...&api_key=...&device=...)
+        if (server == null) {
+            try {
+                val uri = Uri.parse(trimmed)
+                val scheme = uri.scheme?.lowercase()
+                if (scheme == "piprapay" || scheme == "http" || scheme == "https") {
+                    key = uri.getQueryParameter("api_key")
+                        ?: uri.getQueryParameter("apiKey")
+                        ?: uri.getQueryParameter("key")
+                        ?: uri.getQueryParameter("token")
+                        ?: uri.getQueryParameter("otp")
 
-                val baseUrl = if (!serverParam.isNullOrBlank()) {
-                    if (serverParam.endsWith("/")) serverParam else "$serverParam/"
-                } else {
-                    val portPart = if (uri.port != -1) ":${uri.port}" else ""
-                    "${uri.scheme}://${uri.host}$portPart/"
+                    device = uri.getQueryParameter("device")
+                        ?: uri.getQueryParameter("device_key")
+                        ?: uri.getQueryParameter("deviceKey")
+                        ?: uri.getQueryParameter("pos")
+
+                    val serverParam = uri.getQueryParameter("server")
+                        ?: uri.getQueryParameter("server_url")
+                        ?: uri.getQueryParameter("serverUrl")
+                        ?: uri.getQueryParameter("url")
+
+                    if (!serverParam.isNullOrBlank()) {
+                        server = if (serverParam.endsWith("/")) serverParam else "$serverParam/"
+                    } else if (scheme == "http" || scheme == "https") {
+                        val portPart = if (uri.port != -1) ":${uri.port}" else ""
+                        server = "${uri.scheme}://${uri.host}$portPart/"
+                    }
                 }
-
-                if (!key.isNullOrBlank()) {
-                    parsedServerUrl = baseUrl
-                    parsedApiKey = key
-                    parsedDeviceKey = device ?: ("POS-" + (1000..9999).random())
-                    parseError = null
-                    isScanning = false
-                    return
-                }
-            }
-        } catch (_: Exception) { }
-
-        // Format 3: Direct URL with path (production default pairing)
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-            val formatted = if (trimmed.endsWith("/")) trimmed else "$trimmed/"
-            parsedServerUrl = formatted
-            parsedApiKey = "0702746925"
-            parsedDeviceKey = "POS-" + (1000..9999).random()
-            parseError = null
-            isScanning = false
-            return
+            } catch (_: Exception) { }
         }
 
-        // Format 4: Plain OTP digits
-        if (trimmed.all { it.isDigit() } && trimmed.length in 6..12) {
-            parsedServerUrl = "https://pay.emon.bd/"
-            parsedApiKey = trimmed
-            parsedDeviceKey = "POS-" + (1000..9999).random()
-            parseError = null
-            isScanning = false
-            return
+        // 3. Direct URL fallback (e.g. https://pay.emon.bd/)
+        if (server == null && (trimmed.startsWith("http://") || trimmed.startsWith("https://"))) {
+            server = if (trimmed.endsWith("/")) trimmed else "$trimmed/"
+            key = "0702746925"
+            device = "POS-" + (1000..9999).random()
         }
 
-        parseError = "Unrecognized QR code format. Expected pairing URL: https://pay.emon.bd/pair?key=..."
-        parsedServerUrl = null
-        parsedApiKey = null
-        parsedDeviceKey = null
+        // 4. Plain numeric OTP
+        if (server == null && trimmed.all { it.isDigit() } && trimmed.length in 6..12) {
+            server = "https://pay.emon.bd/"
+            key = trimmed
+            device = "POS-" + (1000..9999).random()
+        }
+
+        if (server != null && !key.isNullOrBlank()) {
+            val assignedDevice = device ?: ("POS-" + (1000..9999).random())
+            parsedServerUrl = server
+            parsedApiKey = key
+            parsedDeviceKey = assignedDevice
+            parseError = null
+            isScanningActive = false
+
+            // Trigger instant auto-connect pipeline
+            executeAutoConnect(server, key, assignedDevice)
+        } else {
+            parseError = "Unrecognized QR code format. Expected pairing URL: piprapay://pair?server=...&api_key=..."
+            triggerHapticFeedback()
+        }
     }
 
     LazyColumn(
@@ -207,7 +376,7 @@ fun QrScannerScreen(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Hero Card: Actionable Scanner Viewfinder
+        // Hero Card: Active Native Camera Viewfinder
         item {
             Surface(
                 modifier = Modifier
@@ -222,168 +391,251 @@ fun QrScannerScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Viewfinder Box
-                    Box(
-                        modifier = Modifier
-                            .size(200.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(CanvasBlack)
-                            .border(
-                                width = 2.dp,
-                                color = if (isScanning) AccentEmerald else BorderZinc800,
-                                shape = RoundedCornerShape(16.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (isScanning) {
-                            // Active Scanner View with live laser line
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(2.dp)
-                                    .offset(y = (laserY - 90).dp)
-                                    .background(AccentEmerald)
-                            )
-
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.QrCodeScanner,
-                                    contentDescription = "Active Scanner",
-                                    modifier = Modifier.size(64.dp),
-                                    tint = AccentEmerald.copy(alpha = 0.85f)
-                                )
-                                Text(
-                                    text = "Scanning for QR Code...",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = TextZinc400
-                                )
-                            }
-                        } else {
-                            // Idle Viewfinder
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.QrCodeScanner,
-                                    contentDescription = "QR Scanner",
-                                    modifier = Modifier.size(56.dp),
-                                    tint = TextZinc500
-                                )
-                                Text(
-                                    text = "Camera Viewfinder Ready",
-                                    fontSize = 11.sp,
-                                    color = TextZinc500
-                                )
-                            }
-                        }
-                    }
-
+                    // Title & Description Header
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "Pair PipraPay Companion",
-                            fontSize = 16.sp,
+                            text = "Instant QR Pairing",
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = TextWhite
                         )
                         Text(
-                            text = "Scan the pairing QR code displayed on your PipraPay Merchant Dashboard.",
+                            text = "Point camera at the Companion QR code on your PipraPay Merchant Dashboard.",
                             fontSize = 12.sp,
                             color = TextZinc400,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
 
-                    // Action Buttons (Launch Camera Scanner / Stop Scanner)
-                    if (!isScanning) {
-                        Button(
-                            onClick = {
-                                isScanning = true
-                                parseError = null
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(46.dp)
-                                .testTag("launch_scanner_button"),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White,
-                                contentColor = Color.Black
+                    // Scanner Viewport Box (220dp x 220dp)
+                    Box(
+                        modifier = Modifier
+                            .size(230.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(CanvasBlack)
+                            .border(
+                                width = 2.dp,
+                                color = if (isScanningActive && hasCameraPermission) AccentEmerald else BorderZinc800,
+                                shape = RoundedCornerShape(16.dp)
                             ),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.QrCodeScanner,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = Color.Black
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "Launch Camera Scanner",
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp,
-                                color = Color.Black
-                            )
-                        }
-                    } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Button(
-                                onClick = {
-                                    // Simulate successful instant pairing QR scan
-                                    parsePairingPayload("https://pay.emon.bd/pair?key=0702746925&device=DEV-POS-01")
-                                    Toast.makeText(context, "QR Code Scanned!", Toast.LENGTH_SHORT).show()
-                                },
-                                modifier = Modifier
-                                    .weight(1.3f)
-                                    .height(44.dp)
-                                    .testTag("simulate_scan_button"),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.White,
-                                    contentColor = Color.Black
-                                ),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Black)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Scan Code", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (hasCameraPermission && isScanningActive) {
+                            // Active Camera Viewfinder via CameraX
+                            val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+                            val analyzer = remember {
+                                QrCodeAnalyzer { scannedCode ->
+                                    handleScannedPayload(scannedCode)
+                                }
                             }
 
-                            OutlinedButton(
-                                onClick = { isScanning = false },
+                            AndroidView(
+                                factory = { ctx ->
+                                    val previewView = PreviewView(ctx).apply {
+                                        scaleType = PreviewView.ScaleType.FILL_CENTER
+                                    }
+
+                                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+                                    cameraProviderFuture.addListener({
+                                        val cameraProvider = cameraProviderFuture.get()
+
+                                        val preview = Preview.Builder().build().also {
+                                            it.surfaceProvider = previewView.surfaceProvider
+                                        }
+
+                                        val imageAnalysis = ImageAnalysis.Builder()
+                                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                            .build()
+                                            .also {
+                                                it.setAnalyzer(cameraExecutor, analyzer)
+                                            }
+
+                                        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+                                        try {
+                                            cameraProvider.unbindAll()
+                                            cameraProvider.bindToLifecycle(
+                                                lifecycleOwner,
+                                                cameraSelector,
+                                                preview,
+                                                imageAnalysis
+                                            )
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
+                                    }, ContextCompat.getMainExecutor(ctx))
+
+                                    previewView
+                                },
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .height(44.dp)
-                                    .testTag("stop_scanner_button"),
-                                shape = RoundedCornerShape(10.dp),
-                                border = BorderStroke(1.dp, BorderZinc800)
+                                    .fillMaxSize()
+                                    .testTag("camera_preview_view")
+                            )
+
+                            // Overlay: Pulsing green scanner line
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(2.dp)
+                                    .offset(y = (laserY - 100).dp)
+                                    .background(AccentEmerald)
+                            )
+
+                            // Overlay: Framing Corner Brackets
+                            Box(
+                                modifier = Modifier
+                                    .size(170.dp)
+                                    .border(2.dp, AccentEmerald.copy(alpha = 0.8f), RoundedCornerShape(12.dp))
+                            )
+                        } else if (!hasCameraPermission) {
+                            // Camera Permission Prompt UI
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(15.dp), tint = TextZinc400)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Cancel", fontSize = 12.sp, color = TextWhite)
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(GhostEmeraldBg),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.QrCodeScanner,
+                                        contentDescription = "Camera Permission",
+                                        tint = AccentEmerald,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Text(
+                                    text = "Camera Access Required",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextWhite
+                                )
+                                Text(
+                                    text = "Grant camera permission to automatically scan QR codes.",
+                                    fontSize = 11.sp,
+                                    color = TextZinc400,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                                Button(
+                                    onClick = {
+                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(38.dp)
+                                        .testTag("grant_camera_permission_button"),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.White,
+                                        contentColor = Color.Black
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Grant Permission", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                                }
+                            }
+                        } else {
+                            // Paused or Scanned View
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = StatusSynced,
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                Text(
+                                    text = "QR Code Detected",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextWhite
+                                )
                             }
                         }
                     }
 
-                    // Fallback Link: Enter Details Manually
+                    // Scanner Action Buttons (Simulate Scan & Rescan)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Scan / Test QR Pairing button
+                        Button(
+                            onClick = {
+                                handleScannedPayload("piprapay://pair?server=https://pay.emon.bd&api_key=0702746925&device=POS-DEV-01")
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp)
+                                .testTag("scan_code_button"),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White,
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            if (isConnecting) {
+                                CircularProgressIndicator(
+                                    color = Color.Black,
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Connecting...", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                            } else {
+                                Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Black)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Scan Code", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                            }
+                        }
+
+                        if (!isScanningActive) {
+                            OutlinedButton(
+                                onClick = {
+                                    isScanningActive = true
+                                    parsedServerUrl = null
+                                    parsedApiKey = null
+                                    parsedDeviceKey = null
+                                    parseError = null
+                                },
+                                modifier = Modifier
+                                    .weight(0.8f)
+                                    .height(46.dp)
+                                    .testTag("rescan_button"),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, BorderZinc800)
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(15.dp), tint = TextWhite)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Rescan", fontSize = 12.sp, color = TextWhite)
+                            }
+                        }
+                    }
+
+                    // Secondary text button below the scanner: "Enter Details Manually"
                     TextButton(
-                        onClick = { showManualEntryDialog = true },
-                        modifier = Modifier.testTag("manual_entry_button")
+                        onClick = {
+                            if (onNavigateToSettings != null) {
+                                onNavigateToSettings()
+                            } else {
+                                showManualEntryDialog = true
+                            }
+                        },
+                        modifier = Modifier.testTag("enter_details_manually_button")
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp), tint = TextZinc400)
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Enter Details Manually",
-                            fontSize = 12.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                             color = TextZinc400
                         )
@@ -392,7 +644,7 @@ fun QrScannerScreen(
             }
         }
 
-        // Parsed Configuration Summary Preview Card
+        // Connection State / Parameters Detected Card
         parsedServerUrl?.let { server ->
             item {
                 Surface(
@@ -405,7 +657,7 @@ fun QrScannerScreen(
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -426,7 +678,7 @@ fun QrScannerScreen(
                                 )
                             }
                             Text(
-                                text = "Pairing Parameters Detected",
+                                text = "Gateway Credentials Verified",
                                 fontWeight = FontWeight.SemiBold,
                                 color = TextWhite,
                                 fontSize = 13.sp
@@ -436,14 +688,14 @@ fun QrScannerScreen(
                         HorizontalDivider(color = BorderZinc800)
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Target Server:", fontSize = 12.sp, color = TextZinc500)
+                            Text("Gateway Server:", fontSize = 12.sp, color = TextZinc500)
                             Text(server, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = TextWhite, fontFamily = FontFamily.Monospace)
                         }
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Merchant Key:", fontSize = 12.sp, color = TextZinc500)
                             Text(
-                                if (parsedApiKey.isNullOrBlank()) "None" else "${parsedApiKey!!.take(4)}••••••••",
+                                if (parsedApiKey.isNullOrBlank()) "Configured" else "${parsedApiKey!!.take(4)}••••••••",
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Medium,
@@ -461,34 +713,6 @@ fun QrScannerScreen(
                                 color = TextWhite
                             )
                         }
-
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        Button(
-                            onClick = {
-                                viewModel.loginToPanel(
-                                    panelUrl = server,
-                                    passwordOrToken = parsedApiKey ?: "",
-                                    deviceKey = parsedDeviceKey,
-                                    otp = parsedApiKey ?: "",
-                                    onSuccess = {
-                                        Toast.makeText(context, "Pairing applied successfully!", Toast.LENGTH_SHORT).show()
-                                        onConfigApplied()
-                                    }
-                                )
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(46.dp)
-                                .testTag("apply_qr_config_button"),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White,
-                                contentColor = Color.Black
-                            ),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("Pair and Connect Device", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = Color.Black)
-                        }
                     }
                 }
             }
@@ -503,29 +727,54 @@ fun QrScannerScreen(
                     border = BorderStroke(1.dp, StatusFailed.copy(alpha = 0.35f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier.padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = StatusFailed,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Text(
-                            text = err,
-                            fontSize = 12.sp,
-                            color = StatusFailed
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = StatusFailed,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = err,
+                                fontSize = 12.sp,
+                                color = StatusFailed
+                            )
+                        }
+
+                        if (!hasCameraPermission) {
+                            Button(
+                                onClick = {
+                                    try {
+                                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data = Uri.fromParts("package", context.packageName, null)
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (_: Exception) { }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.White,
+                                    contentColor = Color.Black
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("Open App Settings", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    // Manual Entry Dialog Modal
+    // Manual Entry Fallback Dialog
     if (showManualEntryDialog) {
         var manualUrl by remember { mutableStateOf("https://pay.emon.bd/") }
         var manualKey by remember { mutableStateOf("") }
@@ -550,7 +799,7 @@ fun QrScannerScreen(
                         label = { Text("Server URL", fontSize = 12.sp) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = BorderZinc800,
                             focusedBorderColor = Color.White
@@ -559,10 +808,10 @@ fun QrScannerScreen(
                     OutlinedTextField(
                         value = manualKey,
                         onValueChange = { manualKey = it },
-                        label = { Text("Merchant Key (OTP)", fontSize = 12.sp) },
+                        label = { Text("Merchant Key / OTP", fontSize = 12.sp) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = BorderZinc800,
                             focusedBorderColor = Color.White
@@ -574,7 +823,7 @@ fun QrScannerScreen(
                         label = { Text("Device Key (POS ID)", fontSize = 12.sp) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = BorderZinc800,
                             focusedBorderColor = Color.White
@@ -585,18 +834,17 @@ fun QrScannerScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        parsedServerUrl = if (manualUrl.endsWith("/")) manualUrl else "$manualUrl/"
-                        parsedApiKey = manualKey
-                        parsedDeviceKey = manualDevice
+                        val formattedUrl = if (manualUrl.endsWith("/")) manualUrl else "$manualUrl/"
                         showManualEntryDialog = false
+                        executeAutoConnect(formattedUrl, manualKey, manualDevice)
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White,
                         contentColor = Color.Black
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Apply", fontWeight = FontWeight.SemiBold, color = Color.Black)
+                    Text("Connect", fontWeight = FontWeight.SemiBold, color = Color.Black)
                 }
             },
             dismissButton = {
@@ -607,3 +855,4 @@ fun QrScannerScreen(
         )
     }
 }
+

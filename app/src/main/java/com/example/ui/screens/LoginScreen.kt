@@ -1,13 +1,10 @@
 package com.example.ui.screens
 
-import android.content.ClipboardManager
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,8 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -41,20 +36,15 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,11 +53,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -78,8 +66,6 @@ import com.example.ui.theme.InputBorderLight
 import com.example.ui.theme.StatusFailed
 import com.example.ui.viewmodel.LoginState
 import com.example.ui.viewmodel.MainViewModel
-import kotlinx.coroutines.launch
-import org.json.JSONObject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,6 +73,7 @@ fun LoginScreen(
     viewModel: MainViewModel,
     onLoginSuccess: () -> Unit,
     onBack: (() -> Unit)? = null,
+    onNavigateToQr: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -105,9 +92,6 @@ fun LoginScreen(
     var passwordError by remember { mutableStateOf<String?>(null) }
 
     var isPasswordVisible by remember { mutableStateOf(false) }
-    var showQrModal by remember { mutableStateOf(false) }
-    var qrRawPayload by remember { mutableStateOf("") }
-    var qrParseError by remember { mutableStateOf<String?>(null) }
 
     // Handle login state changes
     LaunchedEffect(loginState) {
@@ -151,8 +135,6 @@ fun LoginScreen(
             return
         }
 
-        // Validation passed: save credentials to EncryptedSharedPreferences, set isOnboardingCompleted = true,
-        // start PipraPayForegroundService, and trigger navigation to DashboardScreen
         viewModel.loginToPanel(
             panelUrl = trimmedUrl,
             passwordOrToken = trimmedPassword,
@@ -236,7 +218,7 @@ fun LoginScreen(
             },
             placeholder = {
                 Text(
-                    text = "https://api.piprapay.com",
+                    text = "https://pay.emon.bd/",
                     color = Color(0xFF94A3B8),
                     fontSize = 14.sp
                 )
@@ -258,12 +240,11 @@ fun LoginScreen(
             )
         )
 
-        // Quick Preset URL Chips
+        // Production Host Default Preset Chip
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 6.dp)
-                .horizontalScroll(rememberScrollState()),
+                .padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             FilterChip(
@@ -272,45 +253,9 @@ fun LoginScreen(
                     panelUrl = "https://pay.emon.bd/"
                     urlError = null
                 },
-                label = { Text("pay.emon.bd", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                label = { Text("pay.emon.bd (Production)", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = BrandIndigo.copy(alpha = 0.15f),
-                    selectedLabelColor = BrandIndigo
-                )
-            )
-            FilterChip(
-                selected = panelUrl == "https://api.piprapay.com",
-                onClick = {
-                    panelUrl = "https://api.piprapay.com"
-                    urlError = null
-                },
-                label = { Text("PipraPay Cloud", fontSize = 11.sp) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = BrandIndigo.copy(alpha = 0.12f),
-                    selectedLabelColor = BrandIndigo
-                )
-            )
-            FilterChip(
-                selected = panelUrl == "https://staging-api.piprapay.com",
-                onClick = {
-                    panelUrl = "https://staging-api.piprapay.com"
-                    urlError = null
-                },
-                label = { Text("Staging Server", fontSize = 11.sp) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = BrandIndigo.copy(alpha = 0.12f),
-                    selectedLabelColor = BrandIndigo
-                )
-            )
-            FilterChip(
-                selected = panelUrl == "http://10.0.2.2:8080",
-                onClick = {
-                    panelUrl = "http://10.0.2.2:8080"
-                    urlError = null
-                },
-                label = { Text("Localhost", fontSize = 11.sp) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = BrandIndigo.copy(alpha = 0.12f),
                     selectedLabelColor = BrandIndigo
                 )
             )
@@ -337,7 +282,7 @@ fun LoginScreen(
             },
             placeholder = {
                 Text(
-                    text = "Enter password or secret token",
+                    text = "Enter OTP or secret token",
                     color = Color(0xFF94A3B8),
                     fontSize = 14.sp
                 )
@@ -368,7 +313,6 @@ fun LoginScreen(
                 unfocusedBorderColor = InputBorderLight
             )
         )
-
 
         // Login Error Banner if needed
         AnimatedVisibility(visible = loginState is LoginState.Error) {
@@ -403,7 +347,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Main "Login" Button (Pill shaped, vibrant purple/indigo, matching screenshot)
+        // Main "Login" Button (Standardized solid action button)
         Button(
             onClick = {
                 validateAndExecuteLogin()
@@ -412,14 +356,17 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
-                .shadow(elevation = 6.dp, shape = RoundedCornerShape(26.dp), spotColor = BrandIndigo)
+                .shadow(elevation = 6.dp, shape = RoundedCornerShape(12.dp), spotColor = BrandIndigo)
                 .testTag("login_button"),
-            colors = ButtonDefaults.buttonColors(containerColor = BrandIndigo),
-            shape = RoundedCornerShape(26.dp)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White,
+                contentColor = Color.Black
+            ),
+            shape = RoundedCornerShape(12.dp)
         ) {
             if (loginState is LoginState.Loading) {
                 CircularProgressIndicator(
-                    color = Color.White,
+                    color = Color.Black,
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp
                 )
@@ -427,15 +374,15 @@ fun LoginScreen(
                 Text(
                     text = "Connecting to Panel...",
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Black
                 )
             } else {
                 Text(
                     text = "Login",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Black
                 )
             }
         }
@@ -481,12 +428,7 @@ fun LoginScreen(
                     .background(Color.White)
                     .border(2.dp, BrandIndigo, CircleShape)
                     .clickable {
-                        if (panelUrl.trim().isNotBlank() && password.trim().isNotBlank()) {
-                            validateAndExecuteLogin()
-                        } else {
-                            validateAndExecuteLogin()
-                            showQrModal = true
-                        }
+                        onNavigateToQr?.invoke()
                     }
                     .testTag("qr_code_login_button"),
                 contentAlignment = Alignment.Center
@@ -509,12 +451,7 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .clickable {
-                        if (panelUrl.trim().isNotBlank() && password.trim().isNotBlank()) {
-                            validateAndExecuteLogin()
-                        } else {
-                            validateAndExecuteLogin()
-                            showQrModal = true
-                        }
+                        onNavigateToQr?.invoke()
                     }
                     .testTag("or_login_with_qr_code_text")
             )
@@ -522,188 +459,5 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(28.dp))
     }
-
-    // Modal Sheet for QR Pairing & Fast Connection
-    if (showQrModal) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        val scope = rememberCoroutineScope()
-
-        ModalBottomSheet(
-            onDismissRequest = { showQrModal = false },
-            sheetState = sheetState,
-            containerColor = MaterialTheme.colorScheme.surface,
-            modifier = Modifier.testTag("qr_login_modal_sheet")
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Scan or Paste QR Config",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    IconButton(onClick = { scope.launch { sheetState.hide() }.invokeOnCompletion { showQrModal = false } }) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
-                    }
-                }
-
-                Text(
-                    text = "In your PipraPay Merchant Dashboard, click 'Companion QR Code' to copy or scan the configuration token.",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-
-                // Input or Paste Box
-                OutlinedTextField(
-                    value = qrRawPayload,
-                    onValueChange = {
-                        qrRawPayload = it
-                        qrParseError = null
-                    },
-                    placeholder = {
-                        Text(
-                            "{\n  \"server_url\": \"https://api.piprapay.com\",\n  \"api_key\": \"pipra_live_...\"\n}",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 12.sp
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .testTag("qr_modal_json_field"),
-                    shape = RoundedCornerShape(12.dp),
-                    textStyle = androidx.compose.ui.text.TextStyle(
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp
-                    )
-                )
-
-                // Paste from clipboard button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val text = clipboard.primaryClip?.getItemAt(0)?.text?.toString()
-                            if (!text.isNullOrBlank()) {
-                                qrRawPayload = text
-                                Toast.makeText(context, "Pasted from clipboard", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(context, "Clipboard is empty", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Paste", fontSize = 12.sp)
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            qrRawPayload = "https://pay.emon.bd/----0702746925"
-                        },
-                        modifier = Modifier.weight(1.3f),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text("pay.emon.bd QR", fontSize = 12.sp)
-                    }
-                }
-
-                qrParseError?.let { err ->
-                    Text(
-                        text = err,
-                        color = StatusFailed,
-                        fontSize = 12.sp,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                // Apply and connect button
-                Button(
-                    onClick = {
-                        val trimmed = qrRawPayload.trim()
-                        var parsedUrl = ""
-                        var parsedKey = ""
-                        var parsedDevice = ""
-
-                        if (trimmed.contains("----")) {
-                            val parts = trimmed.split("----")
-                            parsedUrl = parts[0].trim()
-                            parsedKey = parts.getOrNull(1)?.trim() ?: ""
-                        } else {
-                            try {
-                                val json = JSONObject(trimmed)
-                                parsedUrl = json.optString("server_url", json.optString("serverUrl", json.optString("url", ""))).trim()
-                                parsedKey = json.optString(
-                                    "api_key",
-                                    json.optString(
-                                        "apiKey",
-                                        json.optString("otp", json.optString("password", json.optString("token", json.optString("key", ""))))
-                                    )
-                                ).trim()
-                                parsedDevice = json.optString("device_key", json.optString("deviceKey", json.optString("device_id", json.optString("deviceId", "")))).trim()
-                            } catch (e: Exception) {
-                                val lines = trimmed.lines().map { it.trim() }.filter { it.isNotEmpty() }
-                                if (lines.size >= 2 && (lines[0].startsWith("http://") || lines[0].startsWith("https://"))) {
-                                    parsedUrl = lines[0]
-                                    parsedKey = lines[1]
-                                } else if (trimmed.all { it.isDigit() } && trimmed.length in 6..12) {
-                                    parsedUrl = "https://pay.emon.bd/"
-                                    parsedKey = trimmed
-                                }
-                            }
-                        }
-
-                        if (parsedUrl.isBlank() && parsedKey.isBlank()) {
-                            qrParseError = "Invalid QR payload. Please scan a PipraPay QR code (URL----OTP) or valid JSON."
-                        } else if (parsedUrl.isBlank()) {
-                            qrParseError = "Payment Panel URL cannot be empty."
-                        } else if (parsedKey.isBlank()) {
-                            qrParseError = "OTP or API Key cannot be empty."
-                        } else {
-                            panelUrl = if (parsedUrl.endsWith("/")) parsedUrl else "$parsedUrl/"
-                            password = parsedKey
-                            showQrModal = false
-                            Toast.makeText(context, "Configuration loaded! Pairing with server...", Toast.LENGTH_SHORT).show()
-                            viewModel.loginToPanel(
-                                panelUrl = panelUrl,
-                                passwordOrToken = password,
-                                deviceKey = parsedDevice.ifBlank { null },
-                                otp = password,
-                                onSuccess = {
-                                    onLoginSuccess()
-                                }
-                            )
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .testTag("apply_qr_and_login_button"),
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandIndigo),
-                    shape = RoundedCornerShape(24.dp)
-                ) {
-                    Text("Apply & Login Now", fontWeight = FontWeight.Bold, color = Color.White)
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-        }
-    }
 }
+

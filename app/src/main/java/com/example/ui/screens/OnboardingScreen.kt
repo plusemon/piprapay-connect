@@ -125,7 +125,8 @@ import org.json.JSONObject
 enum class OnboardingStep {
     SYSTEM_READINESS,
     PERMISSIONS_SETUP,
-    PANEL_LOGIN
+    PANEL_LOGIN,
+    QR_SCAN
 }
 
 @Composable
@@ -138,6 +139,7 @@ fun OnboardingScreen(
 
     BackHandler(enabled = currentStep != OnboardingStep.SYSTEM_READINESS) {
         currentStep = when (currentStep) {
+            OnboardingStep.QR_SCAN -> OnboardingStep.PANEL_LOGIN
             OnboardingStep.PANEL_LOGIN -> OnboardingStep.PERMISSIONS_SETUP
             OnboardingStep.PERMISSIONS_SETUP -> OnboardingStep.SYSTEM_READINESS
             OnboardingStep.SYSTEM_READINESS -> OnboardingStep.SYSTEM_READINESS
@@ -184,7 +186,15 @@ fun OnboardingScreen(
                     LoginScreen(
                         viewModel = viewModel,
                         onBack = { currentStep = OnboardingStep.PERMISSIONS_SETUP },
+                        onNavigateToQr = { currentStep = OnboardingStep.QR_SCAN },
                         onLoginSuccess = onOnboardingFinished
+                    )
+                }
+                OnboardingStep.QR_SCAN -> {
+                    QrScannerScreen(
+                        viewModel = viewModel,
+                        onConfigApplied = onOnboardingFinished,
+                        onNavigateToSettings = { currentStep = OnboardingStep.PANEL_LOGIN }
                     )
                 }
             }
