@@ -203,8 +203,8 @@ fun PipraPayApp(
                         modifier = Modifier
                             .fillMaxWidth()
                             .navigationBarsPadding()
-                            .height(56.dp)
-                            .padding(horizontal = 8.dp),
+                            .height(64.dp)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {

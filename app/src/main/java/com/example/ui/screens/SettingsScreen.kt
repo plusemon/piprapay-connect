@@ -168,18 +168,12 @@ fun SettingsScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Sleek Segmented Environment Selector
-                    MinimalEnvironmentPicker(
-                        currentUrl = serverUrl,
-                        onUrlSelected = { serverUrl = it }
-                    )
-
                     // Server Base URL
                     OutlinedTextField(
                         value = serverUrl,
                         onValueChange = { serverUrl = it },
                         label = { Text("Server URL", fontSize = 12.sp) },
-                        placeholder = { Text("https://api.piprapay.com/", fontSize = 13.sp) },
+                        placeholder = { Text("https://pay.emon.bd/", fontSize = 13.sp) },
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Dns,
@@ -312,11 +306,14 @@ fun SettingsScreen(
                                 .height(42.dp)
                                 .testTag("save_settings_button"),
                             shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White,
+                                contentColor = Color.Black
+                            )
                         ) {
-                            Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Black)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Save", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Text("Save", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
                         }
 
                         OutlinedButton(
@@ -725,55 +722,6 @@ private fun SettingsSectionHeader(title: String) {
         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
         modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
     )
-}
-
-@Composable
-private fun MinimalEnvironmentPicker(
-    currentUrl: String,
-    onUrlSelected: (String) -> Unit
-) {
-    val options = listOf(
-        "Production" to "https://api.piprapay.com/",
-        "Staging" to "https://staging-api.piprapay.com/",
-        "Localhost" to "http://10.0.2.2:8080/"
-    )
-
-    Surface(
-        shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(3.dp),
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            options.forEach { (label, url) ->
-                val isSelected = currentUrl == url
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            if (isSelected) MaterialTheme.colorScheme.surface
-                            else Color.Transparent
-                        )
-                        .clickable { onUrlSelected(url) }
-                        .padding(vertical = 6.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = label,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = if (isSelected) EmeraldPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
 }
 
 @Composable

@@ -307,10 +307,12 @@ fun DashboardScreen(
                         onCheckedChange = { viewModel.toggleService(it) },
                         modifier = Modifier.testTag("service_toggle_switch"),
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = CanvasBlack,
-                            checkedTrackColor = TextWhite,
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = AccentEmerald,
+                            checkedBorderColor = AccentEmerald,
                             uncheckedThumbColor = TextZinc500,
-                            uncheckedTrackColor = BorderZinc800
+                            uncheckedTrackColor = BorderZinc800,
+                            uncheckedBorderColor = BorderZinc800
                         )
                     )
                 }
@@ -1687,10 +1689,10 @@ fun VerifiedBalancesCard(
                         shape = RoundedCornerShape(10.dp),
                         color = SurfaceCard,
                         border = BorderStroke(1.dp, BorderZinc800),
-                        modifier = Modifier.widthIn(min = 124.dp)
+                        modifier = Modifier.widthIn(min = 108.dp)
                     ) {
                         Column(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
@@ -1714,7 +1716,7 @@ fun VerifiedBalancesCard(
                                     border = BorderStroke(1.dp, BorderZinc800)
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
@@ -1722,13 +1724,13 @@ fun VerifiedBalancesCard(
                                             modifier = Modifier
                                                 .size(4.dp)
                                                 .clip(CircleShape)
-                                                .background(TextZinc500)
+                                                .background(AccentEmerald)
                                         )
                                         Text(
-                                            text = "Waiting for SMS",
+                                            text = "Listening",
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Medium,
-                                            color = TextZinc500
+                                            color = TextZinc400
                                         )
                                     }
                                 }
