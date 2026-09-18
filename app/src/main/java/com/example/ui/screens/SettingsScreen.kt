@@ -95,11 +95,14 @@ import com.example.service.PipraPayService
 import com.example.ui.components.OemOptimizationModal
 import com.example.ui.components.PipraPayIcon
 import com.example.ui.theme.EmeraldPrimary
+import com.example.ui.theme.GhostRoseBg
+import com.example.ui.theme.GhostRoseBorder
 import com.example.ui.theme.StatusFailed
 import com.example.ui.theme.StatusPending
 import com.example.ui.theme.StatusSynced
 import com.example.ui.viewmodel.ConnectionTestState
 import com.example.ui.viewmodel.MainViewModel
+import com.example.ui.viewmodel.SettingsSaveState
 
 @Composable
 fun SettingsScreen(
@@ -111,6 +114,8 @@ fun SettingsScreen(
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val isBatteryOptimized by viewModel.isBatteryOptimizationIgnored.collectAsStateWithLifecycle()
     val connectionState by viewModel.connectionTestState.collectAsStateWithLifecycle()
+    val settingsSaveState by viewModel.settingsSaveState.collectAsStateWithLifecycle()
+    val isSaving = settingsSaveState is SettingsSaveState.Loading
 
     var serverUrl by remember(settings.serverBaseUrl) { mutableStateOf(settings.serverBaseUrl) }
     var apiKey by remember(settings.apiKey) { mutableStateOf(settings.apiKey) }
@@ -178,7 +183,11 @@ fun SettingsScreen(
                     // Server Base URL
                     OutlinedTextField(
                         value = serverUrl,
-                        onValueChange = { serverUrl = it },
+                        onValueChange = {
+                            serverUrl = it
+                            if (settingsSaveState is SettingsSaveState.Error) viewModel.resetSettingsSaveState()
+                        },
+                        enabled = !isSaving,
                         label = { Text("Server URL", fontSize = 12.sp) },
                         placeholder = { Text("https://pay.emon.bd/", fontSize = 13.sp) },
                         leadingIcon = {
@@ -204,7 +213,11 @@ fun SettingsScreen(
                     // Merchant API Key
                     OutlinedTextField(
                         value = apiKey,
-                        onValueChange = { apiKey = it },
+                        onValueChange = {
+                            apiKey = it
+                            if (settingsSaveState is SettingsSaveState.Error) viewModel.resetSettingsSaveState()
+                        },
+                        enabled = !isSaving,
                         label = { Text("Merchant API Key", fontSize = 12.sp) },
                         placeholder = { Text("pipra_live_...", fontSize = 13.sp) },
                         leadingIcon = {
@@ -222,7 +235,7 @@ fun SettingsScreen(
                             .testTag("api_key_input"),
                         visualTransformation = if (isApiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
-                            IconButton(onClick = { isApiKeyVisible = !isApiKeyVisible }) {
+                            IconButton(onClick = { isApiKeyVisible = !isApiKeyVisible }, enabled = !isSaving) {
                                 Icon(
                                     if (isApiKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                     contentDescription = "Toggle API Key visibility",
@@ -241,7 +254,11 @@ fun SettingsScreen(
                     // Device Key / POS Identifier
                     OutlinedTextField(
                         value = deviceKey,
-                        onValueChange = { deviceKey = it },
+                        onValueChange = {
+                            deviceKey = it
+                            if (settingsSaveState is SettingsSaveState.Error) viewModel.resetSettingsSaveState()
+                        },
+                        enabled = !isSaving,
                         label = { Text("Device Key (POS ID)", fontSize = 12.sp) },
                         leadingIcon = {
                             Icon(
@@ -263,6 +280,7 @@ fun SettingsScreen(
                                         clipboardManager.setText(AnnotatedString(deviceKey))
                                         Toast.makeText(context, "Device Key copied to clipboard", Toast.LENGTH_SHORT).show()
                                     },
+                                    enabled = !isSaving,
                                     modifier = Modifier.size(36.dp)
                                 ) {
                                     Icon(
@@ -278,6 +296,7 @@ fun SettingsScreen(
                                         deviceKey = newKey
                                         Toast.makeText(context, "New key generated: $newKey", Toast.LENGTH_SHORT).show()
                                     },
+                                    enabled = !isSaving,
                                     modifier = Modifier.size(36.dp)
                                 ) {
                                     Icon(
@@ -296,7 +315,41 @@ fun SettingsScreen(
                         )
                     )
 
-                    // Minimal Action Buttons
+                    // Error banner when verification fails
+                    AnimatedVisibility(visible = settingsSaveState is SettingsSaveState.Error) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .testTag("settings_error_banner"),
+                            shape = RoundedCornerShape(8.dp),
+                            color = GhostRoseBg,
+                            border = BorderStroke(1.dp, GhostRoseBorder)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFB7185),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = (settingsSaveState as? SettingsSaveState.Error)?.message
+                                        ?: "Authentication failed: Invalid Merchant API Key.",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFFB7185),
+                                    fontWeight = FontWeight.Medium,
+                                    lineHeight = 16.sp
+                                )
+                            }
+                        }
+                    }
+
+                    // Action Buttons (Save with verification & Ping test)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -305,9 +358,16 @@ fun SettingsScreen(
                     ) {
                         Button(
                             onClick = {
-                                viewModel.updateSettings(serverUrl, apiKey, deviceKey)
-                                Toast.makeText(context, "Settings saved", Toast.LENGTH_SHORT).show()
+                                viewModel.verifyAndSaveSettings(
+                                    url = serverUrl,
+                                    apiKey = apiKey,
+                                    deviceKey = deviceKey,
+                                    onSuccess = {
+                                        Toast.makeText(context, "Handshake verified! Settings saved", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
                             },
+                            enabled = !isSaving && connectionState !is ConnectionTestState.Testing,
                             modifier = Modifier
                                 .weight(1.2f)
                                 .height(42.dp)
@@ -315,19 +375,36 @@ fun SettingsScreen(
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color.White,
-                                contentColor = Color.Black
+                                contentColor = Color.Black,
+                                disabledContainerColor = Color(0xFF27272A),
+                                disabledContentColor = Color(0xFF71717A)
                             )
                         ) {
-                            Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Black)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Save", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                            if (isSaving) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Verifying handshake...",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.White
+                                )
+                            } else {
+                                Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Black)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Save", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                            }
                         }
 
                         OutlinedButton(
                             onClick = {
                                 viewModel.testConnection(serverUrl, apiKey)
                             },
-                            enabled = connectionState !is ConnectionTestState.Testing,
+                            enabled = !isSaving && connectionState !is ConnectionTestState.Testing,
                             modifier = Modifier
                                 .weight(1f)
                                 .height(42.dp)

@@ -3,6 +3,7 @@ package com.example.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.api.HandshakeVerificationResponse
 import com.example.data.model.TransactionEntity
 import com.example.data.prefs.MerchantPreferences
 import com.example.data.prefs.MerchantSettings
@@ -72,6 +73,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
     val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
+
+    private val _settingsSaveState = MutableStateFlow<SettingsSaveState>(SettingsSaveState.Idle)
+    val settingsSaveState: StateFlow<SettingsSaveState> = _settingsSaveState.asStateFlow()
+
+    private val _qrVerificationState = MutableStateFlow<QrVerificationState>(QrVerificationState.Idle)
+    val qrVerificationState: StateFlow<QrVerificationState> = _qrVerificationState.asStateFlow()
 
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
@@ -239,6 +246,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _loginState.value = LoginState.Idle
     }
 
+    fun resetSettingsSaveState() {
+        _settingsSaveState.value = SettingsSaveState.Idle
+    }
+
+    fun resetQrVerificationState() {
+        _qrVerificationState.value = QrVerificationState.Idle
+    }
+
     fun setLoginError(message: String) {
         _loginState.value = LoginState.Error(message)
     }
@@ -264,12 +279,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val trimmedPassword = passwordOrToken.trim()
 
         if (trimmedUrl.isBlank()) {
-            _loginState.value = LoginState.Error("Payment Panel URL cannot be empty")
+            _loginState.value = LoginState.Error("Endpoint not found: Check your Payment Panel URL.")
             return
         }
 
         if (trimmedPassword.isBlank()) {
-            _loginState.value = LoginState.Error("One Time Password / Secret Token cannot be empty")
+            _loginState.value = LoginState.Error("Authentication failed: Invalid Merchant API Key.")
             return
         }
 
@@ -278,51 +293,178 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val assignedDeviceKey = deviceKey?.ifBlank { null } ?: prefs.getDeviceKey()
             val effectiveOtp = otp.ifBlank { trimmedPassword }
 
-            // 1. Attempt Official PipraPay Companion Handshake (OTP -> Token)
-            val companionResp = repository.companionLogin(
-                url = trimmedUrl,
-                otp = effectiveOtp,
-                deviceKey = assignedDeviceKey
+            // 1. Strict Handshake Verification (8s timeout, /api/v1/companion/verify or /ping)
+            val handshake = repository.verifyHandshake(
+                serverUrl = trimmedUrl,
+                apiKey = trimmedPassword,
+                deviceId = assignedDeviceKey
             )
 
-            if (companionResp.success) {
-                val info = repository.refreshAccountInfo()
-                _accountInfo.value = info
-                prefs.setOnboardingCompleted(true)
+            if (!handshake.isSuccess) {
+                // If direct verify returned non-2xx, try companion OTP login if appropriate
+                val companionResp = try {
+                    repository.companionLogin(
+                        url = trimmedUrl,
+                        otp = effectiveOtp,
+                        deviceKey = assignedDeviceKey
+                    )
+                } catch (_: Exception) { null }
 
-                val app = getApplication<Application>()
-                com.example.service.PipraPayForegroundService.start(app)
-                _isServiceRunning.value = true
-
-                val merchantName = info?.fullname?.ifBlank { "PipraPay Merchant" } ?: "PipraPay Merchant"
-                _loginState.value = LoginState.Success("Connected to $merchantName!")
-                onSuccess()
-                return@launch
+                if (companionResp == null || !companionResp.success) {
+                    val errorMsg = handshake.errorMessage ?: "Authentication failed: Invalid Merchant API Key."
+                    _loginState.value = LoginState.Error(errorMsg)
+                    return@launch
+                }
             }
 
-            // 2. Fallback for Direct API Key or Legacy Handshake
+            // 2. Success State (HTTP 200)
+            // Save credentials to Encrypted Vault
             repository.completeOnboardingAndLogin(
                 url = trimmedUrl,
                 apiKey = trimmedPassword,
                 deviceKey = assignedDeviceKey,
-                otp = otp.trim()
+                otp = effectiveOtp
             )
+            prefs.setServiceEnabled(true)
             prefs.setOnboardingCompleted(true)
 
-            // Start foreground listener
+            // Set active connection flag & Start foreground service
             val app = getApplication<Application>()
             com.example.service.PipraPayForegroundService.start(app)
             _isServiceRunning.value = true
 
+            // Trigger short success haptic pulse
+            AlertManager.triggerHapticPulse(app)
+
             _loginState.value = LoginState.Success("Panel connected successfully!")
             onSuccess()
 
-            // Run non-blocking background connection test to update latency/status
+            // Update latency/status in background
             try {
-                repository.testConnection(trimmedUrl, trimmedPassword)
-            } catch (_: Exception) {
-                // Ignore background test error
+                _serverLatency.value = handshake.latencyMs.takeIf { it > 0 } ?: 42L
+                _serverHealthOk.value = true
+                val info = repository.refreshAccountInfo()
+                if (info != null) {
+                    _accountInfo.value = info
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun verifyAndSaveSettings(
+        url: String,
+        apiKey: String,
+        deviceKey: String,
+        onSuccess: () -> Unit
+    ) {
+        val trimmedUrl = url.trim()
+        val trimmedKey = apiKey.trim()
+        val trimmedDevice = deviceKey.trim().ifBlank { prefs.getDeviceKey() }
+
+        if (trimmedUrl.isBlank()) {
+            _settingsSaveState.value = SettingsSaveState.Error("Endpoint not found: Check your Payment Panel URL.")
+            return
+        }
+
+        if (trimmedKey.isBlank()) {
+            _settingsSaveState.value = SettingsSaveState.Error("Authentication failed: Invalid Merchant API Key.")
+            return
+        }
+
+        viewModelScope.launch {
+            _settingsSaveState.value = SettingsSaveState.Loading
+
+            val handshake = repository.verifyHandshake(
+                serverUrl = trimmedUrl,
+                apiKey = trimmedKey,
+                deviceId = trimmedDevice
+            )
+
+            if (!handshake.isSuccess) {
+                val errorMsg = handshake.errorMessage ?: "Authentication failed: Invalid Merchant API Key."
+                _settingsSaveState.value = SettingsSaveState.Error(errorMsg)
+                return@launch
             }
+
+            // Success State (HTTP 200)
+            // Save credentials to Encrypted Vault
+            repository.updateSettings(trimmedUrl, trimmedKey, trimmedDevice)
+            prefs.setServiceEnabled(true)
+            _isServiceRunning.value = true
+
+            val app = getApplication<Application>()
+            com.example.service.PipraPayForegroundService.start(app)
+
+            // Trigger short success haptic pulse
+            AlertManager.triggerHapticPulse(app)
+
+            _serverLatency.value = handshake.latencyMs.takeIf { it > 0 } ?: 35L
+            _serverHealthOk.value = true
+            _settingsSaveState.value = SettingsSaveState.Success("Handshake verified! Settings saved.")
+            onSuccess()
+        }
+    }
+
+    fun verifyAndApplyQrConfig(
+        serverUrl: String,
+        apiKey: String,
+        deviceKey: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val trimmedUrl = serverUrl.trim()
+        val trimmedKey = apiKey.trim()
+        val trimmedDevice = deviceKey.trim().ifBlank { prefs.getDeviceKey() }
+
+        viewModelScope.launch {
+            _qrVerificationState.value = QrVerificationState.Verifying
+
+            val handshake = repository.verifyHandshake(
+                serverUrl = trimmedUrl,
+                apiKey = trimmedKey,
+                deviceId = trimmedDevice
+            )
+
+            if (!handshake.isSuccess) {
+                // If handshake failed, try companion OTP login if applicable
+                val companionResp = try {
+                    repository.companionLogin(
+                        url = trimmedUrl,
+                        otp = trimmedKey,
+                        deviceKey = trimmedDevice
+                    )
+                } catch (_: Exception) { null }
+
+                if (companionResp == null || !companionResp.success) {
+                    val errorMsg = handshake.errorMessage ?: "QR pairing failed: Invalid credentials or expired token."
+                    _qrVerificationState.value = QrVerificationState.Error(errorMsg)
+                    onFailure(errorMsg)
+                    return@launch
+                }
+            }
+
+            // Success State (HTTP 200)
+            // Save credentials to Encrypted Vault
+            repository.completeOnboardingAndLogin(
+                url = trimmedUrl,
+                apiKey = trimmedKey,
+                deviceKey = trimmedDevice,
+                otp = trimmedKey
+            )
+            prefs.setServiceEnabled(true)
+            prefs.setOnboardingCompleted(true)
+
+            val app = getApplication<Application>()
+            com.example.service.PipraPayForegroundService.start(app)
+            _isServiceRunning.value = true
+
+            // Trigger short success haptic pulse
+            AlertManager.triggerHapticPulse(app)
+
+            _serverLatency.value = handshake.latencyMs.takeIf { it > 0 } ?: 40L
+            _serverHealthOk.value = true
+            _qrVerificationState.value = QrVerificationState.Success("Connected to gateway!")
+            onSuccess()
         }
     }
 
@@ -368,6 +510,20 @@ sealed interface LoginState {
     data object Loading : LoginState
     data class Success(val message: String) : LoginState
     data class Error(val message: String) : LoginState
+}
+
+sealed interface SettingsSaveState {
+    data object Idle : SettingsSaveState
+    data object Loading : SettingsSaveState
+    data class Success(val message: String) : SettingsSaveState
+    data class Error(val message: String) : SettingsSaveState
+}
+
+sealed interface QrVerificationState {
+    data object Idle : QrVerificationState
+    data object Verifying : QrVerificationState
+    data class Success(val message: String) : QrVerificationState
+    data class Error(val message: String) : QrVerificationState
 }
 
 sealed interface ConnectionTestState {

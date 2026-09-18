@@ -98,6 +98,8 @@ import com.example.ui.theme.CanvasBlack
 import com.example.ui.theme.ContainerDark
 import com.example.ui.theme.GhostEmeraldBg
 import com.example.ui.theme.GhostEmeraldBorder
+import com.example.ui.theme.GhostRoseBg
+import com.example.ui.theme.GhostRoseBorder
 import com.example.ui.theme.StatusFailed
 import com.example.ui.theme.StatusSynced
 import com.example.ui.theme.TextWhite
@@ -105,6 +107,7 @@ import com.example.ui.theme.TextZinc400
 import com.example.ui.theme.TextZinc500
 import com.example.ui.viewmodel.LoginState
 import com.example.ui.viewmodel.MainViewModel
+import com.example.ui.viewmodel.QrVerificationState
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
@@ -194,6 +197,7 @@ fun QrScannerScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val loginState by viewModel.loginState.collectAsStateWithLifecycle()
+    val qrVerificationState by viewModel.qrVerificationState.collectAsStateWithLifecycle()
 
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -206,8 +210,9 @@ fun QrScannerScreen(
     var parsedApiKey by remember { mutableStateOf<String?>(null) }
     var parsedDeviceKey by remember { mutableStateOf<String?>(null) }
     var parseError by remember { mutableStateOf<String?>(null) }
-    var isConnecting by remember { mutableStateOf(false) }
     var showManualEntryDialog by remember { mutableStateOf(false) }
+
+    val isVerifying = qrVerificationState is QrVerificationState.Verifying
 
     // Scanner Laser Animation
     val infiniteTransition = rememberInfiniteTransition(label = "scanner_laser_transition")
@@ -268,20 +273,23 @@ fun QrScannerScreen(
         } catch (_: Exception) { }
     }
 
-    // Auto-Connect Pipeline
+    // Auto-Connect Pipeline with Strict Handshake Authentication
     fun executeAutoConnect(serverUrl: String, apiKey: String, deviceKey: String) {
-        isConnecting = true
+        isScanningActive = false
+        parseError = null
         triggerHapticFeedback()
 
-        viewModel.loginToPanel(
-            panelUrl = serverUrl,
-            passwordOrToken = apiKey,
+        viewModel.verifyAndApplyQrConfig(
+            serverUrl = serverUrl,
+            apiKey = apiKey,
             deviceKey = deviceKey,
-            otp = apiKey,
             onSuccess = {
-                isConnecting = false
-                Toast.makeText(context, "Connected to PipraPay Gateway", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Handshake verified! Connected to gateway.", Toast.LENGTH_LONG).show()
                 onConfigApplied()
+            },
+            onFailure = { errorMsg ->
+                parseError = errorMsg
+                triggerHapticFeedback()
             }
         )
     }
@@ -540,6 +548,32 @@ fun QrScannerScreen(
                                     Text("Grant Permission", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
                                 }
                             }
+                        } else if (isVerifying) {
+                            // Verifying Overlay
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    color = AccentEmerald,
+                                    modifier = Modifier.size(36.dp),
+                                    strokeWidth = 3.dp
+                                )
+                                Text(
+                                    text = "Authenticating with gateway...",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextWhite,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                                Text(
+                                    text = "Performing strict handshake verification",
+                                    fontSize = 11.sp,
+                                    color = TextZinc400,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            }
                         } else {
                             // Paused or Scanned View
                             Column(
@@ -572,24 +606,32 @@ fun QrScannerScreen(
                             onClick = {
                                 handleScannedPayload("piprapay://pair?server=https://pay.emon.bd&api_key=0702746925&device=POS-DEV-01")
                             },
+                            enabled = !isVerifying,
                             modifier = Modifier
                                 .weight(1f)
                                 .height(46.dp)
                                 .testTag("scan_code_button"),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color.White,
-                                contentColor = Color.Black
+                                contentColor = Color.Black,
+                                disabledContainerColor = Color(0xFF27272A),
+                                disabledContentColor = Color(0xFF71717A)
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            if (isConnecting) {
+                            if (isVerifying) {
                                 CircularProgressIndicator(
-                                    color = Color.Black,
+                                    color = Color.White,
                                     modifier = Modifier.size(16.dp),
                                     strokeWidth = 2.dp
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Connecting...", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                                Text(
+                                    text = "Authenticating...",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.White
+                                )
                             } else {
                                 Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Black)
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -597,7 +639,7 @@ fun QrScannerScreen(
                             }
                         }
 
-                        if (!isScanningActive) {
+                        if (!isScanningActive || parseError != null) {
                             OutlinedButton(
                                 onClick = {
                                     isScanningActive = true
@@ -605,7 +647,9 @@ fun QrScannerScreen(
                                     parsedApiKey = null
                                     parsedDeviceKey = null
                                     parseError = null
+                                    viewModel.resetQrVerificationState()
                                 },
+                                enabled = !isVerifying,
                                 modifier = Modifier
                                     .weight(0.8f)
                                     .height(46.dp)
@@ -722,13 +766,15 @@ fun QrScannerScreen(
         parseError?.let { err ->
             item {
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = ContainerDark,
-                    border = BorderStroke(1.dp, StatusFailed.copy(alpha = 0.35f)),
-                    modifier = Modifier.fillMaxWidth()
+                    shape = RoundedCornerShape(8.dp),
+                    color = GhostRoseBg,
+                    border = BorderStroke(1.dp, GhostRoseBorder),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("qr_error_banner")
                 ) {
                     Column(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Row(
@@ -738,13 +784,15 @@ fun QrScannerScreen(
                             Icon(
                                 Icons.Default.Warning,
                                 contentDescription = null,
-                                tint = StatusFailed,
+                                tint = Color(0xFFFB7185),
                                 modifier = Modifier.size(18.dp)
                             )
                             Text(
                                 text = err,
                                 fontSize = 12.sp,
-                                color = StatusFailed
+                                color = Color(0xFFFB7185),
+                                lineHeight = 16.sp,
+                                fontWeight = FontWeight.Medium
                             )
                         }
 
@@ -763,7 +811,7 @@ fun QrScannerScreen(
                                     containerColor = Color.White,
                                     contentColor = Color.Black
                                 ),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text("Open App Settings", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
                             }

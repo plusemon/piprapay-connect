@@ -100,6 +100,151 @@ interface PipraPayApi {
     suspend fun healthCheck(): Response<ResponseBody>
 }
 
+data class HandshakeVerificationResponse(
+    val isSuccess: Boolean,
+    val httpCode: Int? = null,
+    val errorMessage: String? = null,
+    val latencyMs: Long = 0L,
+    val token: String? = null
+)
+
+object HandshakeAuthenticator {
+    private val client: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(8, TimeUnit.SECONDS)
+            .readTimeout(8, TimeUnit.SECONDS)
+            .writeTimeout(8, TimeUnit.SECONDS)
+            .callTimeout(8, TimeUnit.SECONDS)
+            .build()
+    }
+
+    suspend fun verify(
+        serverUrl: String,
+        apiKey: String,
+        deviceId: String
+    ): HandshakeVerificationResponse = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        val trimmedUrl = serverUrl.trim()
+        val cleanBaseUrl = if (trimmedUrl.endsWith("/")) trimmedUrl.dropLast(1) else trimmedUrl
+
+        val verifyUrl = "$cleanBaseUrl/api/v1/companion/verify"
+        val pingUrl = "$cleanBaseUrl/api/ping"
+
+        fun doRequest(url: String): HandshakeVerificationResponse {
+            val req = Request.Builder()
+                .url(url)
+                .get()
+                .header("X-Merchant-Key", apiKey.trim())
+                .header("X-Device-Id", deviceId.trim())
+                .header("Accept", "application/json")
+                .header("User-Agent", "PipraPay-Companion-Android/1.0")
+                .build()
+
+            try {
+                client.newCall(req).execute().use { response ->
+                    val latency = System.currentTimeMillis() - startTime
+                    val code = response.code
+                    val body = response.body?.string().orEmpty()
+
+                    if (code in 200..299) {
+                        var token: String? = null
+                        if (body.isNotBlank()) {
+                            try {
+                                val json = JSONObject(body)
+                                token = json.optString("token").takeIf { it.isNotBlank() }
+                            } catch (_: Exception) {}
+                        }
+                        return HandshakeVerificationResponse(
+                            isSuccess = true,
+                            httpCode = code,
+                            latencyMs = latency,
+                            token = token
+                        )
+                    } else if (code == 401 || code == 403) {
+                        return HandshakeVerificationResponse(
+                            isSuccess = false,
+                            httpCode = code,
+                            errorMessage = "Authentication failed: Invalid Merchant API Key.",
+                            latencyMs = latency
+                        )
+                    } else if (code == 404) {
+                        return HandshakeVerificationResponse(
+                            isSuccess = false,
+                            httpCode = 404,
+                            errorMessage = "Endpoint not found: Check your Payment Panel URL.",
+                            latencyMs = latency
+                        )
+                    } else {
+                        return HandshakeVerificationResponse(
+                            isSuccess = false,
+                            httpCode = code,
+                            errorMessage = "Authentication failed: Server returned HTTP $code.",
+                            latencyMs = latency
+                        )
+                    }
+                }
+            } catch (e: java.net.SocketTimeoutException) {
+                val latency = System.currentTimeMillis() - startTime
+                return HandshakeVerificationResponse(
+                    isSuccess = false,
+                    httpCode = null,
+                    errorMessage = "Connection timed out. Check network or server status.",
+                    latencyMs = latency
+                )
+            } catch (e: java.io.InterruptedIOException) {
+                val latency = System.currentTimeMillis() - startTime
+                return HandshakeVerificationResponse(
+                    isSuccess = false,
+                    httpCode = null,
+                    errorMessage = "Connection timed out. Check network or server status.",
+                    latencyMs = latency
+                )
+            } catch (e: Exception) {
+                val latency = System.currentTimeMillis() - startTime
+                return HandshakeVerificationResponse(
+                    isSuccess = false,
+                    httpCode = null,
+                    errorMessage = "Connection timed out. Check network or server status.",
+                    latencyMs = latency
+                )
+            }
+        }
+
+        // Primary: verifyUrl
+        val primaryResult = doRequest(verifyUrl)
+        if (primaryResult.isSuccess) {
+            return@withContext primaryResult
+        }
+
+        // If 404 on verify endpoint, try ping endpoint as fallback
+        if (primaryResult.httpCode == 404) {
+            val pingResult = doRequest(pingUrl)
+            if (pingResult.isSuccess) {
+                return@withContext pingResult
+            }
+            if (pingResult.httpCode == 401 || pingResult.httpCode == 403) {
+                return@withContext HandshakeVerificationResponse(
+                    isSuccess = false,
+                    httpCode = pingResult.httpCode,
+                    errorMessage = "Authentication failed: Invalid Merchant API Key.",
+                    latencyMs = pingResult.latencyMs
+                )
+            }
+            if (pingResult.httpCode == 404) {
+                return@withContext HandshakeVerificationResponse(
+                    isSuccess = false,
+                    httpCode = 404,
+                    errorMessage = "Endpoint not found: Check your Payment Panel URL.",
+                    latencyMs = pingResult.latencyMs
+                )
+            }
+            return@withContext pingResult
+        }
+
+        return@withContext primaryResult
+    }
+}
+
 object ApiClient {
 
     private val moshi = Moshi.Builder()

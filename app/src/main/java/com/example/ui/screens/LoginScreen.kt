@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -61,6 +62,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.theme.BrandIndigo
 import com.example.ui.theme.BrandIndigoRing
+import com.example.ui.theme.GhostRoseBg
+import com.example.ui.theme.GhostRoseBorder
 import com.example.ui.theme.InputBackgroundLight
 import com.example.ui.theme.InputBorderLight
 import com.example.ui.theme.StatusFailed
@@ -80,6 +83,8 @@ fun LoginScreen(
     val scrollState = rememberScrollState()
     val loginState by viewModel.loginState.collectAsStateWithLifecycle()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+
+    val isLoading = loginState is LoginState.Loading
 
     var panelUrl by remember(settings.serverBaseUrl) {
         mutableStateOf(if (settings.serverBaseUrl.isNotBlank()) settings.serverBaseUrl else "https://pay.emon.bd/")
@@ -105,6 +110,7 @@ fun LoginScreen(
 
     // Core validation and login execution
     fun validateAndExecuteLogin() {
+        if (isLoading) return
         val trimmedUrl = panelUrl.trim()
         val trimmedPassword = password.trim()
 
@@ -126,12 +132,11 @@ fun LoginScreen(
 
         if (hasError) {
             val errorMsg = when {
-                trimmedUrl.isBlank() && trimmedPassword.isBlank() -> "Payment Panel URL and credentials cannot be empty"
-                trimmedUrl.isBlank() -> "Payment Panel URL cannot be empty"
-                else -> "One Time Password cannot be empty"
+                trimmedUrl.isBlank() && trimmedPassword.isBlank() -> "Endpoint not found: Check your Payment Panel URL."
+                trimmedUrl.isBlank() -> "Endpoint not found: Check your Payment Panel URL."
+                else -> "Authentication failed: Invalid Merchant API Key."
             }
             viewModel.setLoginError(errorMsg)
-            Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -158,7 +163,7 @@ fun LoginScreen(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable { onBack() }
+                    .clickable(enabled = !isLoading) { onBack() }
                     .border(1.dp, InputBorderLight, RoundedCornerShape(12.dp))
                     .testTag("login_back_button"),
                 color = MaterialTheme.colorScheme.surface,
@@ -216,6 +221,7 @@ fun LoginScreen(
                 panelUrl = it
                 if (it.isNotBlank()) urlError = null
             },
+            enabled = !isLoading,
             placeholder = {
                 Text(
                     text = "https://pay.emon.bd/",
@@ -249,6 +255,7 @@ fun LoginScreen(
         ) {
             FilterChip(
                 selected = panelUrl.contains("pay.emon.bd"),
+                enabled = !isLoading,
                 onClick = {
                     panelUrl = "https://pay.emon.bd/"
                     urlError = null
@@ -280,6 +287,7 @@ fun LoginScreen(
                 password = it
                 if (it.isNotBlank()) passwordError = null
             },
+            enabled = !isLoading,
             placeholder = {
                 Text(
                     text = "Enter OTP or secret token",
@@ -297,7 +305,10 @@ fun LoginScreen(
                 .testTag("one_time_password_input"),
             visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
-                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                IconButton(
+                    onClick = { isPasswordVisible = !isPasswordVisible },
+                    enabled = !isLoading
+                ) {
                     Icon(
                         imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                         contentDescription = "Toggle password visibility",
@@ -314,15 +325,16 @@ fun LoginScreen(
             )
         )
 
-        // Login Error Banner if needed
+        // Login Error Banner (bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg p-3 text-xs)
         AnimatedVisibility(visible = loginState is LoginState.Error) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 10.dp)
+                    .padding(vertical = 12.dp)
                     .testTag("login_error_banner"),
-                shape = RoundedCornerShape(12.dp),
-                color = StatusFailed.copy(alpha = 0.12f)
+                shape = RoundedCornerShape(8.dp),
+                color = GhostRoseBg,
+                border = BorderStroke(1.dp, GhostRoseBorder)
             ) {
                 Row(
                     modifier = Modifier.padding(12.dp),
@@ -332,14 +344,15 @@ fun LoginScreen(
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
-                        tint = StatusFailed,
-                        modifier = Modifier.size(18.dp)
+                        tint = Color(0xFFFB7185),
+                        modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = (loginState as? LoginState.Error)?.message ?: "Login failed",
+                        text = (loginState as? LoginState.Error)?.message ?: "Authentication failed: Invalid Merchant API Key.",
                         fontSize = 12.sp,
-                        color = StatusFailed,
-                        fontWeight = FontWeight.Medium
+                        color = Color(0xFFFB7185),
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = 16.sp
                     )
                 }
             }
@@ -347,12 +360,12 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Main "Login" Button (Standardized solid action button)
+        // Main "Login" Button (Disabled during handshake, shows inline spinner + "Verifying handshake...")
         Button(
             onClick = {
                 validateAndExecuteLogin()
             },
-            enabled = loginState !is LoginState.Loading,
+            enabled = !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
@@ -360,22 +373,24 @@ fun LoginScreen(
                 .testTag("login_button"),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.White,
-                contentColor = Color.Black
+                contentColor = Color.Black,
+                disabledContainerColor = Color(0xFF27272A),
+                disabledContentColor = Color(0xFF71717A)
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
-            if (loginState is LoginState.Loading) {
+            if (isLoading) {
                 CircularProgressIndicator(
-                    color = Color.Black,
-                    modifier = Modifier.size(20.dp),
+                    color = Color.White,
+                    modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Connecting to Panel...",
-                    fontSize = 15.sp,
+                    text = "Verifying handshake...",
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.Black
+                    color = Color.White
                 )
             } else {
                 Text(
@@ -427,7 +442,7 @@ fun LoginScreen(
                     .clip(CircleShape)
                     .background(Color.White)
                     .border(2.dp, BrandIndigo, CircleShape)
-                    .clickable {
+                    .clickable(enabled = !isLoading) {
                         onNavigateToQr?.invoke()
                     }
                     .testTag("qr_code_login_button"),
@@ -450,7 +465,7 @@ fun LoginScreen(
                 fontWeight = FontWeight.Normal,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
-                    .clickable {
+                    .clickable(enabled = !isLoading) {
                         onNavigateToQr?.invoke()
                     }
                     .testTag("or_login_with_qr_code_text")

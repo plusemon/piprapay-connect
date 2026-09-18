@@ -4,6 +4,8 @@ import android.content.Context
 import com.example.data.api.ApiClient
 import com.example.data.api.CompanionAccountInfo
 import com.example.data.api.CompanionLoginResponse
+import com.example.data.api.HandshakeAuthenticator
+import com.example.data.api.HandshakeVerificationResponse
 import com.example.data.api.PipraPayCompanionClient
 import com.example.data.db.AppDatabase
 import com.example.data.model.TransactionEntity
@@ -79,6 +81,14 @@ class TransactionRepository(private val context: Context) {
 
     suspend fun updateSettings(url: String, apiKey: String, deviceKey: String, otp: String? = null) = withContext(Dispatchers.IO) {
         prefs.updateSettings(url, apiKey, deviceKey, otp)
+    }
+
+    suspend fun verifyHandshake(
+        serverUrl: String,
+        apiKey: String,
+        deviceId: String = prefs.getDeviceKey()
+    ): HandshakeVerificationResponse = withContext(Dispatchers.IO) {
+        HandshakeAuthenticator.verify(serverUrl, apiKey, deviceId)
     }
 
     suspend fun companionLogin(
