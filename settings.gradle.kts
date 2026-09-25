@@ -28,6 +28,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "BizliPay Connect"
+rootProject.name = "BizliPay"
 
 include(":app")

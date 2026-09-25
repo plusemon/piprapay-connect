@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-  namespace = "com.example"
+  namespace = "com.plusemon.bizlipay"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.piprapay.connect"
+    applicationId = "com.plusemon.bizlipay"
     minSdk = 24
     targetSdk = 36
     val envVersion = System.getenv("VERSION_NAME")?.removePrefix("v")

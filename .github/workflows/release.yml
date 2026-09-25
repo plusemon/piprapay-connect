@@ -15,7 +15,7 @@ on:
       release_notes:
         description: 'Release highlights or description'
         required: false
-        default: 'Production release of PipraPay Connect Android app.'
+        default: 'Production release of BizliPay Connect Android app.'
       is_draft:
         description: 'Create as draft release'
         type: boolean
@@ -55,17 +55,17 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ github.event.inputs.tag_name }}"
-            NAME="PipraPay Connect ${TAG}"
+            NAME="BizliPay Connect ${TAG}"
             BODY="${{ github.event.inputs.release_notes }}"
             DRAFT="${{ github.event.inputs.is_draft }}"
           elif [ "${{ github.event_name }}" = "release" ]; then
             TAG="${{ github.event.release.tag_name }}"
-            NAME="${{ github.event.release.name || format('PipraPay Connect {0}', github.event.release.tag_name) }}"
+            NAME="${{ github.event.release.name || format('BizliPay Connect {0}', github.event.release.tag_name) }}"
             BODY="${{ github.event.release.body }}"
             DRAFT="false"
           else
             TAG="${{ github.ref_name }}"
-            NAME="PipraPay Connect ${TAG}"
+            NAME="BizliPay Connect ${TAG}"
             BODY="Release ${TAG}"
             DRAFT="false"
           fi
@@ -98,7 +98,7 @@ jobs:
             echo "KEY_PASSWORD=android" >> "$GITHUB_ENV"
           else
             echo "Generating fallback signing keystore..."
-            keytool -genkeypair -v -keystore "${GITHUB_WORKSPACE}/debug.keystore" -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=PipraPay,O=PipraPay,C=US"
+            keytool -genkeypair -v -keystore "${GITHUB_WORKSPACE}/debug.keystore" -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=BizliPay,O=BizliPay,C=US"
             echo "KEYSTORE_PATH=${GITHUB_WORKSPACE}/debug.keystore" >> "$GITHUB_ENV"
             echo "STORE_PASSWORD=android" >> "$GITHUB_ENV"
             echo "KEY_ALIAS=androiddebugkey" >> "$GITHUB_ENV"
@@ -137,8 +137,8 @@ jobs:
           fi
 
           echo "Selected Release APK: $RELEASE_APK"
-          cp "$RELEASE_APK" "release-assets/piprapay-connect-${TAG}.apk"
-          echo "Successfully packaged: release-assets/piprapay-connect-${TAG}.apk"
+          cp "$RELEASE_APK" "release-assets/bizlipay-connect-${TAG}.apk"
+          echo "Successfully packaged: release-assets/bizlipay-connect-${TAG}.apk"
           ls -lh release-assets/
 
       - name: Publish GitHub Release
@@ -150,7 +150,7 @@ jobs:
           generate_release_notes: true
           draft: ${{ steps.release_meta.outputs.draft == 'true' }}
           prerelease: false
-          files: release-assets/piprapay-connect-${{ steps.release_meta.outputs.tag }}.apk
+          files: release-assets/bizlipay-connect-${{ steps.release_meta.outputs.tag }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

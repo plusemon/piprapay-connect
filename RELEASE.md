@@ -1,6 +1,6 @@
-# PipraPay Connect — GitHub Release Guide
+# BizliPay Connect — GitHub Release Guide
 
-This document outlines how to publish a new release of **PipraPay Connect** to GitHub.
+This document outlines how to publish a new release of **BizliPay Connect** to GitHub.
 
 ---
 
@@ -8,7 +8,7 @@ This document outlines how to publish a new release of **PipraPay Connect** to G
 
 - **Current Version:** `v1.0.1`
 - **Version Code:** `2`
-- **Application ID:** `com.piprapay.connect`
+- **Application ID:** `com.bizlipay.connect`
 - **Target SDK:** Android 16 (API 36)
 - **Minimum SDK:** Android 7.0 (API 24)
 
@@ -30,7 +30,7 @@ You can publish a new release using any of the 3 methods below:
    - **Release version tag:** `v1.0.1` (or your desired version tag)
    - **Release highlights:** Enter release summary/changelog notes.
 6. Click **"Run workflow"**.
-7. GitHub Actions will build `piprapay-connect-v1.0.1.apk` and publish it under **Releases** automatically.
+7. GitHub Actions will build `bizlipay-connect-v1.0.1.apk` and publish it under **Releases** automatically.
 
 ---
 
@@ -40,10 +40,10 @@ You can publish a new release using any of the 3 methods below:
 2. Click **Releases** (on the right sidebar of the repo homepage).
 3. Click **"Draft a new release"**.
 4. Click **"Choose a tag"**, type `v1.0.1`, and select **"Create new tag: v1.0.1 on publish"**.
-5. Set the Release title (e.g. `PipraPay Connect v1.0.1`).
+5. Set the Release title (e.g. `BizliPay Connect v1.0.1`).
 6. Click **"Generate release notes"** or type your changelog.
 7. Click **"Publish release"**.
-8. The GitHub Actions workflow will trigger immediately, build the connect APK, and attach `piprapay-connect-v1.0.1.apk` directly to the release assets.
+8. The GitHub Actions workflow will trigger immediately, build the connect APK, and attach `bizlipay-connect-v1.0.1.apk` directly to the release assets.
 
 ---
 
@@ -57,7 +57,7 @@ git checkout main
 git pull origin main
 
 # Create an annotated tag for the new release
-git tag -a v1.0.1 -m "Release v1.0.1 - PipraPay Connect"
+git tag -a v1.0.1 -m "Release v1.0.1 - BizliPay Connect"
 
 # Push the tag to GitHub
 git push origin v1.0.1
@@ -73,7 +73,7 @@ The GitHub Actions workflow will automatically start, assemble the APK, generate
 2. **Sets up JDK 21** with Gradle dependency caching for fast build speeds.
 3. **Prepares signing keys** from GitHub Secrets (e.g., `KEYSTORE_BASE64`, `STORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`) or repository fallback keystore.
 4. **Runs `./gradlew assembleRelease --stacktrace`** to produce an optimized, shrunk, production-ready release APK.
-5. **Packages & stages the artifact** to `piprapay-connect-<version>.apk`.
+5. **Packages & stages the artifact** to `bizlipay-connect-<version>.apk`.
 6. **Publishes the release** to GitHub Releases with downloadable APK assets and release notes.
 
 ---

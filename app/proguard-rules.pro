@@ -1,4 +1,4 @@
-# Proguard / R8 rules for PipraPay
+# Proguard / R8 rules for BizliPay
 
 # Retrofit
 -keepattributes Signature, InnerClasses, EnclosingMethod
@@ -9,8 +9,8 @@
 -dontwarn retrofit2.**
 
 # Moshi & Data Models
--keep class com.example.data.model.** { *; }
--keep class com.example.data.api.** { *; }
+-keep class com.plusemon.bizlipay.data.model.** { *; }
+-keep class com.plusemon.bizlipay.data.api.** { *; }
 -keepclassmembers class * {
     @com.squareup.moshi.Json <fields>;
 }

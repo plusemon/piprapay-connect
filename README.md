@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ PipraPay Connect
+# ⚡ BizliPay Connect
 
 ### **Automated MFS Gateway Node & Backend Sync Engine for Android**
 
@@ -12,7 +12,7 @@
 [![Release](https://img.shields.io/badge/Release-v1.0.1-10B981?style=for-the-badge&logo=github)](https://github.com)
 
 <p align="center">
-  <b>PipraPay Connect</b> is an enterprise-grade Android gateway node application that automatically listens for incoming <b>bKash</b>, <b>Nagad</b>, <b>Rocket</b>, and <b>Upay</b> Mobile Financial Service (MFS) SMS payment notifications, extracts verified transaction details in real time, and securely syncs them to the <b>PipraPay Merchant Backend Engine</b>.
+  <b>BizliPay Connect</b> is an enterprise-grade Android gateway node application that automatically listens for incoming <b>bKash</b>, <b>Nagad</b>, <b>Rocket</b>, and <b>Upay</b> Mobile Financial Service (MFS) SMS payment notifications, extracts verified transaction details in real time, and securely syncs them to the <b>BizliPay Merchant Backend Engine</b>.
 </p>
 
 [Key Features](#-key-features) •
@@ -31,7 +31,7 @@
 
 In Bangladesh, merchants receive customer payments via Mobile Financial Services (MFS) such as **bKash Merchant/Personal**, **Nagad**, **DBBL Rocket**, and **Upay**. Traditionally, verifying each transaction requires human staff to check SMS alerts on a physical phone.
 
-**PipraPay Connect** transforms any standard Android phone into an automated, non-stop transaction verification terminal:
+**BizliPay Connect** transforms any standard Android phone into an automated, non-stop transaction verification terminal:
 1. **Instant Capture**: Intercepts incoming payment SMS with priority 999 telephony broadcasts.
 2. **Precision Parsing**: Extracts Provider, Transaction ID (`TrxID`), Sender Phone Number, and BDT Amount (`৳`).
 3. **Anti-OTP Protection**: Strictly drops verification codes, PIN reset alerts, and sensitive user messages.
@@ -51,7 +51,7 @@ In Bangladesh, merchants receive customer payments via Mobile Financial Services
 | 📊 **Real-Time Merchant Dashboard** | Bengali Taka (`৳`) metrics card, live service status with animated pulse indicator, latency monitor, and filterable transaction list. |
 | 🔍 **Search & Multi-Level Filtering** | Instant search across TrxID, sender number, and amount, plus filter chips for provider (`bKash`, `Nagad`, `Rocket`, `Upay`) and status (`SYNCED`, `PENDING`, `FAILED`). |
 | 🧪 **Integrated SMS Simulator** | Built-in developer tool to simulate incoming MFS SMS messages directly inside the app without needing a physical SIM card. |
-| 📷 **Rapid QR Onboarding** | Point-and-pair configuration import — scans JSON credentials from the PipraPay merchant panel for instant setup. |
+| 📷 **Rapid QR Onboarding** | Point-and-pair configuration import — scans JSON credentials from the BizliPay merchant panel for instant setup. |
 | 🔋 **Battery Optimization Helper** | Built-in detection and direct intent launcher to whitelist the app from OEM battery killers. |
 
 ---
@@ -96,7 +96,7 @@ In Bangladesh, merchants receive customer payments via Mobile Financial Services
                                      |
                                      v
                       +-----------------------------+
-                      |      PipraPay REST API      |
+                      |      BizliPay REST API      |
                       |    POST /api/sms/receive    |
                       |  - Device-Key Auth          |
                       |  - Bearer Token Auth        |
@@ -113,7 +113,7 @@ In Bangladesh, merchants receive customer payments via Mobile Financial Services
 
 ## 📱 Supported MFS Providers
 
-PipraPay Companion comes equipped with tailored parsers for all prominent mobile financial services in Bangladesh:
+BizliPay Connect comes equipped with tailored parsers for all prominent mobile financial services in Bangladesh:
 
 | Provider | Brand Color | SMS Sender Address | Example Transaction Pattern | Extracted Fields |
 |:---|:---:|:---|:---|:---|
@@ -136,30 +136,30 @@ Incoming messages containing any of the following triggers are **immediately dis
 
 ### 1. Download Pre-built Release APK
 1. Navigate to the [Releases](https://github.com) section of this repository.
-2. Download the latest `piprapay-companion-v1.0.1.apk`.
+2. Download the latest `bizlipay-connect-v1.0.1.apk`.
 3. Transfer or open the APK on your Android device (Android 7.0 / API 24 or newer).
 4. Tap **Install** (Allow installation from unknown sources if prompted).
 
 ### 2. Grant Device Permissions
-On first launch, PipraPay Companion will request the essential permissions:
+On first launch, BizliPay Connect will request the essential permissions:
 * **SMS Receive & Read (`android.permission.RECEIVE_SMS`)**: Intercept incoming carrier transaction SMS.
 * **Notifications (`android.permission.POST_NOTIFICATIONS`)**: Display foreground keep-alive service status and detected transaction banners.
 * **Ignore Battery Optimization**: Prevents Android OEM battery managers (MIUI, ColorOS, OneUI) from stopping the listener.
 
 ### 3. Pair with Merchant Account
-* **Option A (QR Code / Paste JSON)**: Go to the **QR Setup** tab in the app, click **Paste Clipboard** or scan the JSON configuration from your PipraPay Web Portal.
+* **Option A (QR Code / Paste JSON)**: Go to the **QR Setup** tab in the app, click **Paste Clipboard** or scan the JSON configuration from your BizliPay Web Portal.
 * **Option B (Manual Setup)**: Open **Settings**, enter your **Server Base URL**, paste your **API Key**, and verify connectivity with the **Test Server Connection** button.
 
 ---
 
 ## 📷 QR Code Pairing Specification
 
-PipraPay Companion accepts standardized JSON payloads for automated zero-touch pairing:
+BizliPay Connect accepts standardized JSON payloads for automated zero-touch pairing:
 
 ```json
 {
-  "server_url": "https://api.piprapay.com/",
-  "api_key": "pipra_live_a1b2c3d4e5f6g7h8",
+  "server_url": "https://api.bizlipay.com/",
+  "api_key": "bizli_live_a1b2c3d4e5f6g7h8",
   "device_key": "STORE-DHAKA-POS01"
 }
 ```
@@ -167,7 +167,7 @@ PipraPay Companion accepts standardized JSON payloads for automated zero-touch p
 ### JSON Schema Attributes
 | Field | Type | Required | Description |
 |:---|:---:|:---:|:---|
-| `server_url` | `string` | **Yes** | Fully qualified HTTPS endpoint of the PipraPay server instance. |
+| `server_url` | `string` | **Yes** | Fully qualified HTTPS endpoint of the BizliPay server instance. |
 | `api_key` | `string` | **Yes** | Secret merchant authentication token (`Bearer` token). |
 | `device_key` | `string` | Optional | Custom identifier for the physical device (auto-generated if omitted). |
 
@@ -175,12 +175,12 @@ PipraPay Companion accepts standardized JSON payloads for automated zero-touch p
 
 ## 🌐 REST API Specification
 
-PipraPay Companion communicates with the merchant server via clean, RESTful JSON payloads over TLS 1.3:
+BizliPay Connect communicates with the merchant server via clean, RESTful JSON payloads over TLS 1.3:
 
 ### 1. Synchronize SMS Transaction
 ```http
 POST /api/sms/receive HTTP/1.1
-Host: api.piprapay.com
+Host: api.bizlipay.com
 Content-Type: application/json
 Accept: application/json
 Authorization: Bearer <MERCHANT_API_KEY>
@@ -205,7 +205,7 @@ Authorization: Bearer <MERCHANT_API_KEY>
   "success": true,
   "status": "SYNCED",
   "trx_id": "9ABC123XYZ",
-  "message": "Acknowledged by PipraPay Engine"
+  "message": "Acknowledged by BizliPay Engine"
 }
 ```
 
@@ -233,8 +233,8 @@ Returns `200 OK` with JSON `{ "status": "healthy" }` to evaluate network latency
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/piprapay-companion.git
-cd piprapay-companion
+git clone https://github.com/your-username/bizlipay-connect.git
+cd bizlipay-connect
 
 # Assemble debug APK
 ./gradlew assembleDebug
@@ -259,7 +259,7 @@ The repository includes a ready-to-run GitHub Actions release workflow configure
 
 ```bash
 # Tag the release
-git tag -a v1.0.1 -m "Release v1.0.1 - PipraPay Companion"
+git tag -a v1.0.1 -m "Release v1.0.1 - BizliPay Connect"
 
 # Push to GitHub
 git push origin v1.0.1
@@ -272,7 +272,7 @@ git push origin v1.0.1
 4. Click **"Run workflow"**, choose your version tag (e.g., `v1.0.1`), and execute.
 5. The workflow will:
    * Compile `./gradlew assembleDebug`
-   * Stage `piprapay-companion-v1.0.1.apk`
+   * Stage `bizlipay-connect-v1.0.1.apk`
    * Create a GitHub Release with download assets and auto-generated release notes.
 
 ---
@@ -280,7 +280,7 @@ git push origin v1.0.1
 ## 📂 Project Structure
 
 ```
-piprapay-companion/
+bizlipay-connect/
 ├── .github/
 │   └── workflows/
 │       └── release.yml          # GitHub Actions APK builder & release pipeline
@@ -288,18 +288,18 @@ piprapay-companion/
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── AndroidManifest.xml # Permissions, BroadcastReceiver, Foreground Service
-│   │   │   ├── java/com/example/
-│   │   │   │   ├── PipraPayApplication.kt
+│   │   │   ├── java/com/plusemon/bizlipay/
+│   │   │   │   ├── BizliPayApplication.kt
 │   │   │   │   ├── MainActivity.kt
 │   │   │   │   ├── data/
-│   │   │   │   │   ├── api/        # Retrofit & OkHttp client (PipraPayApi)
+│   │   │   │   │   ├── api/        # Retrofit & OkHttp client (BizliPayApi)
 │   │   │   │   │   ├── db/         # Room Database & TransactionDao
 │   │   │   │   │   ├── model/      # TransactionEntity definition
 │   │   │   │   │   ├── prefs/      # EncryptedSharedPreferences (AES-256 GCM)
 │   │   │   │   │   └── repository/ # Single-source-of-truth TransactionRepository
 │   │   │   │   ├── parser/         # MfsSmsParser (bKash, Nagad, Rocket, Upay)
 │   │   │   │   ├── receiver/       # SmsBroadcastReceiver (Telephony capture)
-│   │   │   │   ├── service/        # PipraPayService (Foreground keep-alive)
+│   │   │   │   ├── service/        # BizliPayService (Foreground keep-alive)
 │   │   │   │   ├── sync/           # WorkManager SyncWorker (Background sync)
 │   │   │   │   └── ui/             # Jetpack Compose Screens, ViewModels & Themes
 │   │   │   └── res/                # M3 Styles, Drawables, Mipmap Icons, Strings
