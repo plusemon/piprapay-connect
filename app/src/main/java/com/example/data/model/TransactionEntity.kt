@@ -1,28 +1,42 @@
 package com.example.data.model
 
 import androidx.room.Entity
-import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(
-    tableName = "transactions",
-    indices = [Index(value = ["trxId"], unique = true)]
-)
+/**
+ * SMS item entity stored in Room database.
+ * Matches required schema: (id, sender, message, sim_slot, timestamp, is_synced, sync_attempts)
+ */
+@Entity(tableName = "transactions")
 data class TransactionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
-    val trxId: String,
-    val provider: String, // "BKASH", "NAGAD", "ROCKET", "UPAY"
-    val senderKey: String = provider.lowercase(),
-    val senderNumber: String,
-    val amount: Double,
-    val balance: Double? = null, // Extracted post-transaction wallet balance for pp_balance_verification
-    val currency: String = "BDT",
-    val type: String = "received", // "received", "payment", "cash_in"
-    val simSlot: Int = 1, // SIM 1 or SIM 2
-    val rawMessage: String,
+    val sender: String,
+    val message: String,
+    val sim_slot: String = "1",
     val timestamp: Long = System.currentTimeMillis(),
-    val syncStatus: String = "PENDING", // "PENDING", "SYNCED", "FAILED"
-    val retryCount: Int = 0,
+    val is_synced: Boolean = false,
+    val sync_attempts: Int = 0,
+    // Extracted telemetry & parser fields
+    val trxId: String = "",
+    val provider: String = sender,
+    val senderKey: String = sender.lowercase(),
+    val senderNumber: String = "",
+    val amount: Double = 0.0,
+    val balance: Double? = null,
+    val currency: String = "BDT",
+    val type: String = "received",
     val syncErrorMessage: String? = null
-)
+) {
+    val syncStatus: String
+        get() = if (is_synced) "SYNCED" else if (sync_attempts > 0 && syncErrorMessage != null) "FAILED" else "PENDING"
+
+    val retryCount: Int
+        get() = sync_attempts
+
+    val rawMessage: String
+        get() = message
+
+    val simSlot: Int
+        get() = sim_slot.toIntOrNull() ?: 1
+}

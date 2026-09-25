@@ -19,8 +19,18 @@ import androidx.core.app.NotificationCompat
 import com.example.MainActivity
 import com.example.R
 import com.example.data.prefs.MerchantPreferences
+import com.example.data.repository.TransactionRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 open class PipraPayService : Service() {
+
+    private val serviceScope = CoroutineScope(Dispatchers.IO + Job())
+    private var heartbeatJob: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -32,14 +42,15 @@ open class PipraPayService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action
         if (action == ACTION_STOP) {
-            Log.d(TAG, "Stopping PipraPayService foreground listener")
+            Log.d(TAG, "Stopping BizliPay foreground service")
             MerchantPreferences.getInstance(this).setServiceEnabled(false)
+            heartbeatJob?.cancel()
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
         }
 
-        Log.d(TAG, "Starting PipraPayService foreground keep-alive")
+        Log.d(TAG, "Starting BizliPay foreground keep-alive service")
         MerchantPreferences.getInstance(this).setServiceEnabled(true)
         val notification = buildForegroundNotification()
 
@@ -53,7 +64,44 @@ open class PipraPayService : Service() {
             startForeground(NOTIFICATION_ID, notification)
         }
 
+        startHeartbeatLoop()
+
         return START_STICKY
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        heartbeatJob?.cancel()
+    }
+
+    /**
+     * Triggers the heartbeat ping every 15 minutes as per specification.
+     */
+    private fun startHeartbeatLoop() {
+        heartbeatJob?.cancel()
+        heartbeatJob = serviceScope.launch {
+            val repository = TransactionRepository(applicationContext)
+            val prefs = MerchantPreferences.getInstance(applicationContext)
+
+            while (isActive) {
+                if (prefs.isPaired()) {
+                    try {
+                        Log.d(TAG, "Executing 15-minute BizliPay heartbeat ping")
+                        val result = repository.sendHeartbeat()
+                        if (result.isUnauthorized) {
+                            Log.w(TAG, "Heartbeat returned 401 Unauthorized. Stopping service.")
+                            stopForeground(STOP_FOREGROUND_REMOVE)
+                            stopSelf()
+                            break
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Heartbeat failed: ${e.message}")
+                    }
+                }
+                // Delay 15 minutes
+                delay(15 * 60 * 1000L)
+            }
+        }
     }
 
     private fun createNotificationChannel() {
@@ -92,12 +140,12 @@ open class PipraPayService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val deviceKey = MerchantPreferences.getInstance(this).getDeviceKey()
+        val deviceUid = MerchantPreferences.getInstance(this).getDeviceUid()
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("PipraPay Connect Active")
-            .setContentText("Listening for MFS SMS transactions ($deviceKey)")
+            .setContentTitle("BizliPay Sync Active")
+            .setContentText("Monitoring MFS SMS • Device: $deviceUid")
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setContentIntent(openAppPendingIntent)
@@ -110,11 +158,11 @@ open class PipraPayService : Service() {
     }
 
     companion object {
-        const val TAG = "PipraPayService"
-        const val CHANNEL_ID = "piprapay_service_channel"
+        const val TAG = "BizliPayService"
+        const val CHANNEL_ID = "bizlipay_service_channel"
         const val NOTIFICATION_ID = 1001
-        const val ACTION_START = "com.piprapay.action.START"
-        const val ACTION_STOP = "com.piprapay.action.STOP"
+        const val ACTION_START = "com.bizlipay.action.START"
+        const val ACTION_STOP = "com.bizlipay.action.STOP"
 
         fun start(context: Context) {
             val intent = Intent(context, PipraPayService::class.java).apply {
@@ -134,17 +182,11 @@ open class PipraPayService : Service() {
             context.startService(intent)
         }
 
-        /**
-         * Checks whether the app is currently excluded from Android battery optimizations.
-         */
         fun isBatteryOptimizationIgnored(context: Context): Boolean {
             val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
             return powerManager.isIgnoringBatteryOptimizations(context.packageName)
         }
 
-        /**
-         * Creates an intent directing the user to exclude the app from battery optimizations.
-         */
         @SuppressLint("BatteryLife")
         fun getBatteryOptimizationIntent(context: Context): Intent {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -162,9 +204,6 @@ open class PipraPayService : Service() {
     }
 }
 
-/**
- * PipraPayForegroundService keep-alive companion service.
- */
 class PipraPayForegroundService : PipraPayService() {
     companion object {
         fun start(context: Context) = PipraPayService.start(context)
@@ -173,4 +212,3 @@ class PipraPayForegroundService : PipraPayService() {
         fun getBatteryOptimizationIntent(context: Context) = PipraPayService.getBatteryOptimizationIntent(context)
     }
 }
-

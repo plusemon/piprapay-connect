@@ -108,6 +108,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.service.PipraPayService
+import com.example.ui.components.BizliPayIcon
 import com.example.ui.components.PipraPayIcon
 import com.example.ui.theme.AccentEmerald
 import com.example.ui.theme.BorderZinc800
@@ -260,7 +261,7 @@ private fun SystemReadinessStep(
         Spacer(modifier = Modifier.height(20.dp))
 
         // Hero Logo & Title
-        PipraPayIcon(
+        BizliPayIcon(
             size = 72.dp,
             modifier = Modifier.testTag("onboarding_hero_logo")
         )
@@ -268,7 +269,7 @@ private fun SystemReadinessStep(
         Spacer(modifier = Modifier.height(18.dp))
 
         Text(
-            text = "Welcome to PipraPay Connect",
+            text = "Welcome to BizliPay Connect",
             fontSize = 26.sp,
             fontWeight = FontWeight.ExtraBold,
             color = colors.textPrimary,
@@ -559,7 +560,7 @@ private fun PermissionsSetupStep(
         Spacer(modifier = Modifier.height(6.dp))
 
         Text(
-            text = "To monitor incoming customer payments and forward them to your merchant panel seamlessly, PipraPay needs access to SMS alerts and background services.",
+            text = "To monitor incoming customer payments and forward them to your merchant panel seamlessly, BizliPay needs access to SMS alerts and background services.",
             fontSize = 13.sp,
             color = colors.textMuted,
             lineHeight = 19.sp
@@ -627,7 +628,7 @@ private fun PermissionsSetupStep(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Continue to Login Screen Button
+        // Continue to Pair Device Screen Button
         Button(
             onClick = {
                 if (allRequiredGranted) {
@@ -648,7 +649,7 @@ private fun PermissionsSetupStep(
             shape = RoundedCornerShape(12.dp)
         ) {
             Text(
-                text = "Continue to Panel Login",
+                text = "Continue to Pair Device",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = if (allRequiredGranted) (if (colors.isDark) Color.Black else Color.White) else colors.textMuted

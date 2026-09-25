@@ -1,6 +1,6 @@
 {
-  "name": "PipraPay Connect",
-  "description": "Automated MFS Gateway Node and transaction synchronization engine for PipraPay",
+  "name": "BizliPay Connect",
+  "description": "Automated MFS Gateway Node and device synchronization engine for BizliPay",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

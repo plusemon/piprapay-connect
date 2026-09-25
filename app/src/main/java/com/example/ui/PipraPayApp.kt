@@ -251,7 +251,7 @@ fun PipraPayApp(
                                         .width(28.dp)
                                         .height(2.dp)
                                         .clip(RoundedCornerShape(1.dp))
-                                        .background(if (isSelected) AccentEmerald else Color.Transparent)
+                                        .background(if (isSelected) com.example.ui.theme.Indigo500 else Color.Transparent)
                                 )
 
                                 Column(
@@ -261,14 +261,14 @@ fun PipraPayApp(
                                     Icon(
                                         imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
                                         contentDescription = destination.title,
-                                        tint = if (isSelected) AccentEmerald else colors.textMuted,
+                                        tint = if (isSelected) com.example.ui.theme.Indigo500 else colors.textMuted,
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Text(
                                         text = destination.title,
                                         fontSize = 11.sp,
                                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                                        color = if (isSelected) AccentEmerald else colors.textMuted
+                                        color = if (isSelected) com.example.ui.theme.Indigo500 else colors.textMuted
                                     )
                                 }
 

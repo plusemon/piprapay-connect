@@ -1,6 +1,5 @@
 package com.example.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -13,7 +12,10 @@ import androidx.compose.ui.graphics.Color
 /**
  * Custom semantic color design tokens that dynamically switch between Dark and Light mode.
  */
-data class PipraColors(
+data class BizliColors(
+    val primary: Color,
+    val primaryVariant: Color,
+    val accent: Color,
     val canvasBg: Color,
     val container: Color,
     val surfaceCard: Color,
@@ -24,48 +26,58 @@ data class PipraColors(
     val textSecondary: Color,
     val textMuted: Color,
     val textSubtle: Color,
-    val accentEmerald: Color = AccentEmerald,
-    val accentAmber: Color = AccentAmber,
-    val accentRose: Color = AccentRose,
+    val statusEmerald: Color = StatusEmerald,
+    val statusAmber: Color = StatusAmber,
+    val statusRose: Color = StatusRose,
     val isDark: Boolean
 )
 
-val DarkPipraColors = PipraColors(
-    canvasBg = CanvasBlack,
-    container = ContainerDark,
-    surfaceCard = SurfaceCard,
-    surfaceCardMuted = SurfaceCardMuted,
-    border = BorderZinc800,
-    borderInteractive = BorderZinc700,
+val DarkBizliColors = BizliColors(
+    primary = Indigo500,
+    primaryVariant = Indigo600,
+    accent = Cyan500,
+    canvasBg = Slate900,
+    container = Slate800,
+    surfaceCard = Slate800,
+    surfaceCardMuted = Slate850,
+    border = Slate700,
+    borderInteractive = Slate600,
     textPrimary = TextWhite,
-    textSecondary = TextZinc300,
-    textMuted = TextZinc400,
-    textSubtle = TextZinc500,
+    textSecondary = Slate300,
+    textMuted = Slate400,
+    textSubtle = Slate500,
     isDark = true
 )
 
-val LightPipraColors = PipraColors(
-    canvasBg = CanvasWhite,
-    container = ContainerLight,
-    surfaceCard = SurfaceCardLight,
-    surfaceCardMuted = SurfaceCardMutedLight,
+val LightBizliColors = BizliColors(
+    primary = Indigo600,
+    primaryVariant = Indigo500,
+    accent = Cyan500,
+    canvasBg = Slate50,
+    container = Color.White,
+    surfaceCard = Slate100,
+    surfaceCardMuted = Color(0xFFE2E8F0),
     border = BorderLight,
     borderInteractive = BorderLightInteractive,
     textPrimary = TextBlack,
-    textSecondary = TextSlate700,
-    textMuted = TextSlate500,
-    textSubtle = TextSlate400,
+    textSecondary = Color(0xFF334155),
+    textMuted = Color(0xFF64748B),
+    textSubtle = Color(0xFF94A3B8),
     isDark = false
 )
 
-val LocalPipraColors = staticCompositionLocalOf { DarkPipraColors }
+typealias PipraColors = BizliColors
+val DarkPipraColors = DarkBizliColors
+val LightPipraColors = LightBizliColors
+
+val LocalBizliColors = staticCompositionLocalOf { DarkBizliColors }
 val LocalIsDarkMode = staticCompositionLocalOf { true }
 
-object PipraTheme {
-    val colors: PipraColors
+object BizliTheme {
+    val colors: BizliColors
         @Composable
         @ReadOnlyComposable
-        get() = LocalPipraColors.current
+        get() = LocalBizliColors.current
 
     val isDarkMode: Boolean
         @Composable
@@ -73,65 +85,73 @@ object PipraTheme {
         get() = LocalIsDarkMode.current
 }
 
-// Enforces deep #09090B canvas with #121215 primary surfaces/containers in Dark mode
+object PipraTheme {
+    val colors: BizliColors
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalBizliColors.current
+
+    val isDarkMode: Boolean
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalIsDarkMode.current
+}
+
+// Dark Scheme centered on Slate 900 / Slate 800 with Indigo & Cyan accents
 private val DarkColorScheme = darkColorScheme(
-    primary = TextWhite,
-    onPrimary = CanvasBlack,
-    primaryContainer = ContainerDark, // #121215
-    onPrimaryContainer = TextWhite,
-    secondary = TextZinc300,
-    onSecondary = CanvasBlack,
-    secondaryContainer = ContainerDark, // #121215
-    onSecondaryContainer = TextWhite,
-    tertiary = AccentEmerald,
-    background = CanvasBlack, // #09090B
+    primary = Indigo500,
+    onPrimary = Color.White,
+    primaryContainer = Indigo600,
+    onPrimaryContainer = Color.White,
+    secondary = Cyan500,
+    onSecondary = Slate900,
+    secondaryContainer = Slate800,
+    onSecondaryContainer = Color.White,
+    tertiary = StatusEmerald,
+    background = Slate900,
     onBackground = TextWhite,
-    surface = ContainerDark, // #121215
+    surface = Slate800,
     onSurface = TextWhite,
-    surfaceVariant = SurfaceCard, // #18181B
-    onSurfaceVariant = TextZinc400,
-    outline = BorderZinc800, // #27272A
-    outlineVariant = BorderZinc700,
-    error = AccentRose
+    surfaceVariant = Slate850,
+    onSurfaceVariant = Slate300,
+    outline = Slate700,
+    outlineVariant = Slate600,
+    error = StatusRose
 )
 
-// Crisp Light Color Scheme for light mode
+// Light Color Scheme
 private val LightColorScheme = lightColorScheme(
-    primary = TextBlack,
+    primary = Indigo600,
     onPrimary = Color.White,
-    primaryContainer = ContainerLight,
-    onPrimaryContainer = TextBlack,
-    secondary = TextSlate700,
+    primaryContainer = Indigo500,
+    onPrimaryContainer = Color.White,
+    secondary = Cyan500,
     onSecondary = Color.White,
-    secondaryContainer = SurfaceCardLight,
+    secondaryContainer = Slate100,
     onSecondaryContainer = TextBlack,
-    tertiary = AccentEmerald,
-    background = CanvasWhite,
+    tertiary = StatusEmerald,
+    background = Slate50,
     onBackground = TextBlack,
-    surface = ContainerLight,
+    surface = Color.White,
     onSurface = TextBlack,
-    surfaceVariant = SurfaceCardLight,
-    onSurfaceVariant = TextSlate500,
+    surfaceVariant = Slate100,
+    onSurfaceVariant = Color(0xFF64748B),
     outline = BorderLight,
     outlineVariant = BorderLightInteractive,
-    error = AccentRose
+    error = StatusRose
 )
 
-/**
- * Global ThemeProvider wrapper that adapts dynamically based on darkTheme parameter
- * and provides theme tokens via LocalPipraColors and LocalIsDarkMode.
- */
 @Composable
 fun ThemeProvider(
     darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val pipraColors = if (darkTheme) DarkPipraColors else LightPipraColors
+    val colors = if (darkTheme) DarkBizliColors else LightBizliColors
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     CompositionLocalProvider(
         LocalIsDarkMode provides darkTheme,
-        LocalPipraColors provides pipraColors
+        LocalBizliColors provides colors
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

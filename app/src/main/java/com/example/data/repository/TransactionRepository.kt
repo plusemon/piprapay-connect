@@ -1,16 +1,21 @@
 package com.example.data.repository
 
 import android.content.Context
-import com.example.data.api.ApiClient
+import android.os.BatteryManager
+import android.os.Build
+import com.example.data.api.BatchSmsResult
+import com.example.data.api.BizliPayApiClient
 import com.example.data.api.CompanionAccountInfo
 import com.example.data.api.CompanionLoginResponse
-import com.example.data.api.HandshakeAuthenticator
+import com.example.data.api.DeviceBatchSmsItem
 import com.example.data.api.HandshakeVerificationResponse
-import com.example.data.api.PipraPayCompanionClient
+import com.example.data.api.HeartbeatResult
+import com.example.data.api.PairResult
 import com.example.data.db.AppDatabase
 import com.example.data.model.TransactionEntity
 import com.example.data.prefs.MerchantPreferences
 import com.example.data.prefs.MerchantSettings
+import com.example.parser.MfsSmsParser
 import com.example.parser.ParsedMfsTransaction
 import com.example.sync.SyncWorker
 import kotlinx.coroutines.Dispatchers
@@ -32,13 +37,55 @@ class TransactionRepository(private val context: Context) {
     private val prefs = MerchantPreferences.getInstance(context)
 
     val allTransactions: Flow<List<TransactionEntity>> = dao.getAllTransactionsFlow()
-    val recentTransactions: Flow<List<TransactionEntity>> = dao.getRecentTransactionsFlow(10)
+    val recentTransactions: Flow<List<TransactionEntity>> = dao.getRecentTransactionsFlow(15)
     val pendingCount: Flow<Int> = dao.getPendingCountFlow()
     val totalCount: Flow<Int> = dao.getTransactionCountFlow()
+    val syncedCount: Flow<Int> = dao.getSyncedCountFlow()
     val settingsFlow: StateFlow<MerchantSettings> = prefs.settingsFlow
+
+    /**
+     * Store incoming SMS into Room database and trigger immediate batch sync.
+     */
+    suspend fun insertSms(
+        sender: String,
+        message: String,
+        simSlot: String = "1",
+        timestamp: Long = System.currentTimeMillis()
+    ): Long = withContext(Dispatchers.IO) {
+        val parsed = MfsSmsParser.parse(sender, message, timestamp)
+
+        val entity = TransactionEntity(
+            sender = sender,
+            message = message,
+            sim_slot = simSlot,
+            timestamp = timestamp,
+            is_synced = false,
+            sync_attempts = 0,
+            trxId = parsed?.trxId ?: "",
+            provider = parsed?.provider ?: sender,
+            senderKey = parsed?.senderKey ?: sender.lowercase(),
+            senderNumber = parsed?.senderNumber ?: "",
+            amount = parsed?.amount ?: 0.0,
+            balance = parsed?.balance,
+            currency = parsed?.currency ?: "BDT",
+            type = parsed?.type ?: "received"
+        )
+
+        val rowId = dao.insertTransaction(entity)
+        if (rowId != -1L) {
+            SyncWorker.enqueueSync(context, forceNew = true)
+        }
+        rowId
+    }
 
     suspend fun insertParsedTransaction(parsed: ParsedMfsTransaction): Boolean = withContext(Dispatchers.IO) {
         val entity = TransactionEntity(
+            sender = parsed.provider,
+            message = parsed.rawMessage,
+            sim_slot = "1",
+            timestamp = parsed.timestamp,
+            is_synced = false,
+            sync_attempts = 0,
             trxId = parsed.trxId,
             provider = parsed.provider,
             senderKey = parsed.senderKey,
@@ -46,12 +93,7 @@ class TransactionRepository(private val context: Context) {
             amount = parsed.amount,
             balance = parsed.balance,
             currency = parsed.currency,
-            type = parsed.type,
-            simSlot = 1,
-            rawMessage = parsed.rawMessage,
-            timestamp = parsed.timestamp,
-            syncStatus = "PENDING",
-            retryCount = 0
+            type = parsed.type
         )
         val rowId = dao.insertTransaction(entity)
         if (rowId != -1L) {
@@ -62,13 +104,128 @@ class TransactionRepository(private val context: Context) {
         }
     }
 
+    /**
+     * Pair Device using RESTful Endpoint: POST /api/v1/device/pair
+     */
+    suspend fun pairDevice(
+        serverUrl: String,
+        otp: String,
+        deviceName: String = prefs.getDeviceName(),
+        deviceModel: String = prefs.getDeviceModel(),
+        androidLevel: String = prefs.getAndroidLevel(),
+        appVersion: String = "v1.0.0"
+    ): PairResult = withContext(Dispatchers.IO) {
+        val result = BizliPayApiClient.pair(
+            baseUrl = serverUrl,
+            otp = otp,
+            deviceName = deviceName,
+            deviceModel = deviceModel,
+            androidLevel = androidLevel,
+            appVersion = appVersion
+        )
+
+        if (result.isSuccess && !result.token.isNullOrBlank()) {
+            prefs.savePairingSession(
+                token = result.token,
+                deviceUid = result.deviceUid ?: "dev_${otp.take(6)}",
+                serverBaseUrl = serverUrl,
+                otp = otp,
+                deviceName = deviceName
+            )
+        }
+        result
+    }
+
+    /**
+     * Heartbeat & Health Telemetry: POST /api/v1/device/heartbeat
+     */
+    suspend fun sendHeartbeat(): HeartbeatResult = withContext(Dispatchers.IO) {
+        val baseUrl = prefs.getServerBaseUrl()
+        val token = prefs.getSessionToken()
+        if (token.isBlank()) {
+            return@withContext HeartbeatResult(
+                isSuccess = false,
+                errorMessage = "No active session"
+            )
+        }
+
+        val bm = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
+        val batteryLevel = bm?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 85
+        val appVersion = "v1.0.0"
+
+        val result = BizliPayApiClient.heartbeat(baseUrl, token, batteryLevel, appVersion)
+
+        if (result.isUnauthorized) {
+            // HTTP 401 Unauthorized: clear saved session and mark device as unpaired
+            prefs.clearSessionAndUnpair()
+        } else if (result.isSuccess) {
+            prefs.updateLastSyncTimestamp()
+        }
+
+        result
+    }
+
+    /**
+     * Batch SMS Ingestion: POST /api/v1/device/sms/batch
+     * Batches up to 50 unsynced messages and sends to backend.
+     */
+    suspend fun syncBatchSms(limit: Int = 50): BatchSmsResult = withContext(Dispatchers.IO) {
+        val unsynced = dao.getUnsyncedMessages(limit)
+        if (unsynced.isEmpty()) {
+            return@withContext BatchSmsResult(isSuccess = true, message = "No unsynced messages")
+        }
+
+        val baseUrl = prefs.getServerBaseUrl()
+        val token = prefs.getSessionToken()
+
+        if (token.isBlank()) {
+            return@withContext BatchSmsResult(
+                isSuccess = false,
+                message = "Device not paired. Session token missing.",
+                isUnauthorized = true
+            )
+        }
+
+        val items = unsynced.map { trx ->
+            // timestamp in seconds (or standard unix timestamp)
+            val tsInSeconds = if (trx.timestamp > 10_000_000_000L) trx.timestamp / 1000L else trx.timestamp
+            DeviceBatchSmsItem(
+                sender = trx.sender,
+                message = trx.message,
+                sim_slot = trx.sim_slot.ifBlank { "1" },
+                timestamp = tsInSeconds
+            )
+        }
+
+        val result = BizliPayApiClient.sendBatchSms(baseUrl, token, items)
+
+        if (result.isUnauthorized) {
+            prefs.clearSessionAndUnpair()
+            return@withContext result
+        }
+
+        val ids = unsynced.map { it.id }
+        if (result.isSuccess) {
+            dao.markAsSynced(ids)
+            prefs.updateLastSyncTimestamp()
+        } else {
+            dao.incrementSyncAttempts(ids, result.message)
+        }
+
+        result
+    }
+
     suspend fun triggerManualSync() = withContext(Dispatchers.IO) {
         SyncWorker.enqueueSync(context, forceNew = true)
     }
 
     suspend fun resyncSingleTransaction(trxId: String) = withContext(Dispatchers.IO) {
-        dao.updateStatus(trxId, "PENDING")
+        dao.updateSyncFailure(trxId, 0, null)
         SyncWorker.enqueueSync(context, forceNew = true)
+    }
+
+    suspend fun deleteTransaction(id: Long) = withContext(Dispatchers.IO) {
+        dao.deleteTransaction(id)
     }
 
     suspend fun deleteTransaction(trxId: String) = withContext(Dispatchers.IO) {
@@ -83,12 +240,23 @@ class TransactionRepository(private val context: Context) {
         prefs.updateSettings(url, apiKey, deviceKey, otp)
     }
 
+    suspend fun unpairDevice() = withContext(Dispatchers.IO) {
+        prefs.clearSessionAndUnpair()
+    }
+
     suspend fun verifyHandshake(
         serverUrl: String,
         apiKey: String,
         deviceId: String = prefs.getDeviceKey()
     ): HandshakeVerificationResponse = withContext(Dispatchers.IO) {
-        HandshakeAuthenticator.verify(serverUrl, apiKey, deviceId)
+        val result = pairDevice(serverUrl, apiKey)
+        HandshakeVerificationResponse(
+            isSuccess = result.isSuccess,
+            httpCode = result.httpCode,
+            errorMessage = if (!result.isSuccess) result.message else null,
+            latencyMs = result.latencyMs,
+            token = result.token
+        )
     }
 
     suspend fun companionLogin(
@@ -96,70 +264,31 @@ class TransactionRepository(private val context: Context) {
         otp: String,
         deviceKey: String = prefs.getDeviceKey()
     ): CompanionLoginResponse = withContext(Dispatchers.IO) {
-        val loginResp = PipraPayCompanionClient.login(
-            baseUrl = url,
-            otp = otp,
-            deviceName = prefs.getDeviceName(),
-            deviceModel = prefs.getDeviceModel(),
-            androidLevel = prefs.getAndroidLevel(),
-            appVersion = "1.0.0"
+        val result = pairDevice(url, otp)
+        CompanionLoginResponse(
+            success = result.isSuccess,
+            token = result.token,
+            device_uid = result.deviceUid,
+            title = if (result.isSuccess) "Device Paired" else "Pairing Failed",
+            message = result.message
         )
-
-        if (loginResp.success && !loginResp.token.isNullOrBlank()) {
-            val token = loginResp.token
-
-            // 1. Fetch Account Information (merchant name, email, stats)
-            val accountInfo = try {
-                PipraPayCompanionClient.getAccountInformation(url, token)
-            } catch (_: Exception) { null }
-
-            // 2. Fetch Whitelisted Senders (bkash, nagad, upay, etc.)
-            val senders = try {
-                PipraPayCompanionClient.getWhitelistedSenders(url, token)
-            } catch (_: Exception) { emptyList() }
-
-            // 3. Persist securely
-            prefs.completeOnboardingAndLogin(
-                serverBaseUrl = url,
-                apiKey = otp,
-                deviceKey = deviceKey,
-                otp = otp,
-                sessionToken = token
-            )
-            prefs.saveCompanionSession(
-                token = token,
-                accountName = accountInfo?.fullname,
-                accountEmail = accountInfo?.email,
-                senders = senders
-            )
-        }
-        loginResp
     }
 
     suspend fun refreshAccountInfo(): CompanionAccountInfo? = withContext(Dispatchers.IO) {
-        val url = prefs.getServerBaseUrl()
-        val token = prefs.getSessionToken()
-        if (token.isBlank()) return@withContext null
-        val info = PipraPayCompanionClient.getAccountInformation(url, token)
-        if (info.success) {
-            prefs.saveCompanionSession(
-                token = token,
-                accountName = info.fullname,
-                accountEmail = info.email
+        val hb = sendHeartbeat()
+        if (hb.isSuccess) {
+            CompanionAccountInfo(
+                success = true,
+                fullname = hb.deviceName ?: prefs.getDeviceName(),
+                email = "Connected Device"
             )
+        } else {
+            null
         }
-        info
     }
 
     suspend fun refreshWhitelistedSenders(): List<String> = withContext(Dispatchers.IO) {
-        val url = prefs.getServerBaseUrl()
-        val token = prefs.getSessionToken()
-        if (token.isBlank()) return@withContext emptyList()
-        val senders = PipraPayCompanionClient.getWhitelistedSenders(url, token)
-        if (senders.isNotEmpty()) {
-            prefs.saveCompanionSession(token = token, senders = senders)
-        }
-        senders
+        prefs.getWhitelistedSenders()
     }
 
     suspend fun completeOnboardingAndLogin(
@@ -169,128 +298,61 @@ class TransactionRepository(private val context: Context) {
         otp: String = ""
     ) = withContext(Dispatchers.IO) {
         prefs.completeOnboardingAndLogin(url, apiKey, deviceKey, otp)
-        registerDeviceWithBackend(url, apiKey, deviceKey, otp)
-    }
-
-    private suspend fun registerDeviceWithBackend(
-        url: String,
-        apiKey: String,
-        deviceKey: String,
-        otp: String
-    ) {
-        try {
-            val api = ApiClient.createApi(url, apiKey)
-            val req = com.example.data.api.DeviceRegisterRequest(
-                deviceId = deviceKey,
-                otp = otp,
-                name = prefs.getDeviceName(),
-                model = prefs.getDeviceModel(),
-                androidLevel = prefs.getAndroidLevel(),
-                appVersion = "1.0.0",
-                status = "active"
-            )
-            val authHeader = if (apiKey.isNotBlank()) "Bearer $apiKey" else ""
-            api.registerDevice(authHeader, req)
-        } catch (_: Exception) {
-            // Non-blocking - device will also be tracked on first SMS sync
-        }
     }
 
     suspend fun resetOnboarding() = withContext(Dispatchers.IO) {
-        prefs.resetOnboarding()
+        prefs.clearSessionAndUnpair()
     }
 
     fun generateNewDeviceKey(): String {
         return prefs.generateNewDeviceKey()
     }
 
-    suspend fun testConnection(baseUrl: String, apiKeyOrOtp: String): ConnectionTestResult = withContext(Dispatchers.IO) {
+    suspend fun testConnection(baseUrl: String, tokenOrOtp: String): ConnectionTestResult = withContext(Dispatchers.IO) {
+        val token = prefs.getSessionToken().ifBlank { tokenOrOtp }
         val startTime = System.currentTimeMillis()
-        try {
-            val token = prefs.getSessionToken()
-            if (token.isNotBlank()) {
-                val accountInfo = PipraPayCompanionClient.getAccountInformation(baseUrl, token)
-                val latency = System.currentTimeMillis() - startTime
-                if (accountInfo.success) {
-                    return@withContext ConnectionTestResult(
-                        isSuccess = true,
-                        httpCode = 200,
-                        latencyMs = latency,
-                        message = "Connected to PipraPay Companion (${accountInfo.fullname}) in ${latency}ms"
-                    )
-                }
-            }
 
-            // If OTP is provided, test companion login
-            if (apiKeyOrOtp.isNotBlank() && apiKeyOrOtp.length in 6..12 && apiKeyOrOtp.all { it.isDigit() }) {
-                val loginTest = PipraPayCompanionClient.login(
-                    baseUrl = baseUrl,
-                    otp = apiKeyOrOtp,
-                    deviceName = prefs.getDeviceName(),
-                    deviceModel = prefs.getDeviceModel(),
-                    androidLevel = prefs.getAndroidLevel()
-                )
-                val latency = System.currentTimeMillis() - startTime
-                if (loginTest.success) {
-                    return@withContext ConnectionTestResult(
-                        isSuccess = true,
-                        httpCode = 200,
-                        latencyMs = latency,
-                        message = "PipraPay OTP Verified! Token generated in ${latency}ms"
-                    )
-                }
-            }
-
-            // Fallback: ping endpoint / HTTP probe
-            val api = ApiClient.createApi(baseUrl, apiKeyOrOtp)
-            val authHeader = if (apiKeyOrOtp.isNotBlank()) "Bearer $apiKeyOrOtp" else null
-
-            val response = try {
-                api.pingServer(authHeader)
-            } catch (_: Exception) {
-                api.healthCheck()
-            }
-
+        if (token.isNotBlank()) {
+            val hb = BizliPayApiClient.heartbeat(baseUrl, token, 100)
             val latency = System.currentTimeMillis() - startTime
-            val code = response.code()
-
-            if (response.isSuccessful || code == 200 || code == 204) {
-                ConnectionTestResult(
+            if (hb.isSuccess) {
+                return@withContext ConnectionTestResult(
                     isSuccess = true,
-                    httpCode = code,
+                    httpCode = hb.httpCode ?: 200,
                     latencyMs = latency,
-                    message = "Server reachable! HTTP $code response in ${latency}ms"
+                    message = "Connected to BizliPay Gateway in ${latency}ms"
                 )
-            } else if (code == 401 || code == 403) {
-                ConnectionTestResult(
+            } else if (hb.isUnauthorized) {
+                return@withContext ConnectionTestResult(
                     isSuccess = false,
-                    httpCode = code,
+                    httpCode = 401,
                     latencyMs = latency,
-                    message = "Server reached, but Authentication failed (HTTP $code)."
-                )
-            } else if (code == 404) {
-                ConnectionTestResult(
-                    isSuccess = true,
-                    httpCode = code,
-                    latencyMs = latency,
-                    message = "PipraPay server online at $baseUrl in ${latency}ms"
-                )
-            } else {
-                ConnectionTestResult(
-                    isSuccess = false,
-                    httpCode = code,
-                    latencyMs = latency,
-                    message = "Server returned HTTP $code: ${response.message()}"
+                    message = "Unauthorized: Session token expired. Please pair again."
                 )
             }
-        } catch (e: Exception) {
+        }
+
+        // Test pair endpoint if OTP is 6 digits
+        if (tokenOrOtp.isNotBlank()) {
+            val pair = BizliPayApiClient.pair(
+                baseUrl = baseUrl,
+                otp = tokenOrOtp,
+                deviceName = prefs.getDeviceName(),
+                deviceModel = prefs.getDeviceModel(),
+                androidLevel = prefs.getAndroidLevel()
+            )
             val latency = System.currentTimeMillis() - startTime
-            ConnectionTestResult(
-                isSuccess = false,
-                httpCode = null,
+            return@withContext ConnectionTestResult(
+                isSuccess = pair.isSuccess,
+                httpCode = pair.httpCode,
                 latencyMs = latency,
-                message = e.localizedMessage ?: "Connection failed. Check Server URL and network."
+                message = pair.message
             )
         }
+
+        ConnectionTestResult(
+            isSuccess = false,
+            message = "No credentials provided for testing"
+        )
     }
 }

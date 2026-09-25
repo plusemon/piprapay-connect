@@ -46,6 +46,14 @@ class PipraPayApplication : Application() {
 
             // Channel for received transaction alerts
             val trxChannel = NotificationChannel(
+                "bizlipay_trx_channel",
+                "Transaction Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Real-time alerts when MFS SMS is detected"
+                setShowBadge(true)
+            }
+            val legacyTrxChannel = NotificationChannel(
                 "piprapay_trx_channel",
                 "Transaction Alerts",
                 NotificationManager.IMPORTANCE_HIGH
@@ -56,6 +64,7 @@ class PipraPayApplication : Application() {
 
             manager.createNotificationChannel(serviceChannel)
             manager.createNotificationChannel(trxChannel)
+            manager.createNotificationChannel(legacyTrxChannel)
         }
     }
 

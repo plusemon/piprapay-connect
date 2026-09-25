@@ -12,9 +12,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.R
-import com.example.data.db.AppDatabase
-import com.example.data.model.TransactionEntity
-import com.example.data.prefs.MerchantPreferences
+import com.example.data.repository.TransactionRepository
 import com.example.parser.MfsSmsParser
 import com.example.sync.SyncWorker
 import com.example.util.AlertManager
@@ -47,71 +45,43 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
         }
 
         // Group multi-part SMS messages by originating address
-        val messagesBySender = messages.filterNotNull().groupBy { it.displayOriginatingAddress ?: it.originatingAddress ?: "UNKNOWN" }
+        val messagesBySender = messages.filterNotNull().groupBy {
+            it.displayOriginatingAddress ?: it.originatingAddress ?: "UNKNOWN"
+        }
 
-        // Extract SIM slot index from SMS broadcast intent (0-indexed converted to 1-indexed)
+        // Extract SIM slot index from SMS broadcast intent (0-indexed converted to 1-indexed string)
         val slotIndex = intent.getIntExtra("slot", intent.getIntExtra("simSlot", intent.getIntExtra("simId", -1)))
-        val detectedSimSlot = if (slotIndex >= 0) slotIndex + 1 else 1
+        val detectedSimSlot = if (slotIndex >= 0) (slotIndex + 1).toString() else "1"
 
-        val prefs = MerchantPreferences.getInstance(context)
+        val repository = TransactionRepository(context)
 
         for ((sender, smsList) in messagesBySender) {
-            // Background Telephony Filter Logic:
-            // Before invoking regex extraction on incoming SMS packets, evaluate the originating address
-            // against the active sender set. Discard non-matching messages immediately without disk writes.
-            if (!prefs.isSenderAllowed(sender)) {
-                Log.d(TAG, "Telephony filter: discarded SMS from unrouted sender '$sender' without parsing or disk write.")
-                continue
-            }
-
             val fullBody = smsList.joinToString(separator = "") { it.displayMessageBody ?: it.messageBody ?: "" }
             val timestamp = smsList.firstOrNull()?.timestampMillis ?: System.currentTimeMillis()
 
-            val parsed = MfsSmsParser.parse(
-                senderAddress = sender,
-                messageBody = fullBody,
-                smsTimestamp = timestamp
-            )
+            val pendingResult = goAsync()
+            receiverScope.launch {
+                try {
+                    // Save to Room and trigger immediate batch sync
+                    val rowId = repository.insertSms(
+                        sender = sender,
+                        message = fullBody,
+                        simSlot = detectedSimSlot,
+                        timestamp = timestamp
+                    )
 
-            if (parsed != null) {
-                Log.d(TAG, "MFS transaction recognized: ${parsed.provider} TrxID=${parsed.trxId} Amount=${parsed.amount} Balance=${parsed.balance}")
+                    Log.d(TAG, "SMS saved with ID $rowId from sender $sender. Enqueued sync worker.")
 
-                // Play POS audio chime and haptic feedback pulse on capture
-                AlertManager.playInflowAlert(context)
-
-                val pendingResult = goAsync()
-                receiverScope.launch {
-                    try {
-                        val db = AppDatabase.getInstance(context)
-                        val entity = TransactionEntity(
-                            trxId = parsed.trxId,
-                            provider = parsed.provider,
-                            senderKey = parsed.senderKey,
-                            senderNumber = parsed.senderNumber,
-                            amount = parsed.amount,
-                            balance = parsed.balance,
-                            currency = parsed.currency,
-                            type = parsed.type,
-                            simSlot = detectedSimSlot,
-                            rawMessage = parsed.rawMessage,
-                            timestamp = parsed.timestamp,
-                            syncStatus = "PENDING",
-                            retryCount = 0
-                        )
-
-                        val insertRowId = db.transactionDao().insertTransaction(entity)
-                        if (insertRowId != -1L) {
-                            Log.d(TAG, "Transaction stored with id $insertRowId. Enqueuing sync worker.")
-                            SyncWorker.enqueueSync(context, forceNew = false)
-                            notifyTransactionDetected(context, parsed.provider, parsed.amount, parsed.trxId)
-                        } else {
-                            Log.d(TAG, "Duplicate transaction ignored: ${parsed.trxId}")
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to persist detected transaction: ${e.message}", e)
-                    } finally {
-                        pendingResult.finish()
+                    // Play POS alert feedback if MFS
+                    val parsed = MfsSmsParser.parse(sender, fullBody, timestamp)
+                    if (parsed != null) {
+                        AlertManager.playInflowAlert(context)
+                        notifyTransactionDetected(context, parsed.provider, parsed.amount, parsed.trxId)
                     }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to persist and sync SMS: ${e.message}", e)
+                } finally {
+                    pendingResult.finish()
                 }
             }
         }
@@ -133,7 +103,7 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
             }
 
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val channelId = "piprapay_trx_channel"
+            val channelId = "bizlipay_trx_channel"
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel = NotificationChannel(
@@ -141,7 +111,7 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
                     "Detected Transactions",
                     NotificationManager.IMPORTANCE_HIGH
                 ).apply {
-                    description = "Alerts when a new MFS SMS payment is captured"
+                    description = "Alerts when a new MFS payment is captured"
                 }
                 notificationManager.createNotificationChannel(channel)
             }
@@ -149,8 +119,8 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
             val formattedAmount = String.format("৳ %.2f", amount)
             val notification = NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("$provider Payment Received: $formattedAmount")
-                .setContentText("TrxID: $trxId • Enqueued for PipraPay sync")
+                .setContentTitle("$provider Payment: $formattedAmount")
+                .setContentText("TrxID: $trxId • Enqueued for BizliPay sync")
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .build()
@@ -162,6 +132,6 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
     }
 
     companion object {
-        private const val TAG = "SmsBroadcastReceiver"
+        private const val TAG = "BizliPaySmsReceiver"
     }
 }
