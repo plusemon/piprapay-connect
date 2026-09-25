@@ -65,4 +65,3 @@ class BizliPayApplication : Application() {
     }
 }
 
-typealias PipraPayApplication = BizliPayApplication

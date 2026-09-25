@@ -322,7 +322,7 @@ fun QrScannerScreen(
             try {
                 val uri = Uri.parse(trimmed)
                 val scheme = uri.scheme?.lowercase()
-                if (scheme == "bizlipay" || scheme == "piprapay" || scheme == "http" || scheme == "https") {
+                if (scheme == "bizlipay" || scheme == "http" || scheme == "https") {
                     key = uri.getQueryParameter("api_key")
                         ?: uri.getQueryParameter("apiKey")
                         ?: uri.getQueryParameter("key")

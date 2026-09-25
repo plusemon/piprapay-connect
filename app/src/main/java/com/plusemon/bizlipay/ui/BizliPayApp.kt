@@ -351,10 +351,3 @@ fun BizliPayApp(
     }
 }
 
-@Composable
-fun PipraPayApp(
-    viewModel: MainViewModel,
-    navController: NavHostController = rememberNavController()
-) {
-    BizliPayApp(viewModel, navController)
-}

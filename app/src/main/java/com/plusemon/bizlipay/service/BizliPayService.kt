@@ -212,6 +212,3 @@ open class BizliPayForegroundService : BizliPayService() {
         fun getBatteryOptimizationIntent(context: Context) = BizliPayService.getBatteryOptimizationIntent(context)
     }
 }
-
-typealias PipraPayService = BizliPayService
-typealias PipraPayForegroundService = BizliPayForegroundService

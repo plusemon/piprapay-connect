@@ -66,26 +66,10 @@ val LightBizliColors = BizliColors(
     isDark = false
 )
 
-typealias PipraColors = BizliColors
-val DarkPipraColors = DarkBizliColors
-val LightPipraColors = LightBizliColors
-
 val LocalBizliColors = staticCompositionLocalOf { DarkBizliColors }
 val LocalIsDarkMode = staticCompositionLocalOf { true }
 
 object BizliTheme {
-    val colors: BizliColors
-        @Composable
-        @ReadOnlyComposable
-        get() = LocalBizliColors.current
-
-    val isDarkMode: Boolean
-        @Composable
-        @ReadOnlyComposable
-        get() = LocalIsDarkMode.current
-}
-
-object PipraTheme {
     val colors: BizliColors
         @Composable
         @ReadOnlyComposable

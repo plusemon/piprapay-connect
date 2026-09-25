@@ -213,17 +213,3 @@ fun BizliConfirmationDialog(
     }
 }
 
-@Composable
-fun PipraConfirmationDialog(
-    title: String,
-    message: String,
-    confirmLabel: String,
-    cancelLabel: String = "Cancel",
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-    icon: ImageVector? = Icons.Default.Warning,
-    testTag: String = "confirmation_dialog"
-) {
-    BizliConfirmationDialog(title, message, confirmLabel, cancelLabel, onConfirm, onDismiss, modifier, icon, testTag)
-}

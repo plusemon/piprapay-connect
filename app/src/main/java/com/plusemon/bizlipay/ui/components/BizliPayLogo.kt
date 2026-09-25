@@ -98,16 +98,6 @@ fun BizliPayIcon(
 }
 
 @Composable
-fun PipraPayIcon(
-    modifier: Modifier = Modifier,
-    size: Dp = 36.dp,
-    shapeCornerRadius: Dp = (size.value * 0.24f).dp,
-    showBorder: Boolean = true
-) {
-    BizliPayIcon(modifier, size, shapeCornerRadius, showBorder)
-}
-
-@Composable
 fun BizliPayLogoLockup(
     modifier: Modifier = Modifier,
     iconSize: Dp = 36.dp,
@@ -170,16 +160,4 @@ fun BizliPayLogoLockup(
             }
         }
     }
-}
-
-@Composable
-fun PipraPayLogoLockup(
-    modifier: Modifier = Modifier,
-    iconSize: Dp = 36.dp,
-    titleFontSize: Int = 20,
-    subtitle: String? = "Automated MFS Gateway Node",
-    subtitleFontSize: Int = 11,
-    statusHealth: ServerSyncHealth? = null
-) {
-    BizliPayLogoLockup(modifier, iconSize, titleFontSize, subtitle, subtitleFontSize, statusHealth)
 }

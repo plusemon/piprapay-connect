@@ -134,8 +134,6 @@ object BizliPayCompanionClient {
     }
 }
 
-val PipraPayCompanionClient = BizliPayCompanionClient
-
 object HandshakeAuthenticator {
     suspend fun verify(
         serverUrl: String,
